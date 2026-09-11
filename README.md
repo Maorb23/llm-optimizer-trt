@@ -2,7 +2,7 @@
 
 llm-optimizer is a Python tool for benchmarking and optimizing inference performance of any open-source LLMs.
 
-- 🧩 Benchmark across inference frameworks like SGLang and vLLM using their native arguments
+- 🧩 Benchmark SGLang, vLLM, and NVIDIA TensorRT-LLM using native arguments
 - ⚡️ Find the optimal setup automatically for your use case without endless trial and error
 - 🎯 Apply SLO constraints to focus only on configurations that meet your performance goals
 - 🧮 Estimate performance theoretically without running full benchmarks
@@ -73,7 +73,7 @@ llm-optimizer estimate --interactive
 
 ## Run your first benchmark
 
-Currently, llm-optimizer supports benchmarking with SGLang and vLLM to test different configurations of an LLM.
+llm-optimizer supports SGLang, vLLM, and NVIDIA TensorRT-LLM (`trtllm`).
 
 Here is an example using SGLang:
 
@@ -112,7 +112,38 @@ llm-optimizer \
   --client-args "max_concurrency=range(50,201,50);request_rate=[10,20,50]" \
   --gpus 8 \
   --output-json complex_benchmark.json
+
+# TensorRT-LLM with native executor and batching parameters
+llm-optimizer \
+  --framework trtllm \
+  --model meta-llama/Llama-3.1-8B-Instruct \
+  --server-args "tp_size=[1,2,4];max_batch_size=[32,64];max_num_tokens=[4096,8192]" \
+  --client-args "dataset_name=random;random_input_len=1024;random_output_len=256;max_concurrency=[32,64,128];num_prompts=1000" \
+  --gpus 4 \
+  --output-json trtllm_results.json
 ```
+
+### TensorRT-LLM installation
+
+TensorRT-LLM remains an external, backend-specific dependency. Installing
+llm-optimizer does not install it, so vLLM and SGLang users do not inherit its
+CUDA, PyTorch, or NVIDIA library constraints. NVIDIA recommends its pre-built
+[TensorRT-LLM NGC release container](https://nvidia.github.io/TensorRT-LLM/latest/installation/installation-guide.html).
+Run llm-optimizer inside that container (mount this checkout and the model/cache
+directories), or install the compatible `tensorrt_llm` wheel on Linux. Confirm
+that `trtllm-serve --help` works before starting a managed benchmark.
+
+The integration uses the current `trtllm-serve` OpenAI-compatible API and its
+`/health` endpoint. Current TensorRT-LLM uses the PyTorch backend and loads a
+Hugging Face checkpoint directly; it no longer requires the legacy
+`trtllm-build` engine step. Nested settings such as quantization, KV block
+reuse, scheduler configuration, CUDA graphs, and speculative decoding should
+be placed in a native YAML file and swept by passing alternative files through
+`config=[...]`.
+
+See [TensorRT-LLM comparison benchmark](docs/trtllm-comparison.md) for an
+equivalent three-framework experiment and [TensorRT-LLM and Dynamo](docs/trtllm-dynamo.md)
+for the deployment-topology design.
 
 ## Apply constraints
 
@@ -154,10 +185,13 @@ llm-optimizer saves benchmark results in JSON format, including key inference me
 
 ```bash
 # Visualize results with Pareto frontier analysis
-llm-optimizer visualize --data-file results.json --port 8080
+llm-optimizer visualize --data-file results.json --serve --port 8080
 
 # Combine multiple result files
-llm-optimizer visualize --data-file "sglang_results.json,vllm_results.json" --port 8080
+llm-optimizer visualize \
+  --data-file "sglang_results.json,vllm_results.json,trtllm_results.json" \
+  --serve \
+  --port 8080
 ```
 
 Open your browser at `http://localhost:8080/pareto_llm_dashboard.html`. The dashboard allows you to:
@@ -190,7 +224,8 @@ llm-optimizer \
 
 ## Tune inference parameters
 
-llm-optimizer exposes both server- and client-side parameters so you can experiment with different setups and measure their impact on performance. It uses native parameters from the respective frameworks (currently support vLLM and SGLang). Here are some common parameters and you can add others as needed.
+llm-optimizer exposes native server parameters and common client parameters so
+you can measure the same workload across supported frameworks.
 
 ### SGLang
 - `tp_size*dp_size`: Tensor/Data parallelism combinations
@@ -202,6 +237,26 @@ llm-optimizer exposes both server- and client-side parameters so you can experim
 - `tensor_parallel_size`: Tensor parallelism degree
 - `max_num_batched_tokens`: Maximum batch size in tokens
 - `max_num_seqs`: Maximum concurrent sequences
+
+### TensorRT-LLM
+
+- `tp_size`, `pp_size`, `cp_size`, `ep_size`: native parallel dimensions
+- `max_batch_size`: maximum requests the executor can schedule
+- `max_num_tokens`: maximum unpadded input tokens in a batch
+- `max_seq_len`: maximum prompt plus output length
+- `free_gpu_memory_fraction`: free GPU memory reserved for KV cache
+- `kv_cache_dtype`: `auto`, `fp8`, or `nvfp4` where supported
+- `enable_chunked_prefill`, `enable_attention_dp`: native scheduling/parallel options
+- `config`: native YAML for nested engine, KV cache, quantization, scheduler,
+  CUDA graph, and speculative-decoding settings
+
+TRT-LLM CLI argument names use underscores exactly as documented. The optimizer
+also accepts the documented long aliases such as `tensor_parallel_size`.
+
+Known limitations: model, quantization, precision, and GPU-architecture support
+are determined by the installed TensorRT-LLM release. Multi-node and
+prefill/decode-disaggregated topologies are outside the native backend's initial
+scope. Those topologies are candidates for a future Dynamo deployment mode.
 
 ### Client parameters
 - `max_concurrency`: Maximum concurrent requests

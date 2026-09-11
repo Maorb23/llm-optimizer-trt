@@ -9,9 +9,11 @@ page for benchmark data using Plotly.js.
 import argparse
 import json
 import logging
+import typing as t
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 
+from llm_optimizer.result_utils import normalize_result_record
 from llm_optimizer.utils import InfinityToNullEncoder
 
 # Configure logging
@@ -19,6 +21,22 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+
+def _common_metadata_value(records: list[dict], key: str):
+    values = {record.get(key) for record in records}
+    return values.pop() if len(values) == 1 else "mixed"
+
+
+def _record_field_value(record: dict, field: str):
+    config = record.get("config", {})
+    for section in ("normalized_config", "server_args", "client_args"):
+        value = config.get(section, {}).get(field)
+        if value is not None:
+            return value
+    if field == "framework":
+        return config.get("framework")
+    return record.get("results", {}).get(field)
 
 
 def convert_constraints_for_visualization(parsed_constraints):
@@ -71,11 +89,11 @@ class ParetoLLMOptimizer:
         self.config_file = config_file
         self.config = self.load_config(config_file)
 
-    def load_config(self, config_file: str) -> dict:
+    def load_config(self, config_file: str) -> dict[str, t.Any]:
         """Load visualization configuration from JSON file."""
         try:
             with open(config_file, encoding="utf-8") as f:
-                config = json.load(f)
+                config = t.cast(dict[str, t.Any], json.load(f))
 
             # Framework will be detected later in load_benchmark_data
 
@@ -91,52 +109,78 @@ class ParetoLLMOptimizer:
     def load_benchmark_data(self, data_file: str) -> dict:
         """Load benchmark data from JSON files."""
         data = []
-        constraints = {}
-        metadata = {}
-        best_configurations = {}
-        json_files = [Path(data_file)]
+        constraints: list[t.Any] = []
+        metadata: dict[str, t.Any] = {}
+        best_configurations: dict[str, t.Any] = {}
+        json_files = [
+            Path(name.strip()) for name in data_file.split(",") if name.strip()
+        ]
 
-        # Load data from the specified file
-        try:
-            with open(data_file, encoding="utf-8") as f:
-                file_data = json.load(f)
+        if not json_files:
+            raise ValueError("At least one data file is required")
 
-                # Expect new enhanced structure only
+        metadata_by_file = []
+        best_by_file = {}
+        for json_file in json_files:
+            try:
+                with open(json_file, encoding="utf-8") as f:
+                    file_data = json.load(f)
+
                 if not isinstance(file_data, dict) or "test_results" not in file_data:
                     raise ValueError(
                         "Invalid data format. Expected enhanced format with "
                         "'metadata', 'best_configurations', and 'test_results' fields."
                     )
 
-                # Extract data from enhanced format
-                data = file_data["test_results"]
-                metadata = file_data.get("metadata", {})
-                best_configurations = file_data.get("best_configurations", {})
-                constraints = metadata.get("constraints", {})
+                file_records = [
+                    normalize_result_record(item) for item in file_data["test_results"]
+                ]
+                data.extend(file_records)
+                file_metadata = file_data.get("metadata", {})
+                metadata_by_file.append({"data_file": str(json_file), **file_metadata})
+                file_best = file_data.get("best_configurations", {})
+                if file_best:
+                    best_by_file[str(json_file)] = file_best
 
-                # If constraints not in metadata, try to extract from individual results
-                if not constraints:
-                    for item in data:
+                file_constraints = file_metadata.get("constraints", [])
+                if not file_constraints:
+                    for item in file_records:
                         if (
                             isinstance(item, dict)
                             and "constraints" in item
                             and item["constraints"]
                         ):
-                            constraints = item["constraints"]
+                            file_constraints = item["constraints"]
                             break
+                if file_constraints and not constraints:
+                    constraints = file_constraints
+                elif file_constraints and file_constraints != constraints:
+                    logger.warning(
+                        "Input files contain different constraints; using the "
+                        "first set."
+                    )
+                logger.info(f"Loaded {len(file_records)} records from {json_file}")
+            except Exception as e:
+                logger.error(f"Error loading {json_file}: {e}")
+                raise
 
-            logger.info(f"Loaded data from {data_file}")
-            logger.info(
-                f"Metadata: GPU={metadata.get('gpu_type')} "
-                f"x{metadata.get('gpu_count')}, Model={metadata.get('model_tag')}"
-            )
-            logger.info(f"Total tests: {metadata.get('total_tests', len(data))}")
+        if len(metadata_by_file) == 1:
+            metadata = dict(metadata_by_file[0])
+            metadata.pop("data_file", None)
+            best_configurations = next(iter(best_by_file.values()), {})
+        else:
+            metadata = {
+                "total_tests": len(data),
+                "runs": metadata_by_file,
+                "model_tag": _common_metadata_value(metadata_by_file, "model_tag"),
+                "gpu_type": _common_metadata_value(metadata_by_file, "gpu_type"),
+                "gpu_count": _common_metadata_value(metadata_by_file, "gpu_count"),
+            }
+            best_configurations = best_by_file
 
-        except Exception as e:
-            logger.error(f"Error loading {data_file}: {e}")
-            raise
-
-        logger.info(f"Loaded {len(data)} benchmark records from {data_file}")
+        logger.info(
+            f"Loaded {len(data)} benchmark records from {len(json_files)} file(s)"
+        )
         logger.info(f"Found constraints: {constraints}")
 
         return {
@@ -147,13 +191,23 @@ class ParetoLLMOptimizer:
             "best_configurations": best_configurations,
         }
 
-    def get_field_options(self, data: list = None) -> dict:
+    def get_field_options(
+        self, data: t.Optional[list] = None
+    ) -> dict[str, t.Any]:
         """Get field options by category, with disabled fields for missing data."""
         if not self.config or "fields" not in self.config:
             return {}
 
         categories = {}
         for field_id, field_info in self.config["fields"].items():
+            if (
+                data
+                and field_info.get("optional")
+                and not any(
+                    _record_field_value(item, field_id) is not None for item in data
+                )
+            ):
+                continue
             category = field_info.get("category", "other")
             if category not in categories:
                 categories[category] = {
@@ -170,11 +224,11 @@ class ParetoLLMOptimizer:
 
         return categories
 
-    def get_field_categories(self) -> dict:
+    def get_field_categories(self) -> dict[str, t.Any]:
         """Get field category information for hover display."""
         if not self.config or "field_categories" not in self.config:
             return {}
-        return self.config["field_categories"]
+        return t.cast(dict[str, t.Any], self.config["field_categories"])
 
     def create_html_page(self, data_dict: dict) -> str:
         """Create the HTML page with embedded data and configuration."""
@@ -250,7 +304,9 @@ class ParetoLLMOptimizer:
 
         return html_content
 
-    def generate_dashboard(self, data_file: str, output_file: str = None) -> str:
+    def generate_dashboard(
+        self, data_file: str, output_file: t.Optional[str] = None
+    ) -> str:
         """Generate the dashboard HTML file."""
         # Load benchmark data
         data_dict = self.load_benchmark_data(data_file)

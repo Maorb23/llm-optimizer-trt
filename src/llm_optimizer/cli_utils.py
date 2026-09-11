@@ -334,9 +334,12 @@ def collect_interactive_parameters():
     click.echo("\n🚀 Framework Selection")
     click.echo("• sglang: Fast inference engine optimized for throughput")
     click.echo("• vllm: Popular serving framework with good compatibility")
+    click.echo("• trtllm: NVIDIA TensorRT-LLM native serving")
     click.echo("• both: Generate configs for both frameworks")
     framework = friendly_prompt(
-        "Framework", default="both", choices=["sglang", "vllm", "both"]
+        "Framework",
+        default="both",
+        choices=["sglang", "vllm", "trtllm", "both"],
     )
 
     # Get dataset selection

@@ -4,12 +4,26 @@
     "attention_backend": "config.server_args.attention_backend",
     "dp_size": "config.server_args.dp_size",
     "tp_size": "config.server_args.tp_size",
+    "tensor_parallel_size": "config.normalized_config.tensor_parallel_size",
+    "pipeline_parallel_size": "config.normalized_config.pipeline_parallel_size",
+    "context_parallel_size": "config.normalized_config.context_parallel_size",
+    "expert_parallel_size": "config.normalized_config.expert_parallel_size",
+    "max_batched_tokens": "config.normalized_config.max_batched_tokens",
+    "max_concurrent_sequences": "config.normalized_config.max_concurrent_sequences",
+    "max_sequence_length": "config.normalized_config.max_sequence_length",
+    "kv_cache_memory_fraction": "config.normalized_config.kv_cache_memory_fraction",
+    "kv_cache_dtype": "config.normalized_config.kv_cache_dtype",
+    "engine_precision": "config.normalized_config.engine_precision",
+    "world_size": "config.normalized_config.world_size",
+    "input_length": "config.normalized_config.input_length",
+    "output_length": "config.normalized_config.output_length",
     "max_concurrency": "config.client_args.max_concurrency",
     "request_rate": "config.client_args.request_rate",
     "random_input_len": "config.client_args.random_input_len",
     "random_output_len": "config.client_args.random_output_len",
     "input_throughput": "results.input_throughput",
     "output_throughput": "results.output_throughput",
+    "total_throughput": "results.total_throughput",
     "mean_ttft_ms": "results.mean_ttft_ms",
     "median_ttft_ms": "results.median_ttft_ms",
     "p99_ttft_ms": "results.p99_ttft_ms",
@@ -30,6 +44,10 @@
     "server_args": {
       "label": "Server Arguments", 
       "description": "Server-side configuration parameters"
+    },
+    "normalized_config": {
+      "label": "Comparable Configuration",
+      "description": "Framework-independent configuration semantics"
     },
     "results": {
       "label": "Results",
@@ -70,6 +88,121 @@
       "category": "configuration",
       "unit": "",
       "field_category": "server_args"
+    },
+    "tensor_parallel_size": {
+      "label": "Tensor Parallel Size",
+      "description": "Normalized tensor parallelism across serving frameworks",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "pipeline_parallel_size": {
+      "label": "Pipeline Parallel Size",
+      "description": "Normalized pipeline parallelism across serving frameworks",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "context_parallel_size": {
+      "label": "Context Parallel Size",
+      "description": "TensorRT-LLM context parallelism",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "expert_parallel_size": {
+      "label": "Expert Parallel Size",
+      "description": "TensorRT-LLM MoE expert parallelism",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "max_batched_tokens": {
+      "label": "Max Batched Tokens",
+      "description": "Normalized maximum tokens scheduled in a batch",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "tokens",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "max_concurrent_sequences": {
+      "label": "Max Concurrent Sequences",
+      "description": "Normalized maximum requests or sequences scheduled together",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "max_sequence_length": {
+      "label": "Max Sequence Length",
+      "description": "Normalized maximum prompt plus output length",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "tokens",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "kv_cache_memory_fraction": {
+      "label": "KV Cache Memory Fraction",
+      "description": "Normalized GPU memory fraction allocated to model runtime or KV cache",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "kv_cache_dtype": {
+      "label": "KV Cache Precision",
+      "description": "KV cache data type",
+      "type": "categorical",
+      "category": "configuration",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "engine_precision": {
+      "label": "Engine Precision",
+      "description": "Model weight precision or quantization mode",
+      "type": "categorical",
+      "category": "configuration",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "world_size": {
+      "label": "World Size",
+      "description": "Normalized product of model parallel dimensions",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "GPUs",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "input_length": {
+      "label": "Input Length",
+      "description": "Normalized synthetic request input length",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "tokens",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "output_length": {
+      "label": "Output Length",
+      "description": "Normalized synthetic request output length",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "tokens",
+      "field_category": "normalized_config",
+      "optional": true
     },
     "max_concurrency": {
       "label": "Max Concurrency",
@@ -114,6 +247,14 @@
     "output_throughput": {
       "label": "Output Throughput",
       "description": "Output tokens generated per second",
+      "type": "numerical",
+      "category": "performance",
+      "unit": "tokens/s",
+      "field_category": "results"
+    },
+    "total_throughput": {
+      "label": "Total Token Throughput",
+      "description": "Input plus output tokens processed per second",
       "type": "numerical",
       "category": "performance",
       "unit": "tokens/s",
@@ -344,4 +485,4 @@
       "#00f2fe", "#43e97b", "#38f9d7", "#fa709a", "#fee140"
     ]
   }
-} 
+}

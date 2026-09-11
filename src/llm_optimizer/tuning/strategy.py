@@ -247,6 +247,10 @@ class VLLMStrategy(FrameworkStrategy):
     def framework_name(self) -> str:
         return "vllm"
 
+    @property
+    def batch_parameter_name(self) -> str:
+        return "max_num_batched_tokens"
+
     def calculate_optimal_parameters(
         self,
         gpu_specs: dict[str, Any],
@@ -276,7 +280,7 @@ class VLLMStrategy(FrameworkStrategy):
         return [
             ArgSet(
                 scope=ArgScope.SERVER,
-                name="max_num_batched_tokens",
+                name=self.batch_parameter_name,
                 arg_type=int,
                 values=[optimal_params["conservative_batch"]]
             )
@@ -291,7 +295,7 @@ class VLLMStrategy(FrameworkStrategy):
         return [
             ArgSet(
                 scope=ArgScope.SERVER,
-                name="max_num_batched_tokens",
+                name=self.batch_parameter_name,
                 arg_type=int,
                 values=[optimal_params["aggressive_batch"]]
             )
@@ -306,7 +310,7 @@ class VLLMStrategy(FrameworkStrategy):
         return [
             ArgSet(
                 scope=ArgScope.SERVER,
-                name="max_num_batched_tokens",
+                name=self.batch_parameter_name,
                 arg_type=int,
                 values=[optimal_params["memory_batch"]]
             )
@@ -341,6 +345,18 @@ class VLLMStrategy(FrameworkStrategy):
         ]
 
 
+class TRTLLMStrategy(VLLMStrategy):
+    """TensorRT-LLM tuning using its native executor capacity argument."""
+
+    @property
+    def framework_name(self) -> str:
+        return "trtllm"
+
+    @property
+    def batch_parameter_name(self) -> str:
+        return "max_num_tokens"
+
+
 def get_strategy_for_framework(framework: str) -> FrameworkStrategy:
     """Get the appropriate strategy for the given framework."""
     framework_lower = framework.lower()
@@ -349,8 +365,12 @@ def get_strategy_for_framework(framework: str) -> FrameworkStrategy:
         return SGLangStrategy()
     elif framework_lower == "vllm":
         return VLLMStrategy()
+    elif framework_lower == "trtllm":
+        return TRTLLMStrategy()
     else:
-        raise ValueError(f"Unsupported framework: {framework}. Use 'sglang' or 'vllm'.")
+        raise ValueError(
+            f"Unsupported framework: {framework}. Use 'sglang', 'vllm', or 'trtllm'."
+        )
 
 
 def generate_tuning_configs_with_strategy(

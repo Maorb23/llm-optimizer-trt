@@ -101,6 +101,7 @@
             const mapping = {
                 'input_throughput': 'results.input_throughput',
                 'output_throughput': 'results.output_throughput',
+                'total_throughput': 'results.total_throughput',
                 'mean_ttft_ms': 'results.mean_ttft_ms',
                 'median_ttft_ms': 'results.median_ttft_ms',
                 'p95_ttft_ms': 'results.p95_ttft_ms',
@@ -119,6 +120,7 @@
                 'p99_tpot_ms': 'results.p99_tpot_ms',
                 'max_concurrency': 'config.client_args.max_concurrency',
                 'request_rate': 'config.client_args.request_rate',
+                'framework': 'config.framework',
                 'cmd': 'cmd'
             };
 
@@ -126,6 +128,10 @@
 
             // If not in mapping, check if it's a server arg
             if (!mapping[path]) {
+                const normalizedValue = getPathValue(obj, `config.normalized_config.${path}`);
+                if (normalizedValue !== undefined) {
+                    return normalizedValue;
+                }
                 const serverArgValue = getPathValue(obj, `config.server_args.${path}`);
                 if (serverArgValue !== undefined) {
                     return serverArgValue;
@@ -286,6 +292,7 @@
 
             const grouped = {
                 'results': [],
+                'normalized_config': [],
                 'server_args': [],
                 'client_args': [],
                 'command': []
@@ -301,6 +308,20 @@
                         const num = Number(value);
                         const displayValue = isFinite(num) ? num.toFixed(2) : value;
                         grouped.results.push({ label, value: displayValue, unit: unit ? ` ${unit}` : '' });
+                    }
+                });
+            }
+
+            // Add normalized semantics used for cross-framework comparisons
+            if (point.config?.framework) {
+                grouped.normalized_config.push({ label: 'Framework', value: point.config.framework, unit: '' });
+            }
+            if (point.config?.normalized_config) {
+                Object.entries(point.config.normalized_config).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null) {
+                        const field = config.fields?.[key];
+                        const label = field?.label || key.replace(/_/g, ' ');
+                        grouped.normalized_config.push({ label, value: String(value), unit: '' });
                     }
                 });
             }
@@ -331,8 +352,7 @@
             }
 
             let text = '';
-            // Define desired order: results first, then server_args, then client_args
-            const categoryOrder = ['results', 'server_args', 'client_args', 'command'];
+            const categoryOrder = ['results', 'normalized_config', 'server_args', 'client_args', 'command'];
 
             categoryOrder.forEach(cat => {
                 const fields = grouped[cat];
@@ -485,6 +505,7 @@
                         const t = {
                             [xAxis]: xVal,
                             [yAxis]: yVal,
+                            framework: getNestedValue(p, 'framework'),
                             _original: p
                         };
 
@@ -810,46 +831,24 @@
                 return dataset.filter(d => set.has(d));
             }, [dataset, onlyPareto, xAxis, yAxis]);
 
-            // Extract all available fields from the dataset
-            const allFields = useMemo(() => {
-                if (!filtered.length) return [];
-                const firstItem = filtered[0];
-                const fields = new Set();
-
-                // Add client args
-                if (firstItem.config?.client_args) {
-                    Object.keys(firstItem.config.client_args).forEach(key => fields.add(key));
-                }
-
-                // Add server args
-                if (firstItem.config?.server_args) {
-                    Object.keys(firstItem.config.server_args).forEach(key => fields.add(key));
-                }
-
-                // Add cmd
-                if (firstItem.cmd) {
-                    fields.add('cmd');
-                }
-
-                return Array.from(fields);
-            }, [filtered]);
-
             // Filter and order fields for display - check if any row has data for each field
             const orderedFields = useMemo(() => {
-                const fieldOrder = ['cmd', 'max_concurrency', 'request_rate'];
+                const fieldOrder = ['framework', 'cmd', 'max_concurrency', 'request_rate'];
+
+                const normalizedFields = new Set();
+                filtered.forEach(item => {
+                    const original = item._original || item;
+                    Object.keys(original.config?.normalized_config || {}).forEach(key => normalizedFields.add(key));
+                });
 
                 // Add all server args dynamically
-                const serverArgFields = [];
-                if (filtered.length > 0) {
-                    const firstItem = filtered[0];
-                    if (firstItem.config?.server_args) {
-                        Object.keys(firstItem.config.server_args).forEach(key => {
-                            serverArgFields.push(key);
-                        });
-                    }
-                }
+                const serverArgFields = new Set();
+                filtered.forEach(item => {
+                    const original = item._original || item;
+                    Object.keys(original.config?.server_args || {}).forEach(key => serverArgFields.add(key));
+                });
 
-                const allPossibleFields = [...fieldOrder, ...serverArgFields];
+                const allPossibleFields = [...new Set([...fieldOrder, ...normalizedFields, ...serverArgFields])];
 
                 // Only include fields that have data in at least one row
                 return allPossibleFields.filter(field => {

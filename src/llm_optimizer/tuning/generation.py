@@ -276,16 +276,29 @@ def generate_simple_tuning_configs(
         tp_param = mapping.get("tensor_parallel", "tensor_parallel")
         dp_param = mapping.get("data_parallel", "data_parallel")
 
-        server_arg_sets = [
-            ArgSet(
-                scope=ArgScope.SERVER,
-                name=(tp_param, dp_param),
-                arg_type=(int, int),
-                values=tp_dp_combinations
-            )
-        ]
+        if dp_param:
+            server_arg_sets = [
+                ArgSet(
+                    scope=ArgScope.SERVER,
+                    name=(tp_param, dp_param),
+                    arg_type=(int, int),
+                    values=tp_dp_combinations
+                )
+            ]
+            parallel_desc = f"TP/DP: {tp_dp_combinations}"
+        else:
+            tp_values = sorted({tp for tp, _ in tp_dp_combinations})
+            server_arg_sets = [
+                ArgSet(
+                    scope=ArgScope.SERVER,
+                    name=tp_param,
+                    arg_type=int,
+                    values=tp_values
+                )
+            ]
+            parallel_desc = f"TP: {tp_values}"
 
-        config_desc = f"Simple - {framework.upper()} TP/DP: {tp_dp_combinations}"
+        config_desc = f"Simple - {framework.upper()} {parallel_desc}"
 
         configs.append(TuningConfig(
             framework=framework,
@@ -383,7 +396,7 @@ def generate_advanced_tuning_configs(
             description=f"Advanced - SGLang with prefill tuning: {prefill_values}"
         ))
 
-    elif framework.lower() == "vllm":
+    elif framework.lower() in ("vllm", "trtllm"):
         # Calculate optimal values and generate 3-value ranges for advanced parameters
         optimal_batch_tokens = calculate_optimal_batch_tokens(gpu_specs, model_config, precision, sequence_length)
         batch_values = generate_parameter_range(optimal_batch_tokens, min_val=1024, max_val=32768)
@@ -402,10 +415,12 @@ def generate_advanced_tuning_configs(
         )
 
         advanced_configs.append(TuningConfig(
-            framework="vllm",
+            framework=framework.lower(),
             server_arg_sets=server_arg_sets,
             client_arg_sets=client_arg_sets,
-            description=f"Advanced - vLLM with batch tuning: {batch_values}"
+            description=(
+                f"Advanced - {framework} with batch tuning: {batch_values}"
+            )
         ))
 
     return advanced_configs

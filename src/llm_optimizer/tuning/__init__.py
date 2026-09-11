@@ -28,6 +28,7 @@ from llm_optimizer.tuning.generation import (
 from llm_optimizer.tuning.strategy import (
     FrameworkStrategy,
     SGLangStrategy,
+    TRTLLMStrategy,
     VLLMStrategy,
     generate_tuning_configs,
     get_strategy_for_framework,
@@ -47,6 +48,7 @@ __all__ = [
     # Strategy pattern classes
     "FrameworkStrategy",
     "SGLangStrategy",
+    "TRTLLMStrategy",
     "VLLMStrategy",
     "get_strategy_for_framework",
 

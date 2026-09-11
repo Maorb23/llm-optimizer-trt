@@ -21,7 +21,9 @@ from llm_optimizer.performance import (
     run_performance_estimation,
 )
 from llm_optimizer.predefined.gpus import list_available_gpus_with_lowercase
+from llm_optimizer.result_utils import normalize_config
 from llm_optimizer.server_utils import (
+    get_server_env,
     start_server,
     terminate_process_top_down,
 )
@@ -33,17 +35,37 @@ logger = get_logger("main")
 PREDEFINED_FRAMEWORKS = list(predefined.SERVER_CONFIGS.keys())
 
 
-def construct_benchmark_settings(combo: list[lo_args.BaseArg]) -> dict[str, t.Any]:
+def construct_benchmark_settings(
+    combo: list[lo_args.BaseArg], framework: t.Optional[str] = None
+) -> dict[str, t.Any]:
     client_args = [arg for arg in combo if arg.scope == lo_args.ArgScope.CLIENT]
     server_args = [arg for arg in combo if arg.scope == lo_args.ArgScope.SERVER]
     client_kv_pairs = lo_args.get_all_kv_pairs(client_args)
-    server_cmd_args = lo_args.get_all_cmd_args(server_args)
+    server_cmd_args = predefined.get_server_cmd_args(framework, server_args)
     server_kv_pairs = lo_args.get_all_kv_pairs(server_args)
+    server_config = dict(server_kv_pairs)
+    client_config = dict(client_kv_pairs)
     return {
-        "client_args": dict(client_kv_pairs),
-        "server_args": dict(server_kv_pairs),
+        "framework": framework,
+        "client_args": client_config,
+        "server_args": server_config,
         "server_cmd_args": server_cmd_args,
+        "normalized_config": normalize_config(framework, server_config, client_config),
     }
+
+
+def construct_result_config(
+    benchmark_settings: dict[str, t.Any], framework: t.Optional[str]
+) -> dict[str, t.Any]:
+    """Add framework lifecycle metadata to a serializable configuration."""
+    result_config = dict(benchmark_settings)
+    if framework == "trtllm":
+        engine_args, runtime_args = predefined.trtllm.classify_server_args(
+            result_config["server_args"]
+        )
+        result_config["engine_args"] = engine_args
+        result_config["runtime_args"] = runtime_args
+    return result_config
 
 
 def extract_token_lengths(client_params: dict) -> tuple[int, int]:
@@ -215,7 +237,7 @@ def get_config_id(client_params: dict, server_params: dict) -> str:
 @click.option("--mute-server", is_flag=True, help="Suppress server process stdout.")
 @click.option(
     "--ready-endpoint",
-    default="/health",
+    default=None,
     help="Endpoint to check if server is ready (e.g., /health, /readyz).",
 )
 @click.option(
@@ -287,7 +309,6 @@ def benchmark(
     constraints,
 ):
     """A CLI tool to optimize LLM performance."""
-    import llm_optimizer.bench_client as bench_client
     from llm_optimizer.performance import parse_slo_constraints
     from llm_optimizer.visualization.visualize import (
         convert_constraints_for_visualization,
@@ -309,26 +330,29 @@ def benchmark(
             logger.error(f"Error parsing constraints: {e}")
             # Continue without constraints rather than failing
 
-    if not server_cmd:
+    managed_server = not server_cmd
+    if managed_server:
         if not model or not framework:
             raise click.UsageError(
                 "If --server-cmd is not provided, both --model and "
                 "--framework are required."
             )
 
+        framework_spec = predefined.get_framework_spec(framework)
         if port is None:
-            port = {
-                "sglang": 30000,
-                "vllm": 8000,
-                "max": 8000,
-            }.get(framework, 30000)
+            port = framework_spec.default_port
+        if ready_endpoint is None:
+            ready_endpoint = framework_spec.ready_endpoint
 
-        tmpl = predefined.SEVER_CMD_TMPL[framework]
+        tmpl = framework_spec.server_command
         server_cmd = tmpl.format(
             model=model,
             host=host,
             port=port,
         )
+
+    if ready_endpoint is None:
+        ready_endpoint = "/health"
 
     if gpus is None:
         gpus = get_gpu_count()
@@ -438,7 +462,7 @@ def benchmark(
         )
 
     for idx, combo in enumerate(all_combinations):
-        benchmark_settings = construct_benchmark_settings(combo)
+        benchmark_settings = construct_benchmark_settings(combo, framework)
 
         client_params = benchmark_settings["client_args"]
         server_params = benchmark_settings["server_args"]
@@ -468,17 +492,30 @@ def benchmark(
             print(benchmark_settings)
             continue
 
+        import llm_optimizer.bench_client as bench_client
+
         # Build Server Command & Start Server
         server_process = None
         full_server_cmd = f"{server_cmd} {' '.join(server_cmd_args)}"
 
         try:
-            server_process = start_server(full_server_cmd, {}, ready_url, mute_server)
+            server_env = (
+                get_server_env(framework, gpus, server_params)
+                if managed_server
+                else {}
+            )
+            server_process = start_server(
+                full_server_cmd, server_env, ready_url, mute_server
+            )
 
             # Run Benchmark
-            # Currently are testing OpenAI-compatible API, so pass "vllm" as backend to bench_client
-            # We keep the possibility of use different backend for different framework here
-            backend_for_bench = "vllm"
+            # All managed frameworks currently use the same OpenAI-compatible
+            # completions benchmark implementation.
+            backend_for_bench = (
+                predefined.get_framework_spec(framework).benchmark_backend
+                if framework
+                else "vllm"
+            )
             benchmark_args = {
                 "backend": backend_for_bench,
                 "model": model,
@@ -496,8 +533,10 @@ def benchmark(
             model_tag = model
             input_len, output_len = extract_token_lengths(client_params)
 
+            result_config = construct_result_config(benchmark_settings, framework)
+
             result_with_config = {
-                "config": benchmark_settings,
+                "config": result_config,
                 "results": benchmark_result,
                 "cmd": full_server_cmd,
                 "constraints": constraints_for_viz,
@@ -650,9 +689,12 @@ def visualize(data_file, config, output, serve, port):
         # Create optimizer instance
         optimizer = ParetoLLMOptimizer(str(config_path))
 
-        # Check if data file exists
-        if not pathlib.Path(data_file).exists():
-            logger.error(f"Data file not found: {data_file}")
+        data_files = [
+            pathlib.Path(name.strip()) for name in data_file.split(",") if name.strip()
+        ]
+        missing_files = [str(path) for path in data_files if not path.exists()]
+        if missing_files:
+            logger.error(f"Data file(s) not found: {', '.join(missing_files)}")
             return
 
         # Generate dashboard
@@ -704,7 +746,7 @@ def visualize(data_file, config, output, serve, port):
 )
 @click.option(
     "--framework",
-    type=click.Choice(["sglang", "vllm", "both"]),
+    type=click.Choice(["sglang", "vllm", "trtllm", "both"]),
     default="both",
     help="Framework to optimize for",
 )

@@ -26,6 +26,7 @@ llm-optimizer = "llm_optimizer.cli:cli"
 
 [project.optional-dependencies]
 dev = [
+    "pytest",
     "ruff",
     "mypy",
 ]
