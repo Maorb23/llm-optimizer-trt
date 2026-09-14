@@ -15,6 +15,7 @@ from llm_optimizer.cli_utils import (
     normalize_gpu_choice,
 )
 from llm_optimizer.logging import get_logger, setup_logging
+from llm_optimizer.optimization import satisfies_constraints
 from llm_optimizer.performance import (
     PerformanceEstimationParams,
     display_performance_estimation_results,
@@ -84,49 +85,16 @@ def extract_token_lengths(client_params: dict) -> tuple[int, int]:
     return input_len, output_len
 
 
-def find_best_throughput_configs(all_results: list, constraints: list = None) -> dict:
+def find_best_throughput_configs(
+    all_results: list, constraints: t.Optional[list] = None
+) -> dict:
     """Find configurations with best input/output throughput."""
-    best_configs = {
+    best_configs: dict[str, t.Any] = {
         "best_input_throughput": None,
         "best_output_throughput": None,
         "best_input_throughput_constrained": None,
         "best_output_throughput_constrained": None,
     }
-
-    # Helper to check if result satisfies constraints
-    def satisfies_constraints(result, constraints):
-        if not constraints:
-            return True
-
-        metrics = result.get("results", {})
-        for constraint in constraints:
-            # Handle SLOConstraint objects only (no legacy dict support)
-            metric_name = constraint.metric
-            stat_type = constraint.stat_type
-            operator = constraint.operator
-            threshold = constraint.value
-
-            # Map constraint metric names to result metric names
-            metric_mapping = {
-                "ttft": f"{stat_type}_ttft_ms",
-                "itl": f"{stat_type}_itl_ms",
-                "e2e_latency": f"{stat_type}_e2e_latency_ms",
-            }
-
-            result_metric = metric_mapping.get(
-                metric_name, f"{stat_type}_{metric_name}"
-            )
-            value = metrics.get(result_metric)
-
-            if value is None:
-                return False
-
-            if operator == "<" and value >= threshold:
-                return False
-            elif operator == ">" and value <= threshold:
-                return False
-
-        return True
 
     # Find best configurations
     for result in all_results:
@@ -199,6 +167,456 @@ def get_config_id(client_params: dict, server_params: dict) -> str:
     return "_".join(config_id_parts) or "default"
 
 
+def _load_jsonl(path: pathlib.Path) -> list[dict[str, t.Any]]:
+    results: list[dict[str, t.Any]] = []
+    with path.open() as stream:
+        for line_num, line in enumerate(stream, 1):
+            try:
+                results.append(json.loads(line))
+            except json.JSONDecodeError:
+                logger.warning(
+                    f"Could not parse line {line_num} in {path}: {line.strip()}"
+                )
+    return results
+
+
+def _write_combined_results(
+    output_json: pathlib.Path,
+    output_jsonl: pathlib.Path,
+    gpu_type: str,
+    gpus: int,
+    model: t.Optional[str],
+    constraints_for_viz: list,
+    parsed_constraints: list,
+    optimization_metadata: t.Optional[dict[str, t.Any]] = None,
+) -> None:
+    all_results = _load_jsonl(output_jsonl) if output_jsonl.exists() else []
+    input_len = output_len = None
+    if all_results:
+        client = all_results[0].get("config", {}).get("client_args", {})
+        input_len, output_len = extract_token_lengths(client)
+    enhanced_results: dict[str, t.Any] = {
+        "metadata": {
+            "gpu_type": gpu_type,
+            "gpu_count": gpus,
+            "model_tag": model,
+            "total_tests": len(all_results),
+            "constraints": constraints_for_viz,
+            "input_len": input_len,
+            "output_len": output_len,
+        },
+        "best_configurations": find_best_throughput_configs(
+            all_results, parsed_constraints
+        ),
+        "test_results": all_results,
+    }
+    if optimization_metadata is not None:
+        enhanced_results["optimization"] = optimization_metadata
+    with output_json.open("w") as stream:
+        json.dump(enhanced_results, stream, indent=2, cls=InfinityToNullEncoder)
+
+
+def run_single_configuration(
+    benchmark_settings: dict[str, t.Any],
+    *,
+    framework: t.Optional[str],
+    model: t.Optional[str],
+    server_cmd: str,
+    managed_server: bool,
+    gpus: int,
+    gpu_type: str,
+    host: str,
+    port: t.Optional[int],
+    ready_url: str,
+    mute_server: bool,
+    constraints_for_viz: list,
+    output_jsonl_path: t.Optional[pathlib.Path] = None,
+    output_file_path: t.Optional[pathlib.Path] = None,
+    objective: t.Optional[str] = None,
+    trial_number: t.Optional[int] = None,
+    study_signature: t.Optional[str] = None,
+    parsed_constraints: t.Optional[list] = None,
+) -> tuple[dict[str, t.Any], t.Optional[float]]:
+    """Run and persist one configuration, always cleaning up its server."""
+    import llm_optimizer.bench_client as bench_client
+    from llm_optimizer.optimization import extract_objective
+
+    client_params = benchmark_settings["client_args"]
+    server_params = benchmark_settings["server_args"]
+    full_server_cmd = f"{server_cmd} {' '.join(benchmark_settings['server_cmd_args'])}"
+    server_process = None
+    try:
+        server_env = (
+            get_server_env(framework, gpus, server_params) if managed_server else {}
+        )
+        server_process = start_server(
+            full_server_cmd, server_env, ready_url, mute_server
+        )
+        backend = (
+            predefined.get_framework_spec(framework).benchmark_backend
+            if framework
+            else "vllm"
+        )
+        benchmark_args = {
+            "backend": backend,
+            "model": model,
+            "host": host,
+            "port": port,
+            "dataset_name": "sharegpt",
+            "num_prompts": 1000,
+            "request_rate": float("inf"),
+            "seed": 1,
+        }
+        benchmark_args.update(client_params)
+        benchmark_result = bench_client.run_benchmark(benchmark_args)
+        if not isinstance(benchmark_result, dict):
+            raise RuntimeError("Benchmark did not return a result")
+
+        objective_value = (
+            extract_objective(benchmark_result, objective) if objective else None
+        )
+        feasible = satisfies_constraints(
+            benchmark_result, parsed_constraints or []
+        )
+        input_len, output_len = extract_token_lengths(client_params)
+        result: dict[str, t.Any] = {
+            "config": construct_result_config(benchmark_settings, framework),
+            "results": benchmark_result,
+            "cmd": full_server_cmd,
+            "constraints": constraints_for_viz,
+            "metadata": {
+                "gpu_type": gpu_type,
+                "gpu_count": gpus,
+                "model_tag": model,
+                "input_tokens": input_len,
+                "output_tokens": output_len,
+            },
+        }
+        if trial_number is not None:
+            result["optimization"] = {
+                "trial_number": trial_number,
+                "objective_value": objective_value,
+                "slo_feasible": feasible,
+                "study_signature": study_signature,
+            }
+        if output_jsonl_path:
+            with output_jsonl_path.open("a") as stream:
+                stream.write(json.dumps(result, cls=InfinityToNullEncoder) + "\n")
+            logger.info(f"Appended result to {output_jsonl_path}")
+        elif output_file_path:
+            with output_file_path.open("w") as stream:
+                json.dump(result, stream, indent=2, cls=InfinityToNullEncoder)
+            logger.info(f"Benchmark results saved to {output_file_path}")
+        return result, objective_value
+    finally:
+        if server_process:
+            terminate_process_top_down(server_process)
+
+
+def _trial_summary(trial: t.Any) -> dict[str, t.Any]:
+    return {
+        "number": trial.number,
+        "objective_value": trial.value,
+        "config_id": trial.user_attrs.get("config_id"),
+        "slo_feasible": trial.user_attrs.get("slo_feasible", True),
+    }
+
+
+def _run_optuna_search(
+    *,
+    server_args_sets: list[lo_args.ArgSet],
+    client_args_sets: list[lo_args.ArgSet],
+    framework: str,
+    model: str,
+    server_cmd: str,
+    managed_server: bool,
+    gpus: int,
+    gpu_type: str,
+    host: str,
+    port: t.Optional[int],
+    ready_url: str,
+    mute_server: bool,
+    rest: int,
+    output_json: str,
+    continue_flag: bool,
+    dry_run: bool,
+    parsed_constraints: list,
+    constraints_for_viz: list,
+    constraints_text: t.Optional[str],
+    trials_budget: int,
+    timeout: t.Optional[float],
+    objective: str,
+    seed: int,
+    storage: t.Optional[str],
+    study_name: t.Optional[str],
+) -> None:
+    from llm_optimizer.optimization import (
+        OptunaSearchSpace,
+        canonical_signature,
+        constraint_violations,
+        default_storage_url,
+        extract_objective,
+        objective_direction,
+        require_optuna,
+        storage_kind,
+    )
+
+    direction = objective_direction(objective)
+    output_path = pathlib.Path(output_json)
+    jsonl_path = output_path.with_suffix(".jsonl")
+    storage_url = storage or default_storage_url(output_path)
+    space = OptunaSearchSpace(tuple(server_args_sets + client_args_sets))
+    signature_payload = {
+        "model": model,
+        "server_command": server_cmd,
+        "framework": framework,
+        "search_space": space.canonical(),
+        "objective": objective,
+        "direction": direction,
+        "constraints": constraints_text or "",
+        "gpu_count": gpus,
+        "host": host,
+        "port": port,
+    }
+    signature, canonical_payload = canonical_signature(signature_payload)
+    resolved_study_name = study_name or f"llm-optimizer-{framework}-{signature[:12]}"
+
+    if dry_run:
+        click.echo("Optuna dry run mode enabled.")
+        click.echo(f"Framework: {framework}")
+        click.echo(f"Search-space size: {space.cardinality}")
+        click.echo(f"Objective: {objective} ({direction})")
+        click.echo(f"Trial budget: {trials_budget}")
+        click.echo(f"Timeout: {timeout if timeout is not None else 'none'}")
+        click.echo(f"Storage: {storage_kind(storage_url)}")
+        click.echo(f"Study name: {resolved_study_name}")
+        return
+
+    try:
+        optuna = require_optuna()
+    except RuntimeError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    if not continue_flag and (output_path.exists() or jsonl_path.exists()):
+        raise click.ClickException(
+            f"Output files already exist. Use --continue to resume: {output_path}"
+        )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    existing_results = _load_jsonl(jsonl_path) if jsonl_path.exists() else []
+    if continue_flag and output_path.exists() and not jsonl_path.exists():
+        try:
+            existing_combined = json.loads(output_path.read_text())
+        except (OSError, json.JSONDecodeError) as exc:
+            raise click.ClickException(
+                "Cannot validate the existing Optuna output file."
+            ) from exc
+        if (
+            existing_combined.get("optimization", {}).get("study_signature")
+            != signature
+        ):
+            raise click.ClickException(
+                "Existing output does not match this Optuna study signature."
+            )
+        if existing_combined.get("metadata", {}).get("total_tests", 0):
+            raise click.ClickException(
+                "Cannot resume successful Optuna runs without their JSONL records."
+            )
+    for result in existing_results:
+        recorded_signature = result.get("optimization", {}).get("study_signature")
+        if recorded_signature != signature:
+            raise click.ClickException(
+                "Existing JSONL records do not match this Optuna study signature."
+            )
+
+    def constraints_func(frozen_trial: t.Any) -> list[float]:
+        return t.cast(
+            list[float],
+            frozen_trial.user_attrs.get(
+                "constraint_values", [float("inf")] * len(parsed_constraints)
+            ),
+        )
+
+    sampler_kwargs: dict[str, t.Any] = {"seed": seed}
+    if parsed_constraints:
+        sampler_kwargs["constraints_func"] = constraints_func
+    sampler = optuna.samplers.TPESampler(**sampler_kwargs)
+    study = optuna.create_study(
+        study_name=resolved_study_name,
+        storage=storage_url,
+        direction=direction,
+        sampler=sampler,
+        load_if_exists=continue_flag,
+    )
+    existing_signature = study.user_attrs.get("llm_optimizer_signature")
+    if existing_signature and existing_signature != signature:
+        raise click.ClickException(
+            "The existing Optuna study signature does not match this benchmark. "
+            "Choose another study/output or restore the original arguments."
+        )
+    if not existing_signature:
+        study.set_user_attr("llm_optimizer_signature", signature)
+        study.set_user_attr("llm_optimizer_signature_payload", canonical_payload)
+
+    result_by_id = {
+        get_config_id(
+            result.get("config", {}).get("client_args", {}),
+            result.get("config", {}).get("server_args", {}),
+        ): result
+        for result in existing_results
+    }
+
+    # Reconcile the append-before-tell crash window.
+    for frozen in study.get_trials(deepcopy=False):
+        config_id = frozen.user_attrs.get("config_id")
+        if (
+            frozen.state == optuna.trial.TrialState.RUNNING
+            and config_id in result_by_id
+        ):
+            result = result_by_id[config_id]
+            value = extract_objective(result.get("results", {}), objective)
+            violations = constraint_violations(
+                result.get("results", {}), parsed_constraints
+            )
+            resumed_trial = optuna.trial.Trial(study, frozen._trial_id)
+            resumed_trial.set_user_attr("constraint_values", violations)
+            resumed_trial.set_user_attr(
+                "slo_feasible", all(item <= 0 for item in violations)
+            )
+            study.tell(resumed_trial, value)
+
+    evaluated_ids = set(result_by_id)
+    for frozen in study.get_trials(deepcopy=False):
+        if frozen.state in (
+            optuna.trial.TrialState.COMPLETE,
+            optuna.trial.TrialState.FAIL,
+        ):
+            config_id = frozen.user_attrs.get("config_id")
+            if config_id:
+                evaluated_ids.add(config_id)
+
+    started = time.monotonic()
+    attempts = 0
+    max_attempts = max(100, trials_budget * 20, space.cardinality * 10)
+    stop_reason = "trial_budget"
+    while len(evaluated_ids) < trials_budget:
+        if len(evaluated_ids) >= space.cardinality:
+            stop_reason = "search_space_exhausted"
+            break
+        if timeout is not None and time.monotonic() - started >= timeout:
+            stop_reason = "timeout"
+            break
+        if attempts >= max_attempts:
+            stop_reason = "sampling_attempt_limit"
+            break
+        attempts += 1
+        trial = study.ask()
+        combo = space.suggest(trial)
+        settings = construct_benchmark_settings(combo, framework)
+        config_id = get_config_id(settings["client_args"], settings["server_args"])
+        trial.set_user_attr("config_id", config_id)
+        if config_id in evaluated_ids:
+            study.tell(trial, state=optuna.trial.TrialState.PRUNED)
+            continue
+
+        logger.info(
+            f"Starting Optuna trial {trial.number} "
+            f"({len(evaluated_ids) + 1}/{min(trials_budget, space.cardinality)}): "
+            f"{config_id}"
+        )
+        try:
+            result, benchmark_value = run_single_configuration(
+                settings,
+                framework=framework,
+                model=model,
+                server_cmd=server_cmd,
+                managed_server=managed_server,
+                gpus=gpus,
+                gpu_type=gpu_type,
+                host=host,
+                port=port,
+                ready_url=ready_url,
+                mute_server=mute_server,
+                constraints_for_viz=constraints_for_viz,
+                output_jsonl_path=jsonl_path,
+                objective=objective,
+                trial_number=trial.number,
+                study_signature=signature,
+                parsed_constraints=parsed_constraints,
+            )
+            violations = constraint_violations(result["results"], parsed_constraints)
+            feasible = all(item <= 0 for item in violations)
+            trial.set_user_attr("constraint_values", violations)
+            trial.set_user_attr("slo_feasible", feasible)
+            assert benchmark_value is not None
+            study.tell(trial, benchmark_value)
+        except KeyboardInterrupt:
+            trial.set_user_attr("slo_feasible", False)
+            study.tell(trial, state=optuna.trial.TrialState.FAIL)
+            raise
+        except Exception as exc:
+            logger.error(f"Optuna trial {trial.number} failed for {config_id}: {exc}")
+            trial.set_user_attr("slo_feasible", False)
+            trial.set_user_attr(
+                "constraint_values", [float("inf")] * len(parsed_constraints)
+            )
+            study.tell(trial, state=optuna.trial.TrialState.FAIL)
+        evaluated_ids.add(config_id)
+        if len(evaluated_ids) < min(trials_budget, space.cardinality) and rest:
+            logger.info(f"Resting for {rest} seconds before the next run.")
+            time.sleep(rest)
+
+    frozen_trials = study.get_trials(deepcopy=False)
+    state_counts: dict[str, int] = {}
+    for frozen in frozen_trials:
+        state_counts[frozen.state.name] = state_counts.get(frozen.state.name, 0) + 1
+    completed = [
+        trial
+        for trial in frozen_trials
+        if trial.state == optuna.trial.TrialState.COMPLETE
+    ]
+    key = (lambda trial: trial.value) if direction == "maximize" else (
+        lambda trial: -trial.value
+    )
+    unconstrained = max(completed, key=key) if completed else None
+    feasible_trials = [
+        trial for trial in completed if trial.user_attrs.get("slo_feasible", True)
+    ]
+    best_feasible = max(feasible_trials, key=key) if feasible_trials else None
+    metadata = {
+        "strategy": "optuna",
+        "study_name": resolved_study_name,
+        "study_signature": signature,
+        "sampler": "TPESampler",
+        "objective": objective,
+        "direction": direction,
+        "budget": trials_budget,
+        "timeout": timeout,
+        "seed": seed,
+        "search_space_size": space.cardinality,
+        "trial_state_counts": state_counts,
+        "stop_reason": stop_reason,
+        "best_feasible_trial": (
+            _trial_summary(best_feasible) if best_feasible else None
+        ),
+        "best_unconstrained_trial": (
+            _trial_summary(unconstrained) if unconstrained else None
+        ),
+        "storage_kind": storage_kind(storage_url),
+    }
+    _write_combined_results(
+        output_path,
+        jsonl_path,
+        gpu_type,
+        gpus,
+        model,
+        constraints_for_viz,
+        parsed_constraints,
+        metadata,
+    )
+    logger.info(f"Optuna benchmark results saved to {output_path}")
+
+
 @click.group(invoke_without_command=True)
 @click.option("--server-cmd", type=str, help="The command to start the server.")
 @click.option("--model", type=str, help="The model to use.")
@@ -247,6 +665,44 @@ def get_config_id(client_params: dict, server_params: dict) -> str:
 @click.option(
     "--constraints", type=str, help="SLO constraints (e.g., 'ttft<300ms;itl<8.5ms')"
 )
+@click.option(
+    "--search-strategy",
+    type=click.Choice(["grid", "optuna"]),
+    default="grid",
+    show_default=True,
+    help="Configuration search driver.",
+)
+@click.option(
+    "--optuna-trials",
+    type=click.IntRange(min=1),
+    default=30,
+    show_default=True,
+    help="Unique configurations to attempt in the study.",
+)
+@click.option(
+    "--optuna-timeout",
+    type=click.FloatRange(min=0, min_open=True),
+    help="Optional optimization wall-clock limit in seconds.",
+)
+@click.option(
+    "--optuna-objective",
+    default="output_throughput",
+    show_default=True,
+    help="Benchmark metric to optimize.",
+)
+@click.option(
+    "--optuna-seed",
+    type=int,
+    default=1,
+    show_default=True,
+    help="TPE sampler seed.",
+)
+@click.option(
+    "--optuna-storage", type=str, help="Optuna/SQLAlchemy RDB storage URL."
+)
+@click.option(
+    "--optuna-study-name", type=str, help="Study name; derived when omitted."
+)
 @click.pass_context
 def cli(
     ctx,
@@ -266,6 +722,13 @@ def cli(
     host,
     port,
     constraints,
+    search_strategy,
+    optuna_trials,
+    optuna_timeout,
+    optuna_objective,
+    optuna_seed,
+    optuna_storage,
+    optuna_study_name,
 ):
     """A CLI tool to optimize LLM performance."""
     if ctx.invoked_subcommand is None:
@@ -287,6 +750,13 @@ def cli(
             host,
             port,
             constraints,
+            search_strategy,
+            optuna_trials,
+            optuna_timeout,
+            optuna_objective,
+            optuna_seed,
+            optuna_storage,
+            optuna_study_name,
         )
 
 
@@ -307,6 +777,13 @@ def benchmark(
     host,
     port,
     constraints,
+    search_strategy="grid",
+    optuna_trials=30,
+    optuna_timeout=None,
+    optuna_objective="output_throughput",
+    optuna_seed=1,
+    optuna_storage=None,
+    optuna_study_name=None,
 ):
     """A CLI tool to optimize LLM performance."""
     from llm_optimizer.performance import parse_slo_constraints
@@ -327,10 +804,25 @@ def benchmark(
                 f"Parsed {len(parsed_constraints)} constraint(s): {constraints}"
             )
         except ValueError as e:
+            if search_strategy == "optuna":
+                raise click.UsageError(f"Invalid Optuna constraints: {e}") from e
             logger.error(f"Error parsing constraints: {e}")
             # Continue without constraints rather than failing
 
     managed_server = not server_cmd
+    if search_strategy == "optuna":
+        from llm_optimizer.optimization import objective_direction
+
+        if not output_json:
+            raise click.UsageError("--output-json is required for Optuna search.")
+        if not framework or not model:
+            raise click.UsageError(
+                "Optuna search requires one --framework and one --model."
+            )
+        try:
+            objective_direction(optuna_objective)
+        except ValueError as exc:
+            raise click.UsageError(str(exc)) from exc
     if managed_server:
         if not model or not framework:
             raise click.UsageError(
@@ -361,7 +853,7 @@ def benchmark(
     gpu_type = detect_gpu_type() or "unknown"
     logger.info(f"Detected GPU type: {gpu_type}, Count: {gpus}")
 
-    if dry_run:
+    if dry_run and search_strategy == "grid":
         click.echo("Dry run mode enabled.")
 
     server_args = ";".join(server_args)
@@ -393,9 +885,40 @@ def benchmark(
     total_configs = len(all_combinations)
     logger.info(f"Generated {total_configs} configuration(s) to run.")
 
+    ready_url = f"http://{host}:{port}{ready_endpoint}"
+
+    if search_strategy == "optuna":
+        _run_optuna_search(
+            server_args_sets=server_args_sets,
+            client_args_sets=client_args_sets,
+            framework=framework,
+            model=model,
+            server_cmd=server_cmd,
+            managed_server=managed_server,
+            gpus=gpus,
+            gpu_type=gpu_type,
+            host=host,
+            port=port,
+            ready_url=ready_url,
+            mute_server=mute_server,
+            rest=rest,
+            output_json=output_json,
+            continue_flag=continue_flag,
+            dry_run=dry_run,
+            parsed_constraints=parsed_constraints,
+            constraints_for_viz=constraints_for_viz,
+            constraints_text=constraints,
+            trials_budget=optuna_trials,
+            timeout=optuna_timeout,
+            objective=optuna_objective,
+            seed=optuna_seed,
+            storage=optuna_storage,
+            study_name=optuna_study_name,
+        )
+        return
+
     output_dir = pathlib.Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    ready_url = f"http://{host}:{port}{ready_endpoint}"
 
     output_jsonl_path = None
     if output_json:
@@ -466,7 +989,6 @@ def benchmark(
 
         client_params = benchmark_settings["client_args"]
         server_params = benchmark_settings["server_args"]
-        server_cmd_args = benchmark_settings["server_cmd_args"]
 
         config_id = get_config_id(client_params, server_params)
         output_file_path = output_dir / f"{config_id}.json"
@@ -492,84 +1014,27 @@ def benchmark(
             print(benchmark_settings)
             continue
 
-        import llm_optimizer.bench_client as bench_client
-
-        # Build Server Command & Start Server
-        server_process = None
-        full_server_cmd = f"{server_cmd} {' '.join(server_cmd_args)}"
-
         try:
-            server_env = (
-                get_server_env(framework, gpus, server_params)
-                if managed_server
-                else {}
+            run_single_configuration(
+                benchmark_settings,
+                framework=framework,
+                model=model,
+                server_cmd=server_cmd,
+                managed_server=managed_server,
+                gpus=gpus,
+                gpu_type=gpu_type,
+                host=host,
+                port=port,
+                ready_url=ready_url,
+                mute_server=mute_server,
+                constraints_for_viz=constraints_for_viz,
+                output_jsonl_path=output_jsonl_path,
+                output_file_path=output_file_path,
+                parsed_constraints=parsed_constraints,
             )
-            server_process = start_server(
-                full_server_cmd, server_env, ready_url, mute_server
-            )
-
-            # Run Benchmark
-            # All managed frameworks currently use the same OpenAI-compatible
-            # completions benchmark implementation.
-            backend_for_bench = (
-                predefined.get_framework_spec(framework).benchmark_backend
-                if framework
-                else "vllm"
-            )
-            benchmark_args = {
-                "backend": backend_for_bench,
-                "model": model,
-                "host": host,
-                "port": port,
-                "dataset_name": "sharegpt",  # default value
-                "num_prompts": 1000,  # default value
-                "request_rate": float("inf"),  # default value
-                "seed": 1,  # default value
-            }
-            benchmark_args.update(client_params)
-            benchmark_result = bench_client.run_benchmark(benchmark_args)
-
-            # Extract additional metadata
-            model_tag = model
-            input_len, output_len = extract_token_lengths(client_params)
-
-            result_config = construct_result_config(benchmark_settings, framework)
-
-            result_with_config = {
-                "config": result_config,
-                "results": benchmark_result,
-                "cmd": full_server_cmd,
-                "constraints": constraints_for_viz,
-                "metadata": {
-                    "gpu_type": gpu_type,
-                    "gpu_count": gpus,
-                    "model_tag": model_tag,
-                    "input_tokens": input_len,
-                    "output_tokens": output_len,
-                },
-            }
-
-            if output_jsonl_path:
-                with open(output_jsonl_path, "a") as f:
-                    f.write(
-                        json.dumps(result_with_config, cls=InfinityToNullEncoder) + "\n"
-                    )
-                logger.info(f"Appended result to {output_jsonl_path}")
-            else:
-                with open(output_file_path, "w") as f:
-                    json.dump(
-                        result_with_config, f, indent=2, cls=InfinityToNullEncoder
-                    )
-                logger.info(f"Benchmark results saved to {output_file_path}")
-
         except Exception as e:
             logger.error(f"Error during run for config {config_id}: {e}")
-
         finally:
-            # Clean up
-            if server_process:
-                terminate_process_top_down(server_process)
-
             if idx < total_configs - 1:
                 logger.info(f"Resting for {rest} seconds before the next run.")
                 time.sleep(rest)

@@ -26,6 +26,12 @@ For development:
 pip install -e .[dev]
 ```
 
+Optuna-based Bayesian search is an optional installation:
+
+```bash
+pip install -e '.[optuna]'
+```
+
 ## Get started
 
 The quickest way to try llm-optimizer is with performance estimation. This feature predicts latency, throughput, and concurrency limits, helping you identify optimal configurations without running full benchmarks:
@@ -92,6 +98,66 @@ This command will:
 - Test 3 TP/DP combinations × 3 prefill sizes = 9 server configurations
 - Test each against 3 concurrency values = 27 client configurations
 - In total, 27 unique benchmarks will be run, with results saved in `sglang_results.json`
+
+### Bayesian search with Optuna
+
+Grid search remains the default. Add `--search-strategy optuna` to tune one
+framework and model with Optuna's seeded TPE sampler. The existing scalar,
+list, `range(...)`, boolean, and coupled `tp_size*dp_size` syntax is reused as a
+finite categorical space. `--output-json` is required.
+
+```bash
+# vLLM: maximize output throughput (the default objective)
+llm-optimizer --framework vllm --model meta-llama/Llama-3.1-8B-Instruct \
+  --server-args "tensor_parallel_size=[1,2];max_num_seqs=[16,32,64]" \
+  --client-args "max_concurrency=[16,32,64,128]" \
+  --search-strategy optuna --optuna-trials 20 \
+  --output-json vllm_optuna.json
+
+# SGLang: minimize p95 time to first token while enforcing SLOs
+llm-optimizer --framework sglang --model meta-llama/Llama-3.1-8B-Instruct \
+  --server-args "tp_size*dp_size=[(1,4),(2,2),(4,1)];chunked_prefill_size=[2048,4096]" \
+  --client-args "max_concurrency=[32,64,128]" \
+  --constraints "itl:p95<10ms" --search-strategy optuna \
+  --optuna-objective p95_ttft_ms --optuna-timeout 3600 \
+  --output-json sglang_optuna.json
+
+# TensorRT-LLM: native argument spelling and a reproducible sampler seed
+llm-optimizer --framework trtllm --model meta-llama/Llama-3.1-8B-Instruct \
+  --server-args "tp_size=[1,2,4];max_batch_size=[32,64]" \
+  --client-args "dataset_name=random;random_input_len=1024;random_output_len=256;max_concurrency=[32,64]" \
+  --search-strategy optuna --optuna-seed 7 --optuna-trials 16 \
+  --output-json trtllm_optuna.json
+```
+
+Throughput objectives (`request_throughput`, `input_throughput`,
+`output_throughput`, and `total_throughput`) are maximized. Mean, median, p95,
+and p99 TTFT, ITL, TPOT, and end-to-end fields such as `p95_ttft_ms` and
+`mean_e2e_latency_ms` are minimized. Completed trials that miss an SLO remain
+useful to constrained TPE, but are excluded from the reported feasible best.
+Startup errors, OOMs, benchmark errors, and missing or non-numeric objectives
+are recorded as failed trials; the server is stopped before search continues.
+
+By default, durable study state is stored in `<output-name>.optuna.db` beside
+the JSON output. Resume both that study and its JSONL results with the exact
+same arguments:
+
+```bash
+llm-optimizer --framework vllm --model meta-llama/Llama-3.1-8B-Instruct \
+  --server-args "max_num_seqs=[16,32,64]" \
+  --client-args "max_concurrency=[16,32,64]" \
+  --search-strategy optuna --optuna-trials 9 \
+  --output-json vllm_optuna.json --continue
+```
+
+A canonical signature prevents `--continue` from mixing a changed model,
+command, framework, space, objective, constraints, GPU count, host, or port.
+For PostgreSQL or MySQL, pass an Optuna/SQLAlchemy URL through
+`--optuna-storage` and optionally set `--optuna-study-name`. Credentials are
+never copied into result files. Optuna mode currently supports one active
+worker per study; remote RDB storage provides durability, not distributed
+parallel execution. Use `--dry-run` to print cardinality, objective direction,
+budget, timeout, and storage kind without creating result or database files.
 
 More examples:
 

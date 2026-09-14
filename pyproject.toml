@@ -29,6 +29,10 @@ dev = [
     "pytest",
     "ruff",
     "mypy",
+    "optuna>=4,<5",
+]
+optuna = [
+    "optuna>=4,<5",
 ]
 ai-configurator = [
     "aisimulate==0.1.0.dev2",
