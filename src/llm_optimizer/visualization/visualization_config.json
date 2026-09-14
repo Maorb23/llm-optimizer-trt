@@ -335,8 +335,8 @@
       "description": "Mean end-to-end latency",
       "type": "numerical",
       "x_axis_type": "inverse",
-      "x_axis_name": "Token Throughput per User",
-      "x_axis_unit": "tokens/user",
+      "x_axis_name": "Request Completion Rate per User",
+      "x_axis_unit": "requests/s",
       "category": "latency",
       "unit": "ms",
       "field_category": "results"
@@ -462,7 +462,7 @@
   "defaults": {
     "xAxis": "mean_ttft_ms",
     "yAxis": "output_throughput",
-    "colorBy": "attention_backend",
+    "colorBy": "framework",
     "sizeBy": "none",
     "showLines": true,
     "showPoints": true,

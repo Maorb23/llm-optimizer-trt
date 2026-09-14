@@ -717,6 +717,273 @@ def visualize(data_file, config, output, serve, port):
         traceback.print_exc()
 
 
+@cli.command("dynamo-check")
+@click.option("--model", required=True, help="Hugging Face model ID or model path.")
+@click.option(
+    "--framework",
+    required=True,
+    type=click.Choice(["vllm", "sglang", "trtllm"]),
+)
+@click.option(
+    "--server-args",
+    multiple=True,
+    help="Native backend parameters; lists and composite grids are supported.",
+)
+@click.option("--node-count", type=click.IntRange(min=1), required=True)
+@click.option("--gpus-per-node", type=click.IntRange(min=1), required=True)
+@click.option("--namespace", default="dynamo", show_default=True)
+@click.option("--name", default=None, help="DynamoGraphDeployment name.")
+@click.option("--image", default=None, help="Override the Dynamo runtime image.")
+@click.option("--hf-secret", default="hf-token-secret", show_default=True)
+@click.option(
+    "--output",
+    type=click.Path(dir_okay=False, path_type=pathlib.Path),
+    default=None,
+    help="Write the JSON validation report and generated manifests to this path.",
+)
+@click.option(
+    "--check-cluster",
+    is_flag=True,
+    help="Validate each manifest with kubectl --dry-run=server.",
+)
+def dynamo_check(
+    model,
+    framework,
+    server_args,
+    node_count,
+    gpus_per_node,
+    namespace,
+    name,
+    image,
+    hf_secret,
+    output,
+    check_cluster,
+):
+    """Validate parameter grids and generate NVIDIA Dynamo Kubernetes manifests."""
+    from llm_optimizer.dynamo import (
+        build_dynamo_manifest,
+        kubernetes_server_dry_run,
+        validate_dynamo_config,
+    )
+
+    try:
+        parsed = lo_args.parse_args_str(
+            ";".join(server_args),
+            scope=lo_args.ArgScope.SERVER,
+            configs=predefined.SERVER_CONFIGS[framework],
+            strict=True,
+        )
+    except (TypeError, ValueError) as exc:
+        raise click.UsageError(str(exc)) from exc
+
+    combinations = lo_args.get_all_arg_combinations([], parsed)
+    report: dict[str, t.Any] = {
+        "model": model,
+        "framework": framework,
+        "topology": {
+            "node_count": node_count,
+            "gpus_per_node": gpus_per_node,
+        },
+        "configurations": [],
+    }
+    all_valid = True
+    for index, combination in enumerate(combinations, 1):
+        native_args = dict(lo_args.get_all_kv_pairs(list(combination)))
+        validation = validate_dynamo_config(
+            framework, native_args, node_count, gpus_per_node
+        )
+        entry: dict[str, t.Any] = {
+            "index": index,
+            "server_args": native_args,
+            **validation.to_dict(),
+        }
+        if validation.valid:
+            manifest_name = name
+            if name and len(combinations) > 1:
+                manifest_name = f"{name}-{index}"
+            manifest = build_dynamo_manifest(
+                framework,
+                model,
+                native_args,
+                node_count,
+                gpus_per_node,
+                namespace=namespace,
+                name=manifest_name,
+                image=image,
+                hf_secret=hf_secret or None,
+            )
+            if len(combinations) > 1 and not name:
+                base_name = manifest["metadata"]["name"]
+                suffix = f"-{index}"
+                manifest["metadata"]["name"] = (
+                    base_name[: 63 - len(suffix)].rstrip("-") + suffix
+                )
+            entry["manifest"] = manifest
+            if check_cluster:
+                cluster_valid, cluster_output = kubernetes_server_dry_run(manifest)
+                entry["cluster_validation"] = {
+                    "valid": cluster_valid,
+                    "output": cluster_output,
+                }
+                if not cluster_valid:
+                    entry["valid"] = False
+        all_valid = all_valid and bool(entry["valid"])
+        report["configurations"].append(entry)
+
+    report["valid"] = all_valid
+    report["mode"] = "static"
+    rendered = json.dumps(report, indent=2, sort_keys=True)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(rendered + "\n", encoding="utf-8")
+        click.echo(f"Wrote Dynamo report to {output}")
+    else:
+        click.echo(rendered)
+    if not all_valid:
+        raise click.exceptions.Exit(1)
+
+
+@cli.command("dynamo-optimize")
+@click.option("--model", required=True, help="Hugging Face model ID or model path.")
+@click.option(
+    "--framework",
+    required=True,
+    type=click.Choice(["vllm", "sglang", "trtllm"]),
+)
+@click.option("--node-count", type=click.IntRange(min=1), required=True)
+@click.option("--gpus-per-node", type=click.IntRange(min=1), required=True)
+@click.option("--gpu-system", required=True, help="For example h100_sxm or h200_sxm.")
+@click.option("--backend-version", default=None, help="Backend version modeled by AIC.")
+@click.option(
+    "--input-len", type=click.IntRange(min=1), default=4000, show_default=True
+)
+@click.option(
+    "--output-len", type=click.IntRange(min=1), default=1000, show_default=True
+)
+@click.option("--ttft", type=click.FloatRange(min=0, min_open=True), default=2000.0)
+@click.option("--tpot", type=click.FloatRange(min=0, min_open=True), default=30.0)
+@click.option("--namespace", default="dynamo", show_default=True)
+@click.option(
+    "--artifacts-dir",
+    type=click.Path(file_okay=False, path_type=pathlib.Path),
+    default=None,
+    help="Directory for ranked CSVs, Dynamo manifests, and AIPerf artifacts.",
+)
+@click.option(
+    "--aiconfigurator-command",
+    default="aiconfigurator",
+    show_default=True,
+    help="AI Configurator executable, including an absolute path if needed.",
+)
+@click.option(
+    "--timeout", type=click.IntRange(min=1), default=600, show_default=True
+)
+@click.option(
+    "--output",
+    type=click.Path(dir_okay=False, path_type=pathlib.Path),
+    default=None,
+    help="Write the AI Configurator JSON report to this path.",
+)
+@click.option(
+    "--check-cluster",
+    is_flag=True,
+    help="Validate AI Configurator-generated manifests with Kubernetes.",
+)
+def dynamo_optimize(
+    model,
+    framework,
+    node_count,
+    gpus_per_node,
+    gpu_system,
+    backend_version,
+    input_len,
+    output_len,
+    ttft,
+    tpot,
+    namespace,
+    artifacts_dir,
+    aiconfigurator_command,
+    timeout,
+    output,
+    check_cluster,
+):
+    """Run NVIDIA AI Configurator's GPU-free Dynamo sizing workflow."""
+    from llm_optimizer.dynamo import (
+        AIConfiguratorError,
+        AIConfiguratorRequest,
+        kubernetes_file_server_dry_run,
+        run_ai_configurator,
+    )
+
+    if artifacts_dir is None:
+        if output:
+            artifacts_dir = output.parent / f"{output.stem}-artifacts"
+        else:
+            artifacts_dir = pathlib.Path("results") / f"{framework}-aiconfigurator"
+    request = AIConfiguratorRequest(
+        model=model,
+        framework=framework,
+        gpu_system=gpu_system,
+        total_gpus=node_count * gpus_per_node,
+        input_length=input_len,
+        output_length=output_len,
+        ttft_ms=ttft,
+        tpot_ms=tpot,
+        backend_version=backend_version,
+        namespace=namespace,
+    )
+    try:
+        result = run_ai_configurator(
+            request,
+            str(artifacts_dir),
+            executable=aiconfigurator_command,
+            timeout_seconds=timeout,
+        )
+    except (AIConfiguratorError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    cluster_checks = []
+    valid = True
+    if check_cluster:
+        for artifact in result["artifacts"]:
+            if not artifact.endswith("k8s_deploy.yaml"):
+                continue
+            cluster_valid, cluster_output = kubernetes_file_server_dry_run(
+                str(artifacts_dir / artifact)
+            )
+            cluster_checks.append(
+                {
+                    "artifact": artifact,
+                    "valid": cluster_valid,
+                    "output": cluster_output,
+                }
+            )
+            valid = valid and cluster_valid
+    report = {
+        "valid": valid,
+        "mode": "ai-configurator",
+        "model": model,
+        "framework": framework,
+        "topology": {
+            "node_count": node_count,
+            "gpus_per_node": gpus_per_node,
+            "total_gpus": node_count * gpus_per_node,
+        },
+        "ai_configurator": result,
+    }
+    if check_cluster:
+        report["cluster_validation"] = cluster_checks
+    rendered = json.dumps(report, indent=2, sort_keys=True)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(rendered + "\n", encoding="utf-8")
+        click.echo(f"Wrote AI Configurator report to {output}")
+    else:
+        click.echo(rendered)
+    if not valid:
+        raise click.exceptions.Exit(1)
+
+
 @cli.command("estimate")
 @click.option(
     "--model",

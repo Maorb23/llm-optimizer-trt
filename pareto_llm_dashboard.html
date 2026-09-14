@@ -1,0 +1,2914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-NQSF6DF3');</script>
+    <!-- End Google Tag Manager -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pareto LLM Optimizer Dashboard</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="src/llm_optimizer/visualization/favicon-32x32.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NQSF6DF3"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+            <div id="root" class="w-screen min-h-screen"></div>
+
+    <script type="module">
+        // Import React, ReactDOM, and Lucide React components via ESM
+        import React, { useEffect, useMemo, useRef, useState } from 'https://esm.sh/react@18?dev';
+        import { createRoot } from 'https://esm.sh/react-dom@18/client?dev';
+        import { BarChart3, Info, Copy, Settings } from 'https://esm.sh/lucide-react@0.363.0?bundle&deps=react@18&dev';
+        import * as echarts from 'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.esm.min.js';
+
+        // Embedded data/config from backend
+        const data = [
+  {
+    "config": {
+      "framework": "vllm",
+      "client_args": {
+        "dataset_name": "random",
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "max_concurrency": 8,
+        "num_prompts": 10
+      },
+      "server_args": {
+        "tensor_parallel_size": 1
+      },
+      "server_cmd_args": [
+        "--tensor-parallel-size=1"
+      ],
+      "normalized_config": {
+        "tensor_parallel_size": 1,
+        "max_concurrency": 8,
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "num_prompts": 10,
+        "input_length": 32,
+        "output_length": 16,
+        "world_size": 1
+      }
+    },
+    "results": {
+      "backend": "vllm",
+      "dataset_name": "random",
+      "request_rate": null,
+      "max_concurrency": 8,
+      "sharegpt_output_len": null,
+      "random_input_len": 32,
+      "random_output_len": 16,
+      "random_range_ratio": null,
+      "duration": 0.1318900629999007,
+      "completed": 10,
+      "total_input_tokens": 117,
+      "total_output_tokens": 95,
+      "total_output_tokens_retokenized": 95,
+      "request_throughput": 75.82072350672492,
+      "input_throughput": 887.1024650286814,
+      "output_throughput": 720.2968733138866,
+      "total_throughput": 1607.3993383425682,
+      "mean_e2e_latency_ms": 86.76562460000241,
+      "median_e2e_latency_ms": 88.8440814999285,
+      "std_e2e_latency_ms": 24.44841050130815,
+      "p95_e2e_latency_ms": 115.15482340030303,
+      "p99_e2e_latency_ms": 117.13322788039022,
+      "mean_ttft_ms": 49.04643869999745,
+      "median_ttft_ms": 55.69885949989839,
+      "std_ttft_ms": 13.500779790380347,
+      "p95_ttft_ms": 56.38592650004739,
+      "p99_ttft_ms": 56.51146209997478,
+      "mean_tpot_ms": 4.844450426253829,
+      "median_tpot_ms": 4.881713727255291,
+      "std_tpot_ms": 1.4311379984852564,
+      "p95_tpot_ms": 6.861802070015983,
+      "p99_tpot_ms": 7.146747814018454,
+      "mean_itl_ms": 4.436481411775116,
+      "median_itl_ms": 2.497498000138876,
+      "std_itl_ms": 5.462371417953622,
+      "p95_itl_ms": 21.885937199840555,
+      "p99_itl_ms": 21.88949571989724,
+      "concurrency": 6.5786324326850725,
+      "accept_length": null
+    },
+    "cmd": "vllm serve Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 8000 --tensor-parallel-size=1",
+    "constraints": [],
+    "metadata": {
+      "gpu_type": "H200",
+      "gpu_count": 1,
+      "model_tag": "Qwen/Qwen3.5-0.8B",
+      "input_tokens": 32,
+      "output_tokens": 16
+    }
+  },
+  {
+    "config": {
+      "framework": "sglang",
+      "client_args": {
+        "dataset_name": "random",
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "max_concurrency": 2,
+        "num_prompts": 10
+      },
+      "server_args": {
+        "tp_size": 1
+      },
+      "server_cmd_args": [
+        "--tp-size=1"
+      ],
+      "normalized_config": {
+        "tensor_parallel_size": 1,
+        "max_concurrency": 2,
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "num_prompts": 10,
+        "input_length": 32,
+        "output_length": 16,
+        "world_size": 1
+      }
+    },
+    "results": {
+      "backend": "vllm",
+      "dataset_name": "random",
+      "request_rate": null,
+      "max_concurrency": 2,
+      "sharegpt_output_len": null,
+      "random_input_len": 32,
+      "random_output_len": 16,
+      "random_range_ratio": null,
+      "duration": 0.40347464099977515,
+      "completed": 10,
+      "total_input_tokens": 117,
+      "total_output_tokens": 95,
+      "total_output_tokens_retokenized": 95,
+      "request_throughput": 24.784705118569207,
+      "input_throughput": 289.9810498872597,
+      "output_throughput": 235.45469862640746,
+      "total_throughput": 525.4357485136671,
+      "mean_e2e_latency_ms": 78.66248689997519,
+      "median_e2e_latency_ms": 65.24857349995727,
+      "std_e2e_latency_ms": 45.24991536758476,
+      "p95_e2e_latency_ms": 163.67954965000987,
+      "p99_e2e_latency_ms": 173.3349379299989,
+      "mean_ttft_ms": 54.42637099990861,
+      "median_ttft_ms": 38.64464799994494,
+      "std_ttft_ms": 41.644131844245756,
+      "p95_ttft_ms": 136.33306145000006,
+      "p99_ttft_ms": 136.47813389008206,
+      "mean_tpot_ms": 2.7653582245065103,
+      "median_tpot_ms": 2.2322957499909535,
+      "std_tpot_ms": 1.1415816731487993,
+      "p95_tpot_ms": 4.62017517335577,
+      "p99_tpot_ms": 5.207806945796215,
+      "mean_itl_ms": 2.850471529408798,
+      "median_itl_ms": 1.6932600001382525,
+      "std_itl_ms": 4.4396886862552405,
+      "p95_itl_ms": 4.616486000031726,
+      "p99_itl_ms": 20.627862800083626,
+      "concurrency": 1.9496265417091982,
+      "accept_length": null
+    },
+    "cmd": "python3 -m sglang.launch_server --model-path Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 30000 --tp-size=1",
+    "constraints": [],
+    "metadata": {
+      "gpu_type": "H200",
+      "gpu_count": 1,
+      "model_tag": "Qwen/Qwen3.5-0.8B",
+      "input_tokens": 32,
+      "output_tokens": 16
+    }
+  },
+  {
+    "config": {
+      "framework": "sglang",
+      "client_args": {
+        "dataset_name": "random",
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "max_concurrency": 8,
+        "num_prompts": 10
+      },
+      "server_args": {
+        "tp_size": 1
+      },
+      "server_cmd_args": [
+        "--tp-size=1"
+      ],
+      "normalized_config": {
+        "tensor_parallel_size": 1,
+        "max_concurrency": 8,
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "num_prompts": 10,
+        "input_length": 32,
+        "output_length": 16,
+        "world_size": 1
+      }
+    },
+    "results": {
+      "backend": "vllm",
+      "dataset_name": "random",
+      "request_rate": null,
+      "max_concurrency": 8,
+      "sharegpt_output_len": null,
+      "random_input_len": 32,
+      "random_output_len": 16,
+      "random_range_ratio": null,
+      "duration": 2.930882303999624,
+      "completed": 10,
+      "total_input_tokens": 117,
+      "total_output_tokens": 95,
+      "total_output_tokens_retokenized": 95,
+      "request_throughput": 3.4119418532615637,
+      "input_throughput": 39.919719683160295,
+      "output_throughput": 32.41344760598486,
+      "total_throughput": 72.33316728914515,
+      "mean_e2e_latency_ms": 2329.0049638999335,
+      "median_e2e_latency_ms": 2887.3900995001804,
+      "std_e2e_latency_ms": 1130.5007960939506,
+      "p95_e2e_latency_ms": 2920.5848509997622,
+      "p99_e2e_latency_ms": 2923.0381069997156,
+      "mean_ttft_ms": 2280.6582232999517,
+      "median_ttft_ms": 2843.2358270001714,
+      "std_ttft_ms": 1124.5385808120575,
+      "p95_ttft_ms": 2843.80205704972,
+      "p99_ttft_ms": 2843.8212562096805,
+      "mean_tpot_ms": 6.002964208799553,
+      "median_tpot_ms": 5.963473249948947,
+      "std_tpot_ms": 1.9435200132122512,
+      "p95_tpot_ms": 8.731756780025535,
+      "p99_tpot_ms": 9.696895756051163,
+      "mean_itl_ms": 5.687163988236802,
+      "median_itl_ms": 2.1102430000610184,
+      "std_itl_ms": 8.688323795324738,
+      "p95_itl_ms": 31.502800199996273,
+      "p99_itl_ms": 31.519887639879013,
+      "concurrency": 7.946429512784121,
+      "accept_length": null
+    },
+    "cmd": "python3 -m sglang.launch_server --model-path Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 30000 --tp-size=1",
+    "constraints": [],
+    "metadata": {
+      "gpu_type": "H200",
+      "gpu_count": 1,
+      "model_tag": "Qwen/Qwen3.5-0.8B",
+      "input_tokens": 32,
+      "output_tokens": 16
+    }
+  },
+  {
+    "config": {
+      "framework": "trtllm",
+      "client_args": {
+        "dataset_name": "random",
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "max_concurrency": 2,
+        "num_prompts": 10
+      },
+      "server_args": {
+        "tp_size": 1,
+        "max_batch_size": 4,
+        "max_num_tokens": 512,
+        "max_seq_len": 512
+      },
+      "server_cmd_args": [
+        "--tp_size=1",
+        "--max_batch_size=4",
+        "--max_num_tokens=512",
+        "--max_seq_len=512"
+      ],
+      "normalized_config": {
+        "tensor_parallel_size": 1,
+        "max_batched_tokens": 512,
+        "max_concurrent_sequences": 4,
+        "max_sequence_length": 512,
+        "max_concurrency": 2,
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "num_prompts": 10,
+        "input_length": 32,
+        "output_length": 16,
+        "world_size": 1
+      },
+      "engine_args": {
+        "tp_size": 1,
+        "max_batch_size": 4,
+        "max_num_tokens": 512,
+        "max_seq_len": 512
+      },
+      "runtime_args": {}
+    },
+    "results": {
+      "backend": "vllm",
+      "dataset_name": "random",
+      "request_rate": null,
+      "max_concurrency": 2,
+      "sharegpt_output_len": null,
+      "random_input_len": 32,
+      "random_output_len": 16,
+      "random_range_ratio": null,
+      "duration": 0.9278519859999506,
+      "completed": 10,
+      "total_input_tokens": 117,
+      "total_output_tokens": 95,
+      "total_output_tokens_retokenized": 95,
+      "request_throughput": 10.777581069919199,
+      "input_throughput": 126.09769851805461,
+      "output_throughput": 102.38702016423238,
+      "total_throughput": 228.484718682287,
+      "mean_e2e_latency_ms": 183.47588260000975,
+      "median_e2e_latency_ms": 77.08194599990748,
+      "std_e2e_latency_ms": 154.50588942881885,
+      "p95_e2e_latency_ms": 393.86417364999033,
+      "p99_e2e_latency_ms": 405.62484912999025,
+      "mean_ttft_ms": 156.95328760002667,
+      "median_ttft_ms": 38.870818500072346,
+      "std_ttft_ms": 154.0985543925091,
+      "p95_ttft_ms": 358.7376107000182,
+      "p99_ttft_ms": 359.04573253997114,
+      "mean_tpot_ms": 3.6497731348501645,
+      "median_tpot_ms": 3.3532099333266765,
+      "std_tpot_ms": 2.531201512068062,
+      "p95_tpot_ms": 7.917871859986008,
+      "p99_tpot_ms": 8.370349971991345,
+      "mean_itl_ms": 3.119527611761441,
+      "median_itl_ms": 1.3394919999427657,
+      "std_itl_ms": 7.127216407033561,
+      "p95_itl_ms": 24.38987640002771,
+      "p99_itl_ms": 31.798268679985974,
+      "concurrency": 1.9774261990965822,
+      "accept_length": null
+    },
+    "cmd": "trtllm-serve Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 8000 --tp_size=1 --max_batch_size=4 --max_num_tokens=512 --max_seq_len=512",
+    "constraints": [],
+    "metadata": {
+      "gpu_type": "H200",
+      "gpu_count": 1,
+      "model_tag": "Qwen/Qwen3.5-0.8B",
+      "input_tokens": 32,
+      "output_tokens": 16
+    }
+  },
+  {
+    "config": {
+      "framework": "trtllm",
+      "client_args": {
+        "dataset_name": "random",
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "max_concurrency": 8,
+        "num_prompts": 10
+      },
+      "server_args": {
+        "tp_size": 1,
+        "max_batch_size": 4,
+        "max_num_tokens": 512,
+        "max_seq_len": 512
+      },
+      "server_cmd_args": [
+        "--tp_size=1",
+        "--max_batch_size=4",
+        "--max_num_tokens=512",
+        "--max_seq_len=512"
+      ],
+      "normalized_config": {
+        "tensor_parallel_size": 1,
+        "max_batched_tokens": 512,
+        "max_concurrent_sequences": 4,
+        "max_sequence_length": 512,
+        "max_concurrency": 8,
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "num_prompts": 10,
+        "input_length": 32,
+        "output_length": 16,
+        "world_size": 1
+      },
+      "engine_args": {
+        "tp_size": 1,
+        "max_batch_size": 4,
+        "max_num_tokens": 512,
+        "max_seq_len": 512
+      },
+      "runtime_args": {}
+    },
+    "results": {
+      "backend": "vllm",
+      "dataset_name": "random",
+      "request_rate": null,
+      "max_concurrency": 8,
+      "sharegpt_output_len": null,
+      "random_input_len": 32,
+      "random_output_len": 16,
+      "random_range_ratio": null,
+      "duration": 0.8388966120000987,
+      "completed": 10,
+      "total_input_tokens": 117,
+      "total_output_tokens": 95,
+      "total_output_tokens_retokenized": 95,
+      "request_throughput": 11.920420057673118,
+      "input_throughput": 139.46891467477548,
+      "output_throughput": 113.24399054789463,
+      "total_throughput": 252.71290522267012,
+      "mean_e2e_latency_ms": 560.7953777000375,
+      "median_e2e_latency_ms": 506.709962000059,
+      "std_e2e_latency_ms": 224.809842042066,
+      "p95_e2e_latency_ms": 825.1465401500468,
+      "p99_e2e_latency_ms": 828.662276030102,
+      "mean_ttft_ms": 436.8152947000226,
+      "median_ttft_ms": 413.83472749998873,
+      "std_ttft_ms": 146.0450896600109,
+      "p95_ttft_ms": 630.9635110500606,
+      "p99_ttft_ms": 702.1190918101479,
+      "mean_tpot_ms": 17.837240564132316,
+      "median_tpot_ms": 6.507868250006747,
+      "std_tpot_ms": 22.6654611252799,
+      "p95_tpot_ms": 57.105117559992756,
+      "p99_tpot_ms": 71.17250751197889,
+      "mean_itl_ms": 14.584675070591402,
+      "median_itl_ms": 1.4116610000201035,
+      "std_itl_ms": 54.025319808966984,
+      "p95_itl_ms": 32.358708799984015,
+      "p99_itl_ms": 293.30522227988695,
+      "concurrency": 6.684916468585899,
+      "accept_length": null
+    },
+    "cmd": "trtllm-serve Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 8000 --tp_size=1 --max_batch_size=4 --max_num_tokens=512 --max_seq_len=512",
+    "constraints": [],
+    "metadata": {
+      "gpu_type": "H200",
+      "gpu_count": 1,
+      "model_tag": "Qwen/Qwen3.5-0.8B",
+      "input_tokens": 32,
+      "output_tokens": 16
+    }
+  },
+  {
+    "config": {
+      "framework": "trtllm",
+      "client_args": {
+        "dataset_name": "random",
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "max_concurrency": 2,
+        "num_prompts": 10
+      },
+      "server_args": {
+        "tp_size": 1,
+        "max_batch_size": 16,
+        "max_num_tokens": 512,
+        "max_seq_len": 512
+      },
+      "server_cmd_args": [
+        "--tp_size=1",
+        "--max_batch_size=16",
+        "--max_num_tokens=512",
+        "--max_seq_len=512"
+      ],
+      "normalized_config": {
+        "tensor_parallel_size": 1,
+        "max_batched_tokens": 512,
+        "max_concurrent_sequences": 16,
+        "max_sequence_length": 512,
+        "max_concurrency": 2,
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "num_prompts": 10,
+        "input_length": 32,
+        "output_length": 16,
+        "world_size": 1
+      },
+      "engine_args": {
+        "tp_size": 1,
+        "max_batch_size": 16,
+        "max_num_tokens": 512,
+        "max_seq_len": 512
+      },
+      "runtime_args": {}
+    },
+    "results": {
+      "backend": "vllm",
+      "dataset_name": "random",
+      "request_rate": null,
+      "max_concurrency": 2,
+      "sharegpt_output_len": null,
+      "random_input_len": 32,
+      "random_output_len": 16,
+      "random_range_ratio": null,
+      "duration": 0.3870348609998473,
+      "completed": 10,
+      "total_input_tokens": 117,
+      "total_output_tokens": 95,
+      "total_output_tokens_retokenized": 95,
+      "request_throughput": 25.83746584007053,
+      "input_throughput": 302.29835032882517,
+      "output_throughput": 245.45592548067003,
+      "total_throughput": 547.7542758094952,
+      "mean_e2e_latency_ms": 75.40085070002078,
+      "median_e2e_latency_ms": 67.11988500001098,
+      "std_e2e_latency_ms": 31.628223528093578,
+      "p95_e2e_latency_ms": 122.90140780002046,
+      "p99_e2e_latency_ms": 125.04289516003384,
+      "mean_ttft_ms": 53.331923500013545,
+      "median_ttft_ms": 60.27685649985415,
+      "std_ttft_ms": 20.18746843966837,
+      "p95_ttft_ms": 75.95412729998543,
+      "p99_ttft_ms": 76.37437905994602,
+      "mean_tpot_ms": 2.3470646470921444,
+      "median_tpot_ms": 1.5115587777674795,
+      "std_tpot_ms": 1.3667791611409048,
+      "p95_tpot_ms": 4.618454260007638,
+      "p99_tpot_ms": 4.847576932012089,
+      "mean_itl_ms": 2.595411541177086,
+      "median_itl_ms": 1.4159139998355386,
+      "std_itl_ms": 6.068507816504168,
+      "p95_itl_ms": 2.1850288000678115,
+      "p99_itl_ms": 33.80352340006538,
+      "concurrency": 1.948166904274045,
+      "accept_length": null
+    },
+    "cmd": "trtllm-serve Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 8000 --tp_size=1 --max_batch_size=16 --max_num_tokens=512 --max_seq_len=512",
+    "constraints": [],
+    "metadata": {
+      "gpu_type": "H200",
+      "gpu_count": 1,
+      "model_tag": "Qwen/Qwen3.5-0.8B",
+      "input_tokens": 32,
+      "output_tokens": 16
+    }
+  },
+  {
+    "config": {
+      "framework": "trtllm",
+      "client_args": {
+        "dataset_name": "random",
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "max_concurrency": 8,
+        "num_prompts": 10
+      },
+      "server_args": {
+        "tp_size": 1,
+        "max_batch_size": 16,
+        "max_num_tokens": 512,
+        "max_seq_len": 512
+      },
+      "server_cmd_args": [
+        "--tp_size=1",
+        "--max_batch_size=16",
+        "--max_num_tokens=512",
+        "--max_seq_len=512"
+      ],
+      "normalized_config": {
+        "tensor_parallel_size": 1,
+        "max_batched_tokens": 512,
+        "max_concurrent_sequences": 16,
+        "max_sequence_length": 512,
+        "max_concurrency": 8,
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "num_prompts": 10,
+        "input_length": 32,
+        "output_length": 16,
+        "world_size": 1
+      },
+      "engine_args": {
+        "tp_size": 1,
+        "max_batch_size": 16,
+        "max_num_tokens": 512,
+        "max_seq_len": 512
+      },
+      "runtime_args": {}
+    },
+    "results": {
+      "backend": "vllm",
+      "dataset_name": "random",
+      "request_rate": null,
+      "max_concurrency": 8,
+      "sharegpt_output_len": null,
+      "random_input_len": 32,
+      "random_output_len": 16,
+      "random_range_ratio": null,
+      "duration": 0.18829696199986756,
+      "completed": 10,
+      "total_input_tokens": 117,
+      "total_output_tokens": 95,
+      "total_output_tokens_retokenized": 95,
+      "request_throughput": 53.10760138555519,
+      "input_throughput": 621.3589362109958,
+      "output_throughput": 504.52221316277434,
+      "total_throughput": 1125.88114937377,
+      "mean_e2e_latency_ms": 138.44304069998543,
+      "median_e2e_latency_ms": 160.85129849989244,
+      "std_e2e_latency_ms": 41.03190293467859,
+      "p95_e2e_latency_ms": 177.11778875002437,
+      "p99_e2e_latency_ms": 178.81519055001718,
+      "mean_ttft_ms": 96.69026899996425,
+      "median_ttft_ms": 108.50145899996733,
+      "std_ttft_ms": 23.433328329465226,
+      "p95_ttft_ms": 109.04052294996518,
+      "p99_ttft_ms": 109.18099818996097,
+      "mean_tpot_ms": 5.253951911581034,
+      "median_tpot_ms": 5.493787166680401,
+      "std_tpot_ms": 2.82318036766062,
+      "p95_tpot_ms": 9.666776413308375,
+      "p99_tpot_ms": 10.032980722634118,
+      "mean_itl_ms": 4.911237105876781,
+      "median_itl_ms": 2.1248610000839108,
+      "std_itl_ms": 10.165532343378432,
+      "p95_itl_ms": 41.72710560001178,
+      "p99_itl_ms": 41.80087939992518,
+      "concurrency": 7.35237782009902,
+      "accept_length": null
+    },
+    "cmd": "trtllm-serve Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 8000 --tp_size=1 --max_batch_size=16 --max_num_tokens=512 --max_seq_len=512",
+    "constraints": [],
+    "metadata": {
+      "gpu_type": "H200",
+      "gpu_count": 1,
+      "model_tag": "Qwen/Qwen3.5-0.8B",
+      "input_tokens": 32,
+      "output_tokens": 16
+    }
+  }
+];
+        const constraints = [];
+        const config = {
+  "data_mapping": {
+    "framework": "config.framework",
+    "attention_backend": "config.server_args.attention_backend",
+    "dp_size": "config.server_args.dp_size",
+    "tp_size": "config.server_args.tp_size",
+    "tensor_parallel_size": "config.normalized_config.tensor_parallel_size",
+    "pipeline_parallel_size": "config.normalized_config.pipeline_parallel_size",
+    "context_parallel_size": "config.normalized_config.context_parallel_size",
+    "expert_parallel_size": "config.normalized_config.expert_parallel_size",
+    "max_batched_tokens": "config.normalized_config.max_batched_tokens",
+    "max_concurrent_sequences": "config.normalized_config.max_concurrent_sequences",
+    "max_sequence_length": "config.normalized_config.max_sequence_length",
+    "kv_cache_memory_fraction": "config.normalized_config.kv_cache_memory_fraction",
+    "kv_cache_dtype": "config.normalized_config.kv_cache_dtype",
+    "engine_precision": "config.normalized_config.engine_precision",
+    "world_size": "config.normalized_config.world_size",
+    "input_length": "config.normalized_config.input_length",
+    "output_length": "config.normalized_config.output_length",
+    "max_concurrency": "config.client_args.max_concurrency",
+    "request_rate": "config.client_args.request_rate",
+    "random_input_len": "config.client_args.random_input_len",
+    "random_output_len": "config.client_args.random_output_len",
+    "input_throughput": "results.input_throughput",
+    "output_throughput": "results.output_throughput",
+    "total_throughput": "results.total_throughput",
+    "mean_ttft_ms": "results.mean_ttft_ms",
+    "median_ttft_ms": "results.median_ttft_ms",
+    "p99_ttft_ms": "results.p99_ttft_ms",
+    "mean_itl_ms": "results.mean_itl_ms",
+    "median_itl_ms": "results.median_itl_ms",
+    "p99_itl_ms": "results.p99_itl_ms",
+    "mean_e2e_latency_ms": "results.mean_e2e_latency_ms",
+    "median_e2e_latency_ms": "results.median_e2e_latency_ms",
+    "p99_e2e_latency_ms": "results.p99_e2e_latency_ms",
+    "duration": "results.duration",
+    "cmd": "cmd"
+  },
+  "field_categories": {
+    "client_args": {
+      "label": "Client Arguments",
+      "description": "Client-side configuration parameters"
+    },
+    "server_args": {
+      "label": "Server Arguments",
+      "description": "Server-side configuration parameters"
+    },
+    "normalized_config": {
+      "label": "Comparable Configuration",
+      "description": "Framework-independent configuration semantics"
+    },
+    "results": {
+      "label": "Results",
+      "description": "Benchmark performance results"
+    },
+    "command": {
+      "label": "Command",
+      "description": "Execution command information"
+    }
+  },
+  "fields": {
+    "framework": {
+      "label": "Framework",
+      "description": "The serving framework",
+      "type": "categorical",
+      "category": "configuration",
+      "field_category": "results"
+    },
+    "attention_backend": {
+      "label": "Attention Backend",
+      "description": "The attention mechanism backend",
+      "type": "categorical",
+      "category": "configuration",
+      "field_category": "server_args"
+    },
+    "dp_size": {
+      "label": "Data Parallel Size",
+      "description": "Number of data parallel workers",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "",
+      "field_category": "server_args"
+    },
+    "tp_size": {
+      "label": "Tensor Parallel Size",
+      "description": "Number of tensor parallel workers",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "",
+      "field_category": "server_args"
+    },
+    "tensor_parallel_size": {
+      "label": "Tensor Parallel Size",
+      "description": "Normalized tensor parallelism across serving frameworks",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "pipeline_parallel_size": {
+      "label": "Pipeline Parallel Size",
+      "description": "Normalized pipeline parallelism across serving frameworks",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "context_parallel_size": {
+      "label": "Context Parallel Size",
+      "description": "TensorRT-LLM context parallelism",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "expert_parallel_size": {
+      "label": "Expert Parallel Size",
+      "description": "TensorRT-LLM MoE expert parallelism",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "max_batched_tokens": {
+      "label": "Max Batched Tokens",
+      "description": "Normalized maximum tokens scheduled in a batch",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "tokens",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "max_concurrent_sequences": {
+      "label": "Max Concurrent Sequences",
+      "description": "Normalized maximum requests or sequences scheduled together",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "max_sequence_length": {
+      "label": "Max Sequence Length",
+      "description": "Normalized maximum prompt plus output length",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "tokens",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "kv_cache_memory_fraction": {
+      "label": "KV Cache Memory Fraction",
+      "description": "Normalized GPU memory fraction allocated to model runtime or KV cache",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "kv_cache_dtype": {
+      "label": "KV Cache Precision",
+      "description": "KV cache data type",
+      "type": "categorical",
+      "category": "configuration",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "engine_precision": {
+      "label": "Engine Precision",
+      "description": "Model weight precision or quantization mode",
+      "type": "categorical",
+      "category": "configuration",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "world_size": {
+      "label": "World Size",
+      "description": "Normalized product of model parallel dimensions",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "GPUs",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "input_length": {
+      "label": "Input Length",
+      "description": "Normalized synthetic request input length",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "tokens",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "output_length": {
+      "label": "Output Length",
+      "description": "Normalized synthetic request output length",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "tokens",
+      "field_category": "normalized_config",
+      "optional": true
+    },
+    "max_concurrency": {
+      "label": "Max Concurrency",
+      "description": "Maximum number of concurrent requests",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "",
+      "field_category": "client_args"
+    },
+    "request_rate": {
+      "label": "Request Rate",
+      "description": "Requests per second",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "req/s",
+      "field_category": "client_args"
+    },
+    "random_input_len": {
+      "label": "Input Length",
+      "description": "Random input sequence length",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "tokens",
+      "field_category": "client_args"
+    },
+    "random_output_len": {
+      "label": "Output Length",
+      "description": "Random output sequence length",
+      "type": "numerical",
+      "category": "configuration",
+      "unit": "tokens",
+      "field_category": "client_args"
+    },
+    "input_throughput": {
+      "label": "Input Throughput",
+      "description": "Input tokens processed per second",
+      "type": "numerical",
+      "category": "performance",
+      "unit": "tokens/s",
+      "field_category": "results"
+    },
+    "output_throughput": {
+      "label": "Output Throughput",
+      "description": "Output tokens generated per second",
+      "type": "numerical",
+      "category": "performance",
+      "unit": "tokens/s",
+      "field_category": "results"
+    },
+    "total_throughput": {
+      "label": "Total Token Throughput",
+      "description": "Input plus output tokens processed per second",
+      "type": "numerical",
+      "category": "performance",
+      "unit": "tokens/s",
+      "field_category": "results"
+    },
+    "mean_ttft_ms": {
+      "label": "Mean TTFT",
+      "description": "Mean Time To First Token",
+      "type": "numerical",
+      "x_axis_type": "inverse",
+      "x_axis_name": "Prefilling Rate",
+      "x_axis_unit": "tokens/s",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "median_ttft_ms": {
+      "label": "Median TTFT",
+      "description": "Median Time To First Token",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "p95_ttft_ms": {
+      "label": "P95 TTFT",
+      "description": "95th percentile Time To First Token",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "p99_ttft_ms": {
+      "label": "P99 TTFT",
+      "description": "99th percentile Time To First Token",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "mean_itl_ms": {
+      "label": "Mean ITL",
+      "description": "Mean Inter-Token Latency",
+      "type": "numerical",
+      "x_axis_type": "inverse",
+      "x_axis_name": "Decoding Rate",
+      "x_axis_unit": "tokens/s",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "median_itl_ms": {
+      "label": "Median ITL",
+      "description": "Median Inter-Token Latency",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "p95_itl_ms": {
+      "label": "P95 ITL",
+      "description": "95th percentile Inter-Token Latency",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "p99_itl_ms": {
+      "label": "P99 ITL",
+      "description": "99th percentile Inter-Token Latency",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "mean_e2e_latency_ms": {
+      "label": "Mean E2E Latency",
+      "description": "Mean end-to-end latency",
+      "type": "numerical",
+      "x_axis_type": "inverse",
+      "x_axis_name": "Request Completion Rate per User",
+      "x_axis_unit": "requests/s",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "median_e2e_latency_ms": {
+      "label": "Median E2E Latency",
+      "description": "Median end-to-end latency",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "p95_e2e_latency_ms": {
+      "label": "P95 E2E Latency",
+      "description": "95th percentile end-to-end latency",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "p99_e2e_latency_ms": {
+      "label": "P99 E2E Latency",
+      "description": "99th percentile end-to-end latency",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "mean_tpot_ms": {
+      "label": "Mean TPOT",
+      "description": "Mean Time Per Output Token",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "median_tpot_ms": {
+      "label": "Median TPOT",
+      "description": "Median Time Per Output Token",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "p95_tpot_ms": {
+      "label": "P95 TPOT",
+      "description": "95th percentile Time Per Output Token",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "p99_tpot_ms": {
+      "label": "P99 TPOT",
+      "description": "99th percentile Time Per Output Token",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "std_ttft_ms": {
+      "label": "Std TTFT",
+      "description": "Standard deviation Time To First Token",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "std_itl_ms": {
+      "label": "Std ITL",
+      "description": "Standard deviation Inter-Token Latency",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "std_e2e_latency_ms": {
+      "label": "Std E2E Latency",
+      "description": "Standard deviation end-to-end latency",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "std_tpot_ms": {
+      "label": "Std TPOT",
+      "description": "Standard deviation Time Per Output Token",
+      "type": "numerical",
+      "category": "latency",
+      "unit": "ms",
+      "field_category": "results"
+    },
+    "duration": {
+      "label": "Duration",
+      "description": "Benchmark duration",
+      "type": "numerical",
+      "category": "performance",
+      "unit": "s",
+      "field_category": "results"
+    },
+    "cmd": {
+      "label": "Command",
+      "description": "Execution command",
+      "type": "categorical",
+      "category": "configuration",
+      "field_category": "command"
+    }
+  },
+  "categories": {
+    "configuration": {
+      "label": "Configuration",
+      "description": "System configuration parameters"
+    },
+    "performance": {
+      "label": "Performance",
+      "description": "Performance metrics"
+    },
+    "latency": {
+      "label": "Latency",
+      "description": "Latency metrics"
+    }
+  },
+  "defaults": {
+    "xAxis": "mean_ttft_ms",
+    "yAxis": "output_throughput",
+    "colorBy": "framework",
+    "sizeBy": "none",
+    "showLines": true,
+    "showPoints": true,
+    "showFitLines": true
+  },
+  "ui": {
+    "title": "Pareto LLM Optimizer Dashboard",
+    "subtitle": "Interactive Performance Analysis & Optimization Tool",
+    "description": "Select different metrics for X and Y axes to analyze performance relationships and identify Pareto optimal configurations. Hover over data points to see detailed configuration information."
+  },
+  "constraint_operators": [
+    {
+      "value": "<=",
+      "label": "\u2264 (at most)",
+      "description": "Value must be less than or equal to"
+    },
+    {
+      "value": ">=",
+      "label": "\u2265 (at least)",
+      "description": "Value must be greater than or equal to"
+    },
+    {
+      "value": "<",
+      "label": "< (less than)",
+      "description": "Value must be strictly less than"
+    },
+    {
+      "value": ">",
+      "label": "> (greater than)",
+      "description": "Value must be strictly greater than"
+    }
+  ],
+  "visualization": {
+    "colors": [
+      "#667eea",
+      "#764ba2",
+      "#f093fb",
+      "#f5576c",
+      "#4facfe",
+      "#00f2fe",
+      "#43e97b",
+      "#38f9d7",
+      "#fa709a",
+      "#fee140"
+    ]
+  }
+};
+        const fieldOptions = {
+  "configuration": {
+    "label": "Configuration",
+    "description": "System configuration parameters",
+    "fields": {
+      "framework": {
+        "label": "Framework",
+        "description": "The serving framework",
+        "type": "categorical",
+        "category": "configuration",
+        "field_category": "results"
+      },
+      "attention_backend": {
+        "label": "Attention Backend",
+        "description": "The attention mechanism backend",
+        "type": "categorical",
+        "category": "configuration",
+        "field_category": "server_args"
+      },
+      "dp_size": {
+        "label": "Data Parallel Size",
+        "description": "Number of data parallel workers",
+        "type": "numerical",
+        "category": "configuration",
+        "unit": "",
+        "field_category": "server_args"
+      },
+      "tp_size": {
+        "label": "Tensor Parallel Size",
+        "description": "Number of tensor parallel workers",
+        "type": "numerical",
+        "category": "configuration",
+        "unit": "",
+        "field_category": "server_args"
+      },
+      "tensor_parallel_size": {
+        "label": "Tensor Parallel Size",
+        "description": "Normalized tensor parallelism across serving frameworks",
+        "type": "numerical",
+        "category": "configuration",
+        "unit": "",
+        "field_category": "normalized_config",
+        "optional": true
+      },
+      "max_batched_tokens": {
+        "label": "Max Batched Tokens",
+        "description": "Normalized maximum tokens scheduled in a batch",
+        "type": "numerical",
+        "category": "configuration",
+        "unit": "tokens",
+        "field_category": "normalized_config",
+        "optional": true
+      },
+      "max_concurrent_sequences": {
+        "label": "Max Concurrent Sequences",
+        "description": "Normalized maximum requests or sequences scheduled together",
+        "type": "numerical",
+        "category": "configuration",
+        "unit": "",
+        "field_category": "normalized_config",
+        "optional": true
+      },
+      "max_sequence_length": {
+        "label": "Max Sequence Length",
+        "description": "Normalized maximum prompt plus output length",
+        "type": "numerical",
+        "category": "configuration",
+        "unit": "tokens",
+        "field_category": "normalized_config",
+        "optional": true
+      },
+      "world_size": {
+        "label": "World Size",
+        "description": "Normalized product of model parallel dimensions",
+        "type": "numerical",
+        "category": "configuration",
+        "unit": "GPUs",
+        "field_category": "normalized_config",
+        "optional": true
+      },
+      "input_length": {
+        "label": "Input Length",
+        "description": "Normalized synthetic request input length",
+        "type": "numerical",
+        "category": "configuration",
+        "unit": "tokens",
+        "field_category": "normalized_config",
+        "optional": true
+      },
+      "output_length": {
+        "label": "Output Length",
+        "description": "Normalized synthetic request output length",
+        "type": "numerical",
+        "category": "configuration",
+        "unit": "tokens",
+        "field_category": "normalized_config",
+        "optional": true
+      },
+      "max_concurrency": {
+        "label": "Max Concurrency",
+        "description": "Maximum number of concurrent requests",
+        "type": "numerical",
+        "category": "configuration",
+        "unit": "",
+        "field_category": "client_args"
+      },
+      "request_rate": {
+        "label": "Request Rate",
+        "description": "Requests per second",
+        "type": "numerical",
+        "category": "configuration",
+        "unit": "req/s",
+        "field_category": "client_args"
+      },
+      "random_input_len": {
+        "label": "Input Length",
+        "description": "Random input sequence length",
+        "type": "numerical",
+        "category": "configuration",
+        "unit": "tokens",
+        "field_category": "client_args"
+      },
+      "random_output_len": {
+        "label": "Output Length",
+        "description": "Random output sequence length",
+        "type": "numerical",
+        "category": "configuration",
+        "unit": "tokens",
+        "field_category": "client_args"
+      },
+      "cmd": {
+        "label": "Command",
+        "description": "Execution command",
+        "type": "categorical",
+        "category": "configuration",
+        "field_category": "command"
+      }
+    }
+  },
+  "performance": {
+    "label": "Performance",
+    "description": "Performance metrics",
+    "fields": {
+      "input_throughput": {
+        "label": "Input Throughput",
+        "description": "Input tokens processed per second",
+        "type": "numerical",
+        "category": "performance",
+        "unit": "tokens/s",
+        "field_category": "results"
+      },
+      "output_throughput": {
+        "label": "Output Throughput",
+        "description": "Output tokens generated per second",
+        "type": "numerical",
+        "category": "performance",
+        "unit": "tokens/s",
+        "field_category": "results"
+      },
+      "total_throughput": {
+        "label": "Total Token Throughput",
+        "description": "Input plus output tokens processed per second",
+        "type": "numerical",
+        "category": "performance",
+        "unit": "tokens/s",
+        "field_category": "results"
+      },
+      "duration": {
+        "label": "Duration",
+        "description": "Benchmark duration",
+        "type": "numerical",
+        "category": "performance",
+        "unit": "s",
+        "field_category": "results"
+      }
+    }
+  },
+  "latency": {
+    "label": "Latency",
+    "description": "Latency metrics",
+    "fields": {
+      "mean_ttft_ms": {
+        "label": "Mean TTFT",
+        "description": "Mean Time To First Token",
+        "type": "numerical",
+        "x_axis_type": "inverse",
+        "x_axis_name": "Prefilling Rate",
+        "x_axis_unit": "tokens/s",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "median_ttft_ms": {
+        "label": "Median TTFT",
+        "description": "Median Time To First Token",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "p95_ttft_ms": {
+        "label": "P95 TTFT",
+        "description": "95th percentile Time To First Token",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "p99_ttft_ms": {
+        "label": "P99 TTFT",
+        "description": "99th percentile Time To First Token",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "mean_itl_ms": {
+        "label": "Mean ITL",
+        "description": "Mean Inter-Token Latency",
+        "type": "numerical",
+        "x_axis_type": "inverse",
+        "x_axis_name": "Decoding Rate",
+        "x_axis_unit": "tokens/s",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "median_itl_ms": {
+        "label": "Median ITL",
+        "description": "Median Inter-Token Latency",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "p95_itl_ms": {
+        "label": "P95 ITL",
+        "description": "95th percentile Inter-Token Latency",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "p99_itl_ms": {
+        "label": "P99 ITL",
+        "description": "99th percentile Inter-Token Latency",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "mean_e2e_latency_ms": {
+        "label": "Mean E2E Latency",
+        "description": "Mean end-to-end latency",
+        "type": "numerical",
+        "x_axis_type": "inverse",
+        "x_axis_name": "Request Completion Rate per User",
+        "x_axis_unit": "requests/s",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "median_e2e_latency_ms": {
+        "label": "Median E2E Latency",
+        "description": "Median end-to-end latency",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "p95_e2e_latency_ms": {
+        "label": "P95 E2E Latency",
+        "description": "95th percentile end-to-end latency",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "p99_e2e_latency_ms": {
+        "label": "P99 E2E Latency",
+        "description": "99th percentile end-to-end latency",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "mean_tpot_ms": {
+        "label": "Mean TPOT",
+        "description": "Mean Time Per Output Token",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "median_tpot_ms": {
+        "label": "Median TPOT",
+        "description": "Median Time Per Output Token",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "p95_tpot_ms": {
+        "label": "P95 TPOT",
+        "description": "95th percentile Time Per Output Token",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "p99_tpot_ms": {
+        "label": "P99 TPOT",
+        "description": "99th percentile Time Per Output Token",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "std_ttft_ms": {
+        "label": "Std TTFT",
+        "description": "Standard deviation Time To First Token",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "std_itl_ms": {
+        "label": "Std ITL",
+        "description": "Standard deviation Inter-Token Latency",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "std_e2e_latency_ms": {
+        "label": "Std E2E Latency",
+        "description": "Standard deviation end-to-end latency",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      },
+      "std_tpot_ms": {
+        "label": "Std TPOT",
+        "description": "Standard deviation Time Per Output Token",
+        "type": "numerical",
+        "category": "latency",
+        "unit": "ms",
+        "field_category": "results"
+      }
+    }
+  }
+};
+        const fieldCategories = {
+  "client_args": {
+    "label": "Client Arguments",
+    "description": "Client-side configuration parameters"
+  },
+  "server_args": {
+    "label": "Server Arguments",
+    "description": "Server-side configuration parameters"
+  },
+  "normalized_config": {
+    "label": "Comparable Configuration",
+    "description": "Framework-independent configuration semantics"
+  },
+  "results": {
+    "label": "Results",
+    "description": "Benchmark performance results"
+  },
+  "command": {
+    "label": "Command",
+    "description": "Execution command information"
+  }
+};
+        const defaults = {
+  "xAxis": "mean_ttft_ms",
+  "yAxis": "output_throughput",
+  "colorBy": "framework",
+  "sizeBy": "none",
+  "showLines": true,
+  "showPoints": true,
+  "showFitLines": true
+};
+        const metadata = {
+  "total_tests": 7,
+  "runs": [
+    {
+      "data_file": "results/vllm_search.json",
+      "gpu_type": "H200",
+      "gpu_count": 1,
+      "model_tag": "Qwen/Qwen3.5-0.8B",
+      "total_tests": 1,
+      "constraints": [],
+      "input_len": 32,
+      "output_len": 16
+    },
+    {
+      "data_file": "results/sglang_search.json",
+      "gpu_type": "H200",
+      "gpu_count": 1,
+      "model_tag": "Qwen/Qwen3.5-0.8B",
+      "total_tests": 2,
+      "constraints": [],
+      "input_len": 32,
+      "output_len": 16
+    },
+    {
+      "data_file": "results/trtllm_search.json",
+      "gpu_type": "H200",
+      "gpu_count": 1,
+      "model_tag": "Qwen/Qwen3.5-0.8B",
+      "total_tests": 4,
+      "constraints": [],
+      "input_len": 32,
+      "output_len": 16
+    }
+  ],
+  "model_tag": "Qwen/Qwen3.5-0.8B",
+  "gpu_type": "H200",
+  "gpu_count": 1
+};
+        const bestConfigs = {
+  "results/vllm_search.json": {
+    "best_input_throughput": {
+      "throughput": 887.1024650286814,
+      "config": {
+        "framework": "vllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "max_concurrency": 8,
+          "num_prompts": 10
+        },
+        "server_args": {
+          "tensor_parallel_size": 1
+        },
+        "server_cmd_args": [
+          "--tensor-parallel-size=1"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_concurrency": 8,
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "num_prompts": 10,
+          "input_length": 32,
+          "output_length": 16,
+          "world_size": 1
+        }
+      },
+      "cmd": "vllm serve Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 8000 --tensor-parallel-size=1"
+    },
+    "best_output_throughput": {
+      "throughput": 720.2968733138866,
+      "config": {
+        "framework": "vllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "max_concurrency": 8,
+          "num_prompts": 10
+        },
+        "server_args": {
+          "tensor_parallel_size": 1
+        },
+        "server_cmd_args": [
+          "--tensor-parallel-size=1"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_concurrency": 8,
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "num_prompts": 10,
+          "input_length": 32,
+          "output_length": 16,
+          "world_size": 1
+        }
+      },
+      "cmd": "vllm serve Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 8000 --tensor-parallel-size=1"
+    },
+    "best_input_throughput_constrained": null,
+    "best_output_throughput_constrained": null
+  },
+  "results/sglang_search.json": {
+    "best_input_throughput": {
+      "throughput": 289.9810498872597,
+      "config": {
+        "framework": "sglang",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "max_concurrency": 2,
+          "num_prompts": 10
+        },
+        "server_args": {
+          "tp_size": 1
+        },
+        "server_cmd_args": [
+          "--tp-size=1"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_concurrency": 2,
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "num_prompts": 10,
+          "input_length": 32,
+          "output_length": 16,
+          "world_size": 1
+        }
+      },
+      "cmd": "python3 -m sglang.launch_server --model-path Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 30000 --tp-size=1"
+    },
+    "best_output_throughput": {
+      "throughput": 235.45469862640746,
+      "config": {
+        "framework": "sglang",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "max_concurrency": 2,
+          "num_prompts": 10
+        },
+        "server_args": {
+          "tp_size": 1
+        },
+        "server_cmd_args": [
+          "--tp-size=1"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_concurrency": 2,
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "num_prompts": 10,
+          "input_length": 32,
+          "output_length": 16,
+          "world_size": 1
+        }
+      },
+      "cmd": "python3 -m sglang.launch_server --model-path Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 30000 --tp-size=1"
+    },
+    "best_input_throughput_constrained": null,
+    "best_output_throughput_constrained": null
+  },
+  "results/trtllm_search.json": {
+    "best_input_throughput": {
+      "throughput": 621.3589362109958,
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "max_concurrency": 8,
+          "num_prompts": 10
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 16,
+          "max_num_tokens": 512,
+          "max_seq_len": 512
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=16",
+          "--max_num_tokens=512",
+          "--max_seq_len=512"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 512,
+          "max_concurrent_sequences": 16,
+          "max_sequence_length": 512,
+          "max_concurrency": 8,
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "num_prompts": 10,
+          "input_length": 32,
+          "output_length": 16,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 16,
+          "max_num_tokens": 512,
+          "max_seq_len": 512
+        },
+        "runtime_args": {}
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 8000 --tp_size=1 --max_batch_size=16 --max_num_tokens=512 --max_seq_len=512"
+    },
+    "best_output_throughput": {
+      "throughput": 504.52221316277434,
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "max_concurrency": 8,
+          "num_prompts": 10
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 16,
+          "max_num_tokens": 512,
+          "max_seq_len": 512
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=16",
+          "--max_num_tokens=512",
+          "--max_seq_len=512"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 512,
+          "max_concurrent_sequences": 16,
+          "max_sequence_length": 512,
+          "max_concurrency": 8,
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "num_prompts": 10,
+          "input_length": 32,
+          "output_length": 16,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 16,
+          "max_num_tokens": 512,
+          "max_seq_len": 512
+        },
+        "runtime_args": {}
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 8000 --tp_size=1 --max_batch_size=16 --max_num_tokens=512 --max_seq_len=512"
+    },
+    "best_input_throughput_constrained": null,
+    "best_output_throughput_constrained": null
+  }
+};
+
+        const colors = config.visualization?.colors || [
+            '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe',
+            '#00f2fe', '#43e97b', '#38f9d7', '#fa709a', '#fee140'
+        ];
+        const STAR_SYMBOL = 'path://M0,-10 L2.35,-3.24 L9.51,-3.09 L3.8,1.24 L5.88,8.09 L0,4 L-5.88,8.09 L-3.8,1.24 L-9.51,-3.09 L-2.35,-3.24 Z';
+
+        // Get constraint field options from config
+        function getConstraintFieldOptions() {
+            const options = [];
+            const constraintFields = ['ttft_ms', 'itl_ms', 'e2e_latency_ms', 'tpot_ms'];
+            const statTypes = ['mean', 'median', 'p95', 'p99'];
+
+            constraintFields.forEach(baseField => {
+                statTypes.forEach(statType => {
+                    const fieldName = `${statType}_${baseField}`;
+                    const field = config.fields?.[fieldName];
+                    if (field) {
+                        options.push({ value: fieldName, label: field.label });
+                    }
+                });
+            });
+
+            return options;
+        }
+
+        const OPERATORS = config.constraint_operators || [
+            { value: '<=', label: '≤ (at most)', description: 'Value must be less than or equal to' },
+            { value: '>=', label: '≥ (at least)', description: 'Value must be greater than or equal to' },
+            { value: '<', label: '< (less than)', description: 'Value must be strictly less than' },
+            { value: '>', label: '> (greater than)', description: 'Value must be strictly greater than' }
+        ];
+
+        // Get relevant operators for a metric type
+        function getRelevantOperators(metricName) {
+            // All constraint fields are latency metrics, so only show < and <= operators
+            return OPERATORS.filter(op => op.value === '<' || op.value === '<=');
+        }
+
+        function getParetoPoints(points) {
+            const result = [];
+            for (let i = 0; i < points.length; i++) {
+                const p1 = points[i];
+                let dominated = false;
+                for (let j = 0; j < points.length; j++) {
+                    if (i === j) continue;
+                    const p2 = points[j];
+                    const allGE = p2.x >= p1.x && p2.y >= p1.y;
+                    const anyG = p2.x > p1.x || p2.y > p1.y;
+                    if (allGE && anyG) { dominated = true; break; }
+                }
+                if (!dominated) result.push(p1);
+            }
+            return result;
+        }
+
+        // Helper to access nested data structure
+        function getNestedValue(obj, path) {
+            if (!path || !obj) return undefined;
+
+            // Handle special mappings for common fields
+            const mapping = {
+                'input_throughput': 'results.input_throughput',
+                'output_throughput': 'results.output_throughput',
+                'total_throughput': 'results.total_throughput',
+                'mean_ttft_ms': 'results.mean_ttft_ms',
+                'median_ttft_ms': 'results.median_ttft_ms',
+                'p95_ttft_ms': 'results.p95_ttft_ms',
+                'p99_ttft_ms': 'results.p99_ttft_ms',
+                'mean_itl_ms': 'results.mean_itl_ms',
+                'median_itl_ms': 'results.median_itl_ms',
+                'p95_itl_ms': 'results.p95_itl_ms',
+                'p99_itl_ms': 'results.p99_itl_ms',
+                'mean_e2e_latency_ms': 'results.mean_e2e_latency_ms',
+                'median_e2e_latency_ms': 'results.median_e2e_latency_ms',
+                'p95_e2e_latency_ms': 'results.p95_e2e_latency_ms',
+                'p99_e2e_latency_ms': 'results.p99_e2e_latency_ms',
+                'mean_tpot_ms': 'results.mean_tpot_ms',
+                'median_tpot_ms': 'results.median_tpot_ms',
+                'p95_tpot_ms': 'results.p95_tpot_ms',
+                'p99_tpot_ms': 'results.p99_tpot_ms',
+                'max_concurrency': 'config.client_args.max_concurrency',
+                'request_rate': 'config.client_args.request_rate',
+                'framework': 'config.framework',
+                'cmd': 'cmd'
+            };
+
+            const actualPath = mapping[path] || path;
+
+            // If not in mapping, check if it's a server arg
+            if (!mapping[path]) {
+                const normalizedValue = getPathValue(obj, `config.normalized_config.${path}`);
+                if (normalizedValue !== undefined) {
+                    return normalizedValue;
+                }
+                const serverArgValue = getPathValue(obj, `config.server_args.${path}`);
+                if (serverArgValue !== undefined) {
+                    return serverArgValue;
+                }
+            }
+
+            return getPathValue(obj, actualPath);
+        }
+
+        // Helper function to traverse path
+        function getPathValue(obj, path) {
+            const keys = path.split('.');
+            let current = obj;
+
+            for (const key of keys) {
+                if (current && typeof current === 'object' && key in current) {
+                    current = current[key];
+                } else {
+                    return undefined;
+                }
+            }
+            return current;
+        }
+
+        function checkConstraints(point, dynamicConstraints) {
+            const constraintsToCheck = dynamicConstraints || constraints;
+            // If no constraints, all points satisfy
+            if (!constraintsToCheck || (Array.isArray(constraintsToCheck) && constraintsToCheck.length === 0)) return true;
+            const getVal = (p, name) => {
+                return getNestedValue(p, name);
+            };
+            const evalOp = (lhs, op, rhs) => {
+                switch (op) {
+                    case '>': return lhs > rhs;
+                    case '>=': return lhs >= rhs;
+                    case '<': return lhs < rhs;
+                    case '<=': return lhs <= rhs;
+                    case '==':
+                    case '=': return lhs === rhs;
+                    case '!=': return lhs !== rhs;
+                    default: return true; // unknown op -> ignore
+                }
+            };
+            if (Array.isArray(constraintsToCheck)) {
+                return constraintsToCheck.every(c => {
+                    if (!c || c.name == null) return true;
+                    const lhs = Number(getVal(point, c.name));
+                    const rhs = Number(c.value);
+                    if (Number.isNaN(lhs) || Number.isNaN(rhs)) return false;
+                    return evalOp(lhs, String(c.op || '>=').trim(), rhs);
+                });
+            }
+            return true;
+        }
+
+        // Helper function to get field labels for constraints
+        function getFieldLabel(fieldName) {
+            const field = config.fields?.[fieldName];
+            return field ? field.label : fieldName;
+        }
+
+        // Calculate best configuration dynamically based on current constraints
+        function calculateBestConfig(data, constraints, throughputField) {
+            if (!data || data.length === 0) return null;
+
+            // Filter data that satisfies constraints
+            const validConfigs = !constraints || constraints.length === 0 ?
+                data : data.filter(item => checkConstraints(item, constraints));
+
+            if (validConfigs.length === 0) return null;
+
+            // Find the config with highest throughput
+            let bestConfig = null;
+            let bestThroughput = -1;
+
+            validConfigs.forEach(item => {
+                const throughput = item.results?.[throughputField];
+                if (throughput && throughput > bestThroughput) {
+                    bestThroughput = throughput;
+                    bestConfig = item;
+                }
+            });
+
+            return bestConfig ? {
+                throughput: bestThroughput,
+                config: bestConfig.config,
+                cmd: bestConfig.cmd,
+                originalData: bestConfig
+            } : null;
+        }
+
+        function addConstraintLines(traces, xAxis, yAxis, transformedData) {
+            if (!constraints) return;
+            for (const [field, rawVal] of Object.entries(constraints)) {
+                let v = rawVal;
+                if (config.fields[field]?.category === 'latency') {
+                    v = config.fields[field].unit === 'ms' ? (1000 / rawVal) : (1 / rawVal);
+                }
+                if (field === yAxis) {
+                    const xMin = Math.min(...transformedData.map(d => d[xAxis]));
+                    const xMax = Math.max(...transformedData.map(d => d[xAxis]));
+                    const r = xMax - xMin;
+                    traces.push({ x: [xMin - r * 0.1, xMax + r * 0.1], y: [v, v], mode: 'lines', type: 'scatter', line: { color: '#ef4444', width: 3, dash: 'dash' }, name: `Constraint: ${field} >= ${rawVal}`, hoverinfo: 'skip', showlegend: false });
+                } else if (field === xAxis) {
+                    const yMin = Math.min(...transformedData.map(d => d[yAxis]));
+                    const yMax = Math.max(...transformedData.map(d => d[yAxis]));
+                    const r = yMax - yMin;
+                    traces.push({ x: [v, v], y: [yMin - r * 0.1, yMax + r * 0.1], mode: 'lines', type: 'scatter', line: { color: '#ef4444', width: 3, dash: 'dash' }, name: `Constraint: ${field} >= ${rawVal}`, hoverinfo: 'skip', showlegend: false });
+                }
+            }
+        }
+
+        function getAxisLabel(metric) {
+            const f = config.fields?.[metric];
+            if (!f) return metric;
+            if (f.category === 'latency') return `1/${f.label} (tokens/s)`;
+            return f.label + (f.unit ? ` (${f.unit})` : '');
+        }
+
+        function getXAxisLabel(metric) {
+            const f = config.fields?.[metric];
+            if (!f) return metric;
+            const name = f.x_axis_name || f.label || metric;
+            const unit = f.x_axis_unit || f.unit || '';
+            return name + (unit ? ` (${unit})` : '');
+        }
+
+        function getYAxisLabel(metric) {
+            const f = config.fields?.[metric];
+            if (!f) return metric;
+            // Keep original labeling for y-axis
+            return f.label + (f.unit ? ` (${f.unit})` : '');
+        }
+
+        // Helper function to wrap long text
+        function wrapText(text, maxWidth = 50) {
+            if (!text || text.length <= maxWidth) return text;
+
+            const words = text.split(' ');
+            const lines = [];
+            let currentLine = '';
+
+            words.forEach(word => {
+                if ((currentLine + word).length <= maxWidth) {
+                    currentLine += (currentLine ? ' ' : '') + word;
+                } else {
+                    if (currentLine) lines.push(currentLine);
+                    currentLine = word;
+                }
+            });
+
+            if (currentLine) lines.push(currentLine);
+            return lines.join('<br>');
+        }
+
+        function generateHoverText(point) {
+            if (!point) return '';
+
+            const grouped = {
+                'results': [],
+                'normalized_config': [],
+                'server_args': [],
+                'client_args': [],
+                'command': []
+            };
+
+            // Add results
+            if (point.results) {
+                Object.entries(point.results).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null) {
+                        const field = config.fields?.[key];
+                        const label = field?.label || key;
+                        const unit = field?.unit || '';
+                        const num = Number(value);
+                        const displayValue = isFinite(num) ? num.toFixed(2) : value;
+                        grouped.results.push({ label, value: displayValue, unit: unit ? ` ${unit}` : '' });
+                    }
+                });
+            }
+
+            // Add normalized semantics used for cross-framework comparisons
+            if (point.config?.framework) {
+                grouped.normalized_config.push({ label: 'Framework', value: point.config.framework, unit: '' });
+            }
+            if (point.config?.normalized_config) {
+                Object.entries(point.config.normalized_config).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null) {
+                        const field = config.fields?.[key];
+                        const label = field?.label || key.replace(/_/g, ' ');
+                        grouped.normalized_config.push({ label, value: String(value), unit: '' });
+                    }
+                });
+            }
+
+            // Add client args
+            if (point.config?.client_args) {
+                Object.entries(point.config.client_args).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null && value !== Infinity) {
+                        const label = key.replace(/_/g, ' ');
+                        grouped.client_args.push({ label, value: String(value), unit: '' });
+                    }
+                });
+            }
+
+            // Add server args
+            if (point.config?.server_args) {
+                Object.entries(point.config.server_args).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null) {
+                        const label = key.replace(/_/g, ' ');
+                        grouped.server_args.push({ label, value: String(value), unit: '' });
+                    }
+                });
+            }
+
+            // Add command
+            if (point.cmd) {
+                grouped.command.push({ label: 'Command', value: point.cmd, unit: '' });
+            }
+
+            let text = '';
+            const categoryOrder = ['results', 'normalized_config', 'server_args', 'client_args', 'command'];
+
+            categoryOrder.forEach(cat => {
+                const fields = grouped[cat];
+                if (!fields || fields.length === 0) return;
+
+                const catLabel = fieldCategories?.[cat]?.label || cat;
+                text += `<b>${catLabel}:</b><br>`;
+                fields.forEach(({ label, value, unit }) => {
+                    // Handle special case for cmd field which can be very long
+                    if (label === 'cmd' || label === 'Command') {
+                        const wrappedCmd = wrapText(`${value}${unit}`, 60);
+                        text += `  ${label}: ${wrappedCmd}<br>`;
+                    } else {
+                        text += `  ${label}: ${value}${unit}<br>`;
+                    }
+                });
+                text += '<br>';
+            });
+
+            return text;
+        }
+
+        function getLegendValues(dataset) {
+            const colorBy = defaults?.colorBy || 'framework';
+            const labels = Array.from(new Set(dataset.map(d => d[colorBy]).filter(v => v != null))).sort();
+            const header = config.fields?.[colorBy]?.label || colorBy;
+            return { field: colorBy, header, labels };
+        }
+
+        function formatFirstConstraints() {
+            if (!constraints) return 'None';
+            const fmt = (c) => {
+                if (!c) return '';
+                if (typeof c === 'object' && !Array.isArray(c)) {
+                    if ('name' in c && 'value' in c) {
+                        return `${c.name} ${c.op || '>='} ${c.value}`;
+                    }
+                }
+                return String(c);
+            };
+            if (Array.isArray(constraints)) {
+                const first = constraints[0];
+                if (Array.isArray(first)) return first.map(fmt).filter(Boolean).join(', ');
+                return fmt(first);
+            }
+            if (typeof constraints === 'object') {
+                return Object.entries(constraints).map(([k, v]) => `${k} >= ${v}`).join(', ');
+            }
+            return String(constraints);
+        }
+
+        function formatConstraintsList() {
+            if (!constraints) return [];
+            const fmt = (c) => {
+                if (!c) return '';
+                if (typeof c === 'object' && !Array.isArray(c)) {
+                    if ('name' in c && 'value' in c) return `${c.name} ${c.op || '>='} ${c.value}`;
+                    return JSON.stringify(c);
+                }
+                return String(c);
+            };
+            if (Array.isArray(constraints)) {
+                return constraints.map(fmt).filter(Boolean);
+            }
+            if (typeof constraints === 'object') {
+                return Object.entries(constraints).map(([k, v]) => `${k} >= ${v}`);
+            }
+            return [String(constraints)];
+        }
+
+        // AddConstraintForm component for adding custom constraints
+        function AddConstraintForm({ onAdd, onCancel }) {
+            const [metric, setMetric] = useState('mean_ttft_ms');
+            const [operator, setOperator] = useState('<=');
+            const [value, setValue] = useState('');
+            const [error, setError] = useState('');
+
+            const relevantOperators = getRelevantOperators(metric);
+
+            const handleAdd = () => {
+                const numValue = parseFloat(value);
+                if (isNaN(numValue) || numValue <= 0) {
+                    setError('Please enter a valid positive number');
+                    return;
+                }
+
+                const constraint = { name: metric, op: operator, value: numValue };
+                onAdd(constraint);
+                onCancel();
+            };
+
+            return React.createElement('div', { className: 'border border-blue-300 rounded-lg p-3 bg-blue-50 space-y-3' }, [
+                React.createElement('div', { key: 'title', className: 'text-sm font-medium text-blue-900' }, 'Add Constraint'),
+                React.createElement('div', { key: 'form', className: 'flex flex-wrap gap-2 items-end' }, [
+                    // Metric dropdown
+                    React.createElement('select', {
+                        value: metric,
+                        onChange: e => setMetric(e.target.value),
+                        className: 'text-xs border border-gray-300 rounded px-2 py-1'
+                    }, getConstraintFieldOptions().map(opt =>
+                        React.createElement('option', { key: opt.value, value: opt.value }, opt.label)
+                    )),
+                    // Operator dropdown
+                    React.createElement('select', {
+                        value: operator,
+                        onChange: e => setOperator(e.target.value),
+                        className: 'text-xs border border-gray-300 rounded px-2 py-1'
+                    }, relevantOperators.map(op =>
+                        React.createElement('option', { key: op.value, value: op.value }, op.label)
+                    )),
+                    // Value input
+                    React.createElement('div', { className: 'flex items-center' }, [
+                        React.createElement('input', {
+                            type: 'number',
+                            value: value,
+                            onChange: e => setValue(e.target.value),
+                            placeholder: '300',
+                            className: 'text-xs border border-gray-300 rounded px-2 py-1 w-20'
+                        }),
+                        React.createElement('span', { className: 'text-xs text-gray-600 ml-1' }, 'ms')
+                    ])
+                ]),
+                error && React.createElement('div', { key: 'error', className: 'text-xs text-red-600' }, error),
+                React.createElement('div', { key: 'buttons', className: 'flex gap-2' }, [
+                    React.createElement('button', {
+                        onClick: onCancel,
+                        className: 'text-xs px-3 py-1 border border-gray-300 rounded hover:bg-gray-50'
+                    }, 'Cancel'),
+                    React.createElement('button', {
+                        onClick: handleAdd,
+                        className: 'text-xs px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600'
+                    }, 'Add')
+                ])
+            ]);
+        }
+
+        function useTransformedData(data, xAxis, yAxis) {
+            return useMemo(() => {
+                return data
+                    .filter(p => {
+                        const xVal = getNestedValue(p, xAxis);
+                        const yVal = getNestedValue(p, yAxis);
+                        return xVal !== undefined && yVal !== undefined;
+                    })
+                    .map(p => {
+                        const xVal = getNestedValue(p, xAxis);
+                        const yVal = getNestedValue(p, yAxis);
+
+                        // Create flat object for chart with x and y values
+                        const t = {
+                            [xAxis]: xVal,
+                            [yAxis]: yVal,
+                            framework: getNestedValue(p, 'config.framework'),
+                            _original: p
+                        };
+
+                        // Transform latency values if needed
+                        const f = config.fields?.[xAxis];
+                        if (f?.category === 'latency' && xVal > 0) {
+                            t[xAxis] = f.unit === 'ms' ? (1000 / xVal) : (1 / xVal);
+                        }
+
+                        return t;
+                    });
+            }, [data, xAxis, yAxis]);
+        }
+
+        function Chart({ dataset, xAxis, yAxis, showLines, showPoints, onSelect, constraints: dynamicConstraints }) {
+            const ref = useRef(null);
+            useEffect(() => {
+                if (!dataset || dataset.length === 0) {
+                    if (ref.current) ref.current.innerHTML = '<p class="text-center text-slate-500 py-12">No valid data to display</p>';
+                return;
+            }
+
+                const dom = ref.current;
+                const chart = echarts.init(dom);
+
+                const pts = dataset.map(d => ({ x: d[xAxis], y: d[yAxis], original: d }));
+                const pareto = getParetoPoints(pts);
+                const paretoSet = new Set(pareto.map(p => p.original));
+                const paretoData = dataset.filter(d => paretoSet.has(d));
+                const frameworks = Array.from(
+                    new Set(dataset.map(d => d.framework || 'unknown'))
+                ).sort();
+                const frameworkColors = new Map(
+                    frameworks.map((framework, index) => [
+                        framework,
+                        colors[index % colors.length]
+                    ])
+                );
+
+                const series = [];
+                if (showLines && paretoData.length > 1) {
+                    const sorted = [...paretoData].sort((a, b) => a[xAxis] - b[xAxis]);
+                    series.push({
+                        type: 'line', name: 'Pareto front', smooth: 0.2, symbol: 'none',
+                        lineStyle: { color: '#0e7a66', width: 3 },
+                        areaStyle: { color: 'rgba(16,185,129,0.06)' },
+                        silent: true,
+                        z: 0,
+                        data: sorted.map(d => [d[xAxis], d[yAxis]])
+                    });
+                }
+                if (showPoints) {
+                    frameworks.forEach(framework => {
+                        const color = frameworkColors.get(framework);
+                        const frameworkPoints = dataset.filter(
+                            d => (d.framework || 'unknown') === framework
+                        );
+                        const pointGroups = [
+                            {
+                                status: 'Other',
+                                symbol: 'circle',
+                                symbolSize: 10,
+                                itemStyle: {
+                                    color,
+                                    borderColor: '#ffffff',
+                                    borderWidth: 1,
+                                    opacity: 0.72,
+                                },
+                                matches: d => !paretoSet.has(d),
+                            },
+                            {
+                                status: 'Pareto',
+                                symbol: 'diamond',
+                                symbolSize: 13,
+                                itemStyle: {
+                                    color,
+                                    borderColor: '#0f172a',
+                                    borderWidth: 3,
+                                    opacity: 1,
+                                },
+                                matches: d => paretoSet.has(d) && !checkConstraints(
+                                    d._original,
+                                    dynamicConstraints
+                                ),
+                            },
+                            {
+                                status: 'Pareto + constraints',
+                                symbol: STAR_SYMBOL,
+                                symbolSize: 13,
+                                itemStyle: {
+                                    color,
+                                    borderColor: '#0f172a',
+                                    borderWidth: 3,
+                                    opacity: 1,
+                                },
+                                matches: d => paretoSet.has(d) && checkConstraints(
+                                    d._original,
+                                    dynamicConstraints
+                                ),
+                            },
+                        ];
+
+                        pointGroups.forEach(group => {
+                            const points = frameworkPoints
+                                .filter(group.matches)
+                                .map(d => ({ value: [d[xAxis], d[yAxis]], __row: d }));
+                            if (points.length === 0) return;
+                            series.push({
+                                type: 'scatter',
+                                name: framework,
+                                symbol: group.symbol,
+                                symbolSize: group.symbolSize,
+                                itemStyle: group.itemStyle,
+                                emphasis: { scale: 1.12, focus: 'series' },
+                                tooltip: {
+                                    formatter: params => (
+                                        `<b>${group.status}</b><br>${generateHoverText(
+                                            params.data.__row._original || params.data.__row
+                                        )}`
+                                    ),
+                                },
+                                z: 2,
+                                data: points,
+                            });
+                        });
+                    });
+                }
+
+                const option = {
+                    backgroundColor: 'transparent',
+                    color: frameworks.map(framework => frameworkColors.get(framework)),
+                    grid: { left: 70, right: 40, top: 80, bottom: 50 },
+                    legend: { data: frameworks, top: 38 },
+                    xAxis: { name: getXAxisLabel(xAxis), nameLocation: 'middle', nameGap: 35, type: 'value', axisLabel: { color: '#000' }, nameTextStyle: { color: '#000' }, axisLine: { lineStyle: { color: '#000' } }, splitLine: { lineStyle: { color: '#e5e7eb' } } },
+                    yAxis: { name: getYAxisLabel(yAxis), nameLocation: 'middle', nameGap: 45, type: 'value', axisLabel: { color: '#000' }, nameTextStyle: { color: '#000' }, axisLine: { lineStyle: { color: '#000' } }, splitLine: { lineStyle: { color: '#e5e7eb' } } },
+                    tooltip: { trigger: 'item', backgroundColor: 'rgba(2,6,23,0.96)', textStyle: { color: '#ecfeff' }, borderWidth: 0, confine: true, transitionDuration: 0.05 },
+                    series
+                };
+
+                chart.setOption(option);
+                const onResize = () => chart.resize();
+                window.addEventListener('resize', onResize);
+                let ro;
+                if ('ResizeObserver' in window) {
+                    ro = new ResizeObserver(() => chart.resize());
+                    ro.observe(dom);
+                }
+                // Click to select table row by x,y values
+                chart.on('click', (p) => {
+                    if (typeof onSelect !== 'function') return;
+                    const v = Array.isArray(p?.value) ? p.value : (p?.data && Array.isArray(p.data.value) ? p.data.value : null);
+                    if (v && v.length >= 2) {
+                        onSelect({ x: v[0], y: v[1] });
+                    }
+                });
+                return () => {
+                    window.removeEventListener('resize', onResize);
+                    if (ro) ro.disconnect();
+                    chart.dispose();
+                };
+            }, [dataset, xAxis, yAxis, showLines, showPoints, dynamicConstraints]);
+
+            return React.createElement('div', { ref, className: 'w-full h-[32vh] min-h-[300px] overflow-visible' });
+        }
+
+        // Helper function for axis selectors
+        function createSelectOptions(id, fieldOptions) {
+            const groups = [];
+            Object.entries(fieldOptions).forEach(([categoryId, categoryInfo]) => {
+                const options = [];
+                Object.entries(categoryInfo.fields).forEach(([fieldId, fieldInfo]) => {
+                    if (id === 'xAxis') {
+                        const hasXAxisName = fieldInfo && String(fieldInfo.x_axis_name || '').trim().length > 0;
+                        if (!hasXAxisName) return;
+                        if (categoryId !== 'latency') return;
+                        const label = fieldInfo.x_axis_name || fieldInfo.label || fieldId;
+                        const unit = fieldInfo.x_axis_unit || fieldInfo.unit || '';
+                        options.push(
+                            React.createElement('option', { key: fieldId, value: fieldId, disabled: !!fieldInfo.disabled }, `${label}${unit ? ' (' + unit + ')' : ''}${fieldInfo.disabled ? ' (No data)' : ''}`)
+                        );
+                        return;
+                    }
+                    if (id === 'yAxis' && categoryId !== 'performance') return;
+                    options.push(
+                        React.createElement('option', { key: fieldId, value: fieldId, disabled: !!fieldInfo.disabled }, `${fieldInfo.label}${fieldInfo.unit ? ' (' + fieldInfo.unit + ')' : ''}${fieldInfo.disabled ? ' (No data)' : ''}`)
+                    );
+                });
+                if (options.length) {
+                    groups.push(React.createElement('optgroup', { key: categoryId, label: categoryInfo.label }, options));
+                }
+            });
+            return groups;
+        }
+
+        function Controls({ showLines, showPoints, onChange, fieldOptions, customConstraints, setCustomConstraints, showAddForm, setShowAddForm, disabledOriginalConstraints, setDisabledOriginalConstraints, metadata }) {
+            function selectOptions(id) {
+                const groups = [];
+                Object.entries(fieldOptions).forEach(([categoryId, categoryInfo]) => {
+                    const options = [];
+                    Object.entries(categoryInfo.fields).forEach(([fieldId, fieldInfo]) => {
+                        if (id === 'xAxis') {
+                            // Only show fields with non-empty x_axis_name
+                            const hasXAxisName = fieldInfo && String(fieldInfo.x_axis_name || '').trim().length > 0;
+                            if (!hasXAxisName) return;
+                            // Optional: still constrain to latency category if present in config
+                            if (categoryId !== 'latency') return;
+                            const label = fieldInfo.x_axis_name || fieldInfo.label || fieldId;
+                            const unit = fieldInfo.x_axis_unit || fieldInfo.unit || '';
+                            options.push(
+                                React.createElement('option', { key: fieldId, value: fieldId, disabled: !!fieldInfo.disabled }, `${label}${unit ? ' (' + unit + ')' : ''}${fieldInfo.disabled ? ' (No data)' : ''}`)
+                            );
+                            return;
+                        }
+                        if (id === 'yAxis' && categoryId !== 'performance') return;
+                        options.push(
+                            React.createElement('option', { key: fieldId, value: fieldId, disabled: !!fieldInfo.disabled }, `${fieldInfo.label}${fieldInfo.unit ? ' (' + fieldInfo.unit + ')' : ''}${fieldInfo.disabled ? ' (No data)' : ''}`)
+                        );
+                    });
+                    if (options.length) {
+                        groups.push(React.createElement('optgroup', { key: categoryId, label: categoryInfo.label }, options));
+                    }
+                });
+                return groups;
+            }
+
+            return React.createElement('div', { className: 'bg-slate-100 border border-slate-200 rounded-xl p-5' }, [
+                React.createElement('div', { key: 'grid', className: 'grid grid-cols-1 md:grid-cols-2 gap-5 items-start min-w-0' }, [
+                    // Metadata
+                    React.createElement('div', { key: 'metadata', className: 'flex flex-col gap-3' }, [
+                        metadata && Object.keys(metadata).length > 0 && React.createElement('div', { className: 'space-y-1 text-xs' }, [
+                            metadata.gpu_type && React.createElement('div', { key: 'gpu', className: 'flex items-center gap-1' }, [
+                                React.createElement('span', { className: 'font-semibold text-slate-700' }, 'GPU:'),
+                                React.createElement('span', { className: 'text-slate-600' }, `${metadata.gpu_type} x${metadata.gpu_count || 1}`)
+                            ]),
+                            metadata.model_tag && React.createElement('div', { key: 'model', className: 'flex items-center gap-1' }, [
+                                React.createElement('span', { className: 'font-semibold text-slate-700' }, 'Model:'),
+                                React.createElement('span', { className: 'text-slate-600' }, metadata.model_tag)
+                            ]),
+                            (metadata.input_len !== undefined || metadata.output_len !== undefined) && React.createElement('div', { key: 'tokens', className: 'flex items-center gap-1' }, [
+                                React.createElement('span', { className: 'font-semibold text-slate-700' }, 'Input→Output:'),
+                                React.createElement('span', { className: 'text-slate-600' }, `${metadata.input_len || '?'}→${metadata.output_len || '?'} tokens`)
+                            ])
+                        ])
+                    ]),
+
+                    // Constraints
+                    React.createElement('div', { key: 'constraints', className: 'flex flex-col min-w-0' }, [
+                        React.createElement('div', { key: 'header', className: 'flex items-center justify-between mb-2' }, [
+                            React.createElement('label', { className: 'uppercase text-[12px] tracking-wide text-slate-700 font-semibold' }, 'Constraints'),
+                            React.createElement('button', {
+                                onClick: () => setShowAddForm(!showAddForm),
+                                className: 'text-xs bg-emerald-500 text-white px-2 py-1 rounded hover:bg-emerald-600 transition-colors'
+                            }, showAddForm ? 'Cancel' : '+ Add')
+                        ]),
+
+                        // Add constraint form (when active)
+                        showAddForm && React.createElement(AddConstraintForm, {
+                            key: 'addForm',
+                            onAdd: (constraint) => {
+                                setCustomConstraints(prev => [...prev, constraint]);
+                                setShowAddForm(false);
+                            },
+                            onCancel: () => setShowAddForm(false)
+                        }),
+
+                        // Constraint list
+                        React.createElement('div', { key: 'list', className: 'space-y-1 text-xs max-h-32 overflow-y-auto' }, [
+                            // Original constraints (now removable)
+                            ...(formatConstraintsList(constraints).length > 0 ? [
+                                React.createElement('div', { key: 'origLabel', className: 'text-gray-500 font-medium' }, '📊 From Benchmark:'),
+                                ...formatConstraintsList(constraints).map((t, i) => {
+                                    const isDisabled = disabledOriginalConstraints.includes(i);
+                                    return React.createElement('div', { key: `orig-${i}`, className: `flex items-center justify-between px-2 py-1 rounded pl-4 ${isDisabled ? 'bg-gray-100 text-gray-400 line-through' : 'bg-gray-50 text-gray-600'}` }, [
+                                        React.createElement('span', { key: 'text' }, t),
+                                        React.createElement('button', {
+                                            key: 'remove',
+                                            onClick: () => {
+                                                if (isDisabled) {
+                                                    // Re-enable constraint
+                                                    setDisabledOriginalConstraints(prev => prev.filter(idx => idx !== i));
+                                                } else {
+                                                    // Disable constraint
+                                                    setDisabledOriginalConstraints(prev => [...prev, i]);
+                                                }
+                                            },
+                                            className: `ml-2 rounded px-1 ${isDisabled ? 'text-green-500 hover:text-green-700 hover:bg-green-100' : 'text-red-500 hover:text-red-700 hover:bg-red-100'}`
+                                        }, isDisabled ? '↻' : '×')
+                                    ]);
+                                })
+                            ] : []),
+                            // Custom constraints (removable)
+                            ...(customConstraints.length > 0 ? [
+                                React.createElement('div', { key: 'customLabel', className: 'text-blue-700 font-medium mt-2' }, '✏️ Custom:'),
+                                ...customConstraints.map((c, i) =>
+                                    React.createElement('div', { key: `custom-${i}`, className: 'flex items-center justify-between bg-blue-100 px-2 py-1 rounded pl-4' }, [
+                                        React.createElement('span', { key: 'text' }, `${getFieldLabel(c.name)} ${c.op} ${c.value}ms`),
+                                        React.createElement('button', {
+                                            key: 'remove',
+                                            onClick: () => setCustomConstraints(prev => prev.filter((_, idx) => idx !== i)),
+                                            className: 'text-red-500 hover:text-red-700 ml-2 hover:bg-red-100 rounded px-1'
+                                        }, '×')
+                                    ])
+                                )
+                            ] : []),
+                            // Empty state
+                            (formatConstraintsList(constraints).length === 0 && customConstraints.length === 0) &&
+                                React.createElement('div', { key: 'empty', className: 'text-gray-500 italic text-center py-2' }, 'No constraints')
+                        ])
+                    ]),
+                ]),
+
+            ]);
+        }
+
+        function Legend({ dataset }) {
+            const { header, labels } = useMemo(() => getLegendValues(dataset), [dataset]);
+            return React.createElement('div', { className: 'bg-[#374151] border border-slate-600 rounded-xl p-4' }, [
+                React.createElement('h3', { key: 'h', className: 'mb-3 text-base font-semibold tracking-wide text-slate-200' }, header || 'Legend'),
+                React.createElement('div', { key: 'l', className: 'flex flex-col gap-2' }, labels.map((label, idx) => (
+                    React.createElement('div', { key: label, className: 'flex items-center gap-2 px-1 py-1 rounded-lg border border-slate-600 bg-[#1f2937] text-slate-200' }, [
+                        React.createElement('div', { key: 'c', className: 'w-3 h-3 rounded-full', style: { backgroundColor: colors[idx % colors.length] } }),
+                        React.createElement('span', { key: 't', className: 'text-sm' }, label)
+                    ])
+                )))
+            ]);
+        }
+
+        function SidebarFooter({ total }) {
+            return React.createElement('div', { className: 'mt-auto flex flex-wrap gap-2 text-slate-400 text-xs' }, [
+                React.createElement('div', { key: 'm', className: 'px-3 py-1 rounded-full bg-[#111827] border border-slate-700 text-slate-300' }, `Total Tests: ${total}`)
+            ]);
+        }
+
+        function DataTable({ dataset, onlyPareto = false, xAxis, yAxis, selectedPoint }) {
+            const filtered = useMemo(() => {
+                if (!onlyPareto) return dataset;
+                // recompute pareto based on current axes
+                if (!dataset || dataset.length === 0) return [];
+                const pts = dataset.map(d => ({
+                    x: d[xAxis],
+                    y: d[yAxis],
+                    original: d
+                }));
+                const p = getParetoPoints(pts);
+                const set = new Set(p.map(i => i.original));
+                return dataset.filter(d => set.has(d));
+            }, [dataset, onlyPareto, xAxis, yAxis]);
+
+            // Filter and order fields for display - check if any row has data for each field
+            const orderedFields = useMemo(() => {
+                const fieldOrder = ['framework', 'cmd', 'max_concurrency', 'request_rate'];
+
+                const normalizedFields = new Set();
+                filtered.forEach(item => {
+                    const original = item._original || item;
+                    Object.keys(original.config?.normalized_config || {}).forEach(key => normalizedFields.add(key));
+                });
+
+                // Add all server args dynamically
+                const serverArgFields = new Set();
+                filtered.forEach(item => {
+                    const original = item._original || item;
+                    Object.keys(original.config?.server_args || {}).forEach(key => serverArgFields.add(key));
+                });
+
+                const allPossibleFields = [...new Set([...fieldOrder, ...normalizedFields, ...serverArgFields])];
+
+                // Only include fields that have data in at least one row
+                return allPossibleFields.filter(field => {
+                    return filtered.some(row => {
+                        const value = getNestedValue(row._original || row, field);
+                        return value !== undefined && value !== null && value !== '';
+                    });
+                });
+            }, [filtered]);
+
+            // Sort rows by x-axis value (dataset already uses 1/x when needed)
+            const sortedRows = useMemo(() => {
+                const copy = [...filtered];
+                copy.sort((a, b) => {
+                    const ax = Number(a?.[xAxis] ?? 0);
+                    const bx = Number(b?.[xAxis] ?? 0);
+                    return ax - bx; // ascending
+                });
+                return copy;
+            }, [filtered, xAxis]);
+
+            // Build a stable key for row matching using numeric x/y with rounding
+            const makeKey = (x, y) => {
+                if (x == null || y == null) return null;
+                const rx = Number(x).toFixed(6);
+                const ry = Number(y).toFixed(6);
+                return `${rx}|${ry}`;
+            };
+            const selectedKey = useMemo(() => makeKey(selectedPoint?.x, selectedPoint?.y), [selectedPoint, xAxis, yAxis]);
+
+            // Scroll to selected row when it changes
+            useEffect(() => {
+                if (!selectedKey) return;
+                const idx = sortedRows.findIndex(r => makeKey(r[xAxis], r[yAxis]) === selectedKey);
+                if (idx >= 0) {
+                    const el = document.getElementById(`row-${idx}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, [selectedKey, sortedRows, xAxis, yAxis]);
+
+            function copy(text, el) {
+                navigator.clipboard.writeText(text).then(() => {
+                    if (!el) return;
+                    const prev = el.innerHTML;
+                    el.innerHTML = '<span class="text-green-600">✓ Copied!</span>';
+                    setTimeout(() => el.innerHTML = prev, 900);
+                });
+            }
+
+            return React.createElement('div', { className: 'mt-4 overflow-x-auto max-w-full' }, [
+                React.createElement('table', { key: 't', className: 'min-w-full text-sm border border-slate-200 rounded-lg overflow-hidden' }, [
+                    React.createElement('thead', { key: 'h' }, [
+                        React.createElement('tr', { key: 'r' }, orderedFields.map(f => (
+                            React.createElement('th', { key: f, className: 'text-white px-3 py-2 text-left text-xs font-semibold whitespace-nowrap', style: { background: '#67a5a1 70%' } }, getAxisLabel(f))
+                        )))
+                    ]),
+                    React.createElement('tbody', { key: 'b' }, sortedRows.map((row, idx) => (
+                        React.createElement('tr', { key: idx, id: `row-${idx}`, className: (selectedKey && makeKey(row[xAxis], row[yAxis]) === selectedKey ? 'bg-teal-100 transition-colors' : 'odd:bg-white even:bg-slate-50 transition-colors') }, orderedFields.map(f => {
+                            // Get value using nested data access for all fields
+                            const value = getNestedValue(row._original || row, f);
+                            if (f === 'cmd') {
+                                return React.createElement('td', { key: f, className: 'px-3 py-2 border-b border-slate-100 max-w-xs' }, (
+                                    React.createElement('div', { className: 'flex items-start justify-between cursor-pointer px-3 py-2 bg-slate-50 hover:bg-indigo-50 rounded-md border border-slate-200', onClick: (e) => copy(String(value), e.currentTarget), title: 'Click to copy' }, [
+                                        React.createElement('span', { key: 't', className: 'font-mono text-xs text-slate-700 break-words flex-1 leading-relaxed' }, String(value)),
+                                        React.createElement(Copy, { key: 'i', size: 14, className: 'text-slate-500 ml-2 shrink-0 mt-0.5' })
+                                    ])
+                                ));
+                            }
+                            return React.createElement('td', { key: f, className: 'px-3 py-2 border-b border-slate-100 whitespace-nowrap' }, typeof value === 'number' ? value.toFixed(2) : (value ?? ''));
+                        }))
+                    )))
+                ])
+            ]);
+        }
+
+        function App() {
+            const [xAxis, setXAxis] = useState(defaults?.xAxis || 'mean_e2e_latency_ms');
+            const [yAxis, setYAxis] = useState(defaults?.yAxis || 'output_throughput');
+            const [showLines, setShowLines] = useState(defaults?.showLines ?? true);
+            const [showPoints, setShowPoints] = useState(defaults?.showPoints ?? true);
+            const [selectedPoint, setSelectedPoint] = useState(null);
+
+            // Custom constraints state management
+            const [customConstraints, setCustomConstraints] = useState(() => {
+                try {
+                    const saved = localStorage.getItem('llm-optimizer-custom-constraints');
+                    return saved ? JSON.parse(saved) : [];
+                } catch (e) {
+                    return [];
+                }
+            });
+            const [showAddForm, setShowAddForm] = useState(false);
+
+            // Track which original constraints are disabled
+            const [disabledOriginalConstraints, setDisabledOriginalConstraints] = useState(() => {
+                try {
+                    const saved = localStorage.getItem('llm-optimizer-disabled-constraints');
+                    return saved ? JSON.parse(saved) : [];
+                } catch (e) {
+                    return [];
+                }
+            });
+
+            // Save to localStorage whenever customConstraints change
+            useEffect(() => {
+                try {
+                    localStorage.setItem('llm-optimizer-custom-constraints', JSON.stringify(customConstraints));
+                } catch (e) {
+                    console.warn('Failed to save constraints to localStorage:', e);
+                }
+            }, [customConstraints]);
+
+            // Save to localStorage whenever disabledOriginalConstraints change
+            useEffect(() => {
+                try {
+                    localStorage.setItem('llm-optimizer-disabled-constraints', JSON.stringify(disabledOriginalConstraints));
+                } catch (e) {
+                    console.warn('Failed to save disabled constraints to localStorage:', e);
+                }
+            }, [disabledOriginalConstraints]);
+
+            // Merge original and custom constraints, excluding disabled ones
+            const effectiveConstraints = useMemo(() => {
+                const original = constraints || [];
+                const custom = customConstraints || [];
+
+                // Filter out disabled original constraints
+                let enabledOriginal = [];
+                if (Array.isArray(original)) {
+                    enabledOriginal = original.filter((constraint, index) =>
+                        !disabledOriginalConstraints.includes(index)
+                    );
+                } else if (original && !disabledOriginalConstraints.includes(0)) {
+                    enabledOriginal = [original];
+                }
+
+                return [...enabledOriginal, ...custom];
+            }, [customConstraints, disabledOriginalConstraints]);
+
+            const dataset = useTransformedData(data, xAxis, yAxis);
+
+            return React.createElement('div', { className: 'flex flex-col w-screen min-h-screen' }, [
+                // Header
+                React.createElement('header', { key: 'top', className: 'bg-transparent text-slate-900' }, [
+                    React.createElement('div', { key: 'container', className: 'max-w-[1400px] mx-auto w-full px-5 py-6' }, [
+                        React.createElement('div', { key: 'titleWrap', className: 'w-full flex flex-col items-center justify-center gap-4' }, [
+                            React.createElement('div', { key: 'title', className: 'text-2xl md:text-3xl font-bold tracking-tight' }, 'LLM Optimizer')
+                        ])
+                    ])
+                ]),
+
+                // Main
+                React.createElement('main', { key: 'm', className: 'flex-1 overflow-visible max-w-full' }, [
+                    React.createElement('div', { key: 'container', className: 'max-w-[1400px] mx-auto w-full p-5 flex flex-col gap-4' }, [
+                        // Configuration Section
+                        React.createElement('section', { key: 'config', className: 'rounded-xl border border-slate-200 bg-white p-4' }, [
+                            React.createElement(Controls, { key: 'ctrl', showLines, showPoints, fieldOptions, customConstraints, setCustomConstraints, showAddForm, setShowAddForm, disabledOriginalConstraints, setDisabledOriginalConstraints, onChange: (c) => { if (c.showLines !== undefined) setShowLines(c.showLines); if (c.showPoints !== undefined) setShowPoints(c.showPoints); }, metadata })
+                        ]),
+
+                        // Chart Section
+                        React.createElement('section', { key: 'chart', className: 'rounded-xl border border-slate-200 bg-white p-4' }, [
+                            React.createElement('div', { key: 'chartWrap', className: 'w-full relative' }, [
+                                // Compact controls positioned over chart
+                                React.createElement('div', { key: 'chartControls', className: 'absolute top-2 left-2 right-2 z-10 flex justify-between items-center' }, [
+                                    React.createElement('div', { key: 'axisSelectors', className: 'flex gap-3 items-center text-sm bg-white/90 backdrop-blur-sm rounded px-2 py-1 border border-slate-200' }, [
+                                        React.createElement('div', { key: 'x', className: 'flex items-center gap-1' }, [
+                                            React.createElement('label', { className: 'text-xs font-medium text-slate-600' }, 'X-axis:'),
+                                            React.createElement('select', { value: xAxis, onChange: e => setXAxis(e.target.value), className: 'text-xs px-1 py-0.5 rounded border border-slate-300 bg-white' }, createSelectOptions('xAxis', fieldOptions))
+                                        ]),
+                                        React.createElement('div', { key: 'y', className: 'flex items-center gap-1' }, [
+                                            React.createElement('label', { className: 'text-xs font-medium text-slate-600' }, 'Y-axis:'),
+                                            React.createElement('select', { value: yAxis, onChange: e => setYAxis(e.target.value), className: 'text-xs px-1 py-0.5 rounded border border-slate-300 bg-white' }, createSelectOptions('yAxis', fieldOptions))
+                                        ])
+                                    ]),
+                                    React.createElement('div', { key: 'legendExplanation', className: 'flex items-center gap-3 text-xs text-slate-600 bg-white/90 backdrop-blur-sm rounded px-2 py-1 border border-slate-200', title: 'Pareto points lie on the frontier where no point can improve one objective without worsening the other.' }, [
+                                        React.createElement('div', { key: 'lg1', className: 'flex items-center gap-1' }, [
+                                            React.createElement('span', { key: 'dot1', className: 'inline-block w-2 h-2 rotate-45', style: { backgroundColor: '#94a3b8', border: '1px solid #334155' } }),
+                                            React.createElement('span', { key: 'txt1' }, 'Diamond: Pareto')
+                                        ]),
+                                        React.createElement('div', { key: 'lg2', className: 'flex items-center gap-1' }, [
+                                            React.createElement('span', { key: 'dot2', className: 'inline-block text-sm leading-none text-slate-500' }, '★'),
+                                            React.createElement('span', { key: 'txt2' }, 'Star: Pareto + constraints')
+                                        ]),
+                                        React.createElement('div', { key: 'lg3', className: 'flex items-center gap-1' }, [
+                                            React.createElement('span', { key: 'dot3', className: 'inline-block w-2 h-2 rounded-full', style: { backgroundColor: '#94a3b8' } }),
+                                            React.createElement('span', { key: 'txt3' }, 'Circle: Other')
+                                        ])
+                                    ])
+                                ]),
+                                React.createElement(Chart, { key: 'c', dataset, xAxis, yAxis, showLines, showPoints, constraints: effectiveConstraints, onSelect: (pt) => setSelectedPoint(pt) })
+                            ])
+                        ]),
+                        React.createElement('section', { key: 'best', className: 'rounded-xl border border-slate-200 bg-white p-4' }, [
+                            React.createElement('h2', { key: 'title', className: 'text-sm font-semibold mb-2' }, 'Best Configuration'),
+                            React.createElement('div', { key: 'config', className: 'space-y-3' }, (() => {
+                                // Determine if we have any active constraints (benchmark + custom)
+                                const hasActiveConstraints = effectiveConstraints && effectiveConstraints.length > 0;
+
+                                // Determine which throughput type to show based on Y-axis
+                                const isInputThroughput = yAxis === 'input_throughput';
+                                const throughputField = isInputThroughput ? 'input_throughput' : 'output_throughput';
+
+                                // Calculate best configuration dynamically based on current constraints
+                                // Use original data, not transformed data
+                                const selectedConfig = calculateBestConfig(data, effectiveConstraints, throughputField);
+
+                                if (!selectedConfig) {
+                                    return React.createElement('div', { className: 'text-sm text-slate-500' }, 'No valid configuration found');
+                                }
+
+                                const throughputType = isInputThroughput ? 'Input Throughput' : 'Output Throughput';
+                                const constraintLabel = hasActiveConstraints ? 'With Constraints' : 'Unconstrained';
+
+                                return React.createElement('div', { key: 'single-config' }, [
+                                    React.createElement('div', { key: 'config-card', className: 'border border-slate-200 rounded-lg p-3' }, [
+                                        React.createElement('div', { key: 'details', className: 'flex justify-between items-center text-xs text-slate-600 mb-2' }, [
+                                            React.createElement('span', { key: 'throughput', className: 'font-medium' }, `${throughputType}: ${(selectedConfig.throughput || 0).toFixed(1)} tok/s`),
+                                            React.createElement('span', { key: 'config-details' }, (() => {
+                                                const parts = [];
+
+                                                // Get client args from nested data
+                                                const originalData = selectedConfig.originalData;
+                                                const requestRate = originalData?.config?.client_args?.request_rate;
+                                                const maxConcurrency = originalData?.config?.client_args?.max_concurrency;
+
+                                                // Get server args directly from config
+                                                const serverArgs = selectedConfig.config?.server_args || {};
+
+                                                // Add constraint label first
+                                                const combinedParts = [constraintLabel];
+
+                                                // Add client args
+                                                if (maxConcurrency !== undefined) {
+                                                    combinedParts.push(`max_concurrency: ${maxConcurrency}`);
+                                                }
+
+                                                if (requestRate !== undefined && requestRate !== Infinity) {
+                                                    combinedParts.push(`request_rate: ${requestRate}`);
+                                                }
+
+                                                // Don't add server args to Unconstrained section
+
+                                                return combinedParts.join(' • ');
+                                            })())
+                                        ]),
+                                        selectedConfig.cmd && React.createElement('div', { key: 'cmd-wrapper', className: 'relative' }, [
+                                            React.createElement('pre', { key: 'cmd', className: 'p-2 bg-slate-50 rounded text-xs overflow-x-auto' },
+                                                React.createElement('code', {}, selectedConfig.cmd)
+                                            ),
+                                            React.createElement('button', {
+                                                key: 'copy',
+                                                className: 'absolute top-1 right-1 p-1 rounded hover:bg-slate-200',
+                                                onClick: () => navigator.clipboard.writeText(selectedConfig.cmd),
+                                                title: 'Copy to clipboard'
+                                            }, React.createElement(Copy, { size: 12 }))
+                                        ])
+                                    ])
+                                ]);
+                            })())
+                        ]),
+                        React.createElement('div', { key: 'tableWrap', className: 'overflow-visible' }, [
+                            React.createElement('div', { key: 'tableScroller', className: 'overflow-visible' }, [
+                                React.createElement(DataTable, { key: 'tbl', dataset, onlyPareto: true, xAxis, yAxis, selectedPoint })
+                            ])
+                        ])
+                    ])
+                ])
+            ]);
+        }
+
+        createRoot(document.getElementById('root')).render(React.createElement(App));
+    </script>
+</body>
+</html>

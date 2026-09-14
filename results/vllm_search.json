@@ -1,0 +1,155 @@
+{
+  "metadata": {
+    "gpu_type": "H200",
+    "gpu_count": 1,
+    "model_tag": "Qwen/Qwen3.5-0.8B",
+    "total_tests": 1,
+    "constraints": [],
+    "input_len": 32,
+    "output_len": 16
+  },
+  "best_configurations": {
+    "best_input_throughput": {
+      "throughput": 887.1024650286814,
+      "config": {
+        "framework": "vllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "max_concurrency": 8,
+          "num_prompts": 10
+        },
+        "server_args": {
+          "tensor_parallel_size": 1
+        },
+        "server_cmd_args": [
+          "--tensor-parallel-size=1"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_concurrency": 8,
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "num_prompts": 10,
+          "input_length": 32,
+          "output_length": 16,
+          "world_size": 1
+        }
+      },
+      "cmd": "vllm serve Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 8000 --tensor-parallel-size=1"
+    },
+    "best_output_throughput": {
+      "throughput": 720.2968733138866,
+      "config": {
+        "framework": "vllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "max_concurrency": 8,
+          "num_prompts": 10
+        },
+        "server_args": {
+          "tensor_parallel_size": 1
+        },
+        "server_cmd_args": [
+          "--tensor-parallel-size=1"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_concurrency": 8,
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "num_prompts": 10,
+          "input_length": 32,
+          "output_length": 16,
+          "world_size": 1
+        }
+      },
+      "cmd": "vllm serve Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 8000 --tensor-parallel-size=1"
+    },
+    "best_input_throughput_constrained": null,
+    "best_output_throughput_constrained": null
+  },
+  "test_results": [
+    {
+      "config": {
+        "framework": "vllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "max_concurrency": 8,
+          "num_prompts": 10
+        },
+        "server_args": {
+          "tensor_parallel_size": 1
+        },
+        "server_cmd_args": [
+          "--tensor-parallel-size=1"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_concurrency": 8,
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "num_prompts": 10,
+          "input_length": 32,
+          "output_length": 16,
+          "world_size": 1
+        }
+      },
+      "results": {
+        "backend": "vllm",
+        "dataset_name": "random",
+        "request_rate": null,
+        "max_concurrency": 8,
+        "sharegpt_output_len": null,
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "random_range_ratio": null,
+        "duration": 0.1318900629999007,
+        "completed": 10,
+        "total_input_tokens": 117,
+        "total_output_tokens": 95,
+        "total_output_tokens_retokenized": 95,
+        "request_throughput": 75.82072350672492,
+        "input_throughput": 887.1024650286814,
+        "output_throughput": 720.2968733138866,
+        "total_throughput": 1607.3993383425682,
+        "mean_e2e_latency_ms": 86.76562460000241,
+        "median_e2e_latency_ms": 88.8440814999285,
+        "std_e2e_latency_ms": 24.44841050130815,
+        "p95_e2e_latency_ms": 115.15482340030303,
+        "p99_e2e_latency_ms": 117.13322788039022,
+        "mean_ttft_ms": 49.04643869999745,
+        "median_ttft_ms": 55.69885949989839,
+        "std_ttft_ms": 13.500779790380347,
+        "p95_ttft_ms": 56.38592650004739,
+        "p99_ttft_ms": 56.51146209997478,
+        "mean_tpot_ms": 4.844450426253829,
+        "median_tpot_ms": 4.881713727255291,
+        "std_tpot_ms": 1.4311379984852564,
+        "p95_tpot_ms": 6.861802070015983,
+        "p99_tpot_ms": 7.146747814018454,
+        "mean_itl_ms": 4.436481411775116,
+        "median_itl_ms": 2.497498000138876,
+        "std_itl_ms": 5.462371417953622,
+        "p95_itl_ms": 21.885937199840555,
+        "p99_itl_ms": 21.88949571989724,
+        "concurrency": 6.5786324326850725,
+        "accept_length": null
+      },
+      "cmd": "vllm serve Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 8000 --tensor-parallel-size=1",
+      "constraints": [],
+      "metadata": {
+        "gpu_type": "H200",
+        "gpu_count": 1,
+        "model_tag": "Qwen/Qwen3.5-0.8B",
+        "input_tokens": 32,
+        "output_tokens": 16
+      }
+    }
+  ]
+}

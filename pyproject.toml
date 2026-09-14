@@ -30,6 +30,9 @@ dev = [
     "ruff",
     "mypy",
 ]
+ai-configurator = [
+    "aisimulate==0.1.0.dev2",
+]
 
 [tool.ruff]
 target-version = "py39"

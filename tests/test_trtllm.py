@@ -209,6 +209,7 @@ def test_estimator_generates_native_trtllm_tuning_parameters():
 
 def test_visualization_loads_and_normalizes_multiple_framework_files(tmp_path):
     vllm_file = tmp_path / "vllm.json"
+    sglang_file = tmp_path / "sglang.json"
     trt_file = tmp_path / "trtllm.json"
     vllm_file.write_text(
         json.dumps(
@@ -220,6 +221,17 @@ def test_visualization_loads_and_normalizes_multiple_framework_files(tmp_path):
                         "vllm serve model",
                         {"tensor_parallel_size": 2},
                     )
+                ],
+            }
+        )
+    )
+    sglang_file.write_text(
+        json.dumps(
+            {
+                "metadata": {"model_tag": "model", "total_tests": 1},
+                "best_configurations": {},
+                "test_results": [
+                    _result("python -m sglang.launch_server", {"tp_size": 2})
                 ],
             }
         )
@@ -244,25 +256,38 @@ def test_visualization_loads_and_normalizes_multiple_framework_files(tmp_path):
     )
     optimizer = ParetoLLMOptimizer(str(config_path))
 
-    loaded = optimizer.load_benchmark_data(f"{vllm_file},{trt_file}")
+    loaded = optimizer.load_benchmark_data(f"{vllm_file},{sglang_file},{trt_file}")
 
-    assert len(loaded["data"]) == 2
+    assert len(loaded["data"]) == 3
     assert {item["config"]["framework"] for item in loaded["data"]} == {
         "vllm",
+        "sglang",
         "trtllm",
     }
     assert all(
         item["config"]["normalized_config"]["tensor_parallel_size"] == 2
         for item in loaded["data"]
     )
-    assert loaded["metadata"]["total_tests"] == 2
+    assert loaded["metadata"]["total_tests"] == 3
 
     dashboard = tmp_path / "comparison.html"
-    optimizer.generate_dashboard(f"{vllm_file},{trt_file}", output_file=str(dashboard))
+    optimizer.generate_dashboard(
+        f"{vllm_file},{sglang_file},{trt_file}", output_file=str(dashboard)
+    )
     html = dashboard.read_text()
     assert '"framework": "vllm"' in html
+    assert '"framework": "sglang"' in html
     assert '"framework": "trtllm"' in html
     assert '"tensor_parallel_size": 2' in html
+    assert '"colorBy": "framework"' in html
+    assert "const frameworks = Array.from" in html
+    assert "legend: { data: frameworks" in html
+    assert "symbol: group.symbol" in html
+    assert "symbol: 'diamond'" in html
+    assert "const STAR_SYMBOL = 'path://" in html
+    assert "symbol: STAR_SYMBOL" in html
+    assert "color: frameworks.map" in html
+    assert "Request Completion Rate per User" in html
 
 
 def test_wait_for_server_stops_retrying_when_process_exits():

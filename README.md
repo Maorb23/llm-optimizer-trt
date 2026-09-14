@@ -255,8 +255,63 @@ also accepts the documented long aliases such as `tensor_parallel_size`.
 
 Known limitations: model, quantization, precision, and GPU-architecture support
 are determined by the installed TensorRT-LLM release. Multi-node and
-prefill/decode-disaggregated topologies are outside the native backend's initial
-scope. Those topologies are candidates for a future Dynamo deployment mode.
+prefill/decode-disaggregated topologies are outside the native backend's scope.
+Use the Dynamo configuration pipeline for multi-node deployment validation.
+
+## Validate NVIDIA Dynamo deployments
+
+Install the optional AI Configurator integration with Python 3.11 through 3.13:
+
+```bash
+pip install -e '.[ai-configurator]'
+```
+
+The two Dynamo commands have separate responsibilities:
+
+- `dynamo-check` expands a native argument grid, validates it against the
+  Kubernetes topology, and generates deterministic DGD manifests.
+- `dynamo-optimize` runs NVIDIA AI Configurator's support check and GPU-free
+  offline sizing sweep. It ranks aggregated and disaggregated layouts and
+  writes CSV reports, Dynamo manifests, and AIPerf validation artifacts.
+
+Batch settings are reported as distributed-worker limits because vLLM,
+SGLang, and TRT-LLM use continuous batching; they are not independent per-node
+batch sizes.
+
+```bash
+llm-optimizer dynamo-check \
+  --framework vllm \
+  --model meta-llama/Llama-3.1-70B-Instruct \
+  --node-count 2 \
+  --gpus-per-node 4 \
+  --server-args "tensor_parallel_size=4;pipeline_parallel_size=2;max_num_seqs=[32,64];max_num_batched_tokens=8192" \
+  --output results/dynamo-vllm-check.json
+```
+
+```bash
+llm-optimizer dynamo-optimize \
+  --framework vllm \
+  --model meta-llama/Llama-3.1-70B-Instruct \
+  --node-count 2 \
+  --gpus-per-node 4 \
+  --gpu-system h100_sxm \
+  --backend-version 0.26.0 \
+  --input-len 4000 \
+  --output-len 500 \
+  --ttft 600 \
+  --tpot 20 \
+  --output results/dynamo-vllm-optimized.json
+```
+
+The GPU system is an analytical hardware model; AI Configurator does not
+allocate or require local GPUs. The node and GPU counts define its total GPU
+budget.
+
+Any explicitly supplied server-argument grid must satisfy
+`TP × PP × CP = node-count × GPUs-per-node`. Add `--check-cluster` to pass each
+generated manifest to the active Kubernetes API with
+`kubectl apply --dry-run=server`; this validates the installed Dynamo CRD and
+cluster-side admission rules without deploying anything.
 
 ### Client parameters
 - `max_concurrency`: Maximum concurrent requests

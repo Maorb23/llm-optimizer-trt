@@ -1,0 +1,233 @@
+{
+  "metadata": {
+    "gpu_type": "H200",
+    "gpu_count": 1,
+    "model_tag": "Qwen/Qwen3.5-0.8B",
+    "total_tests": 2,
+    "constraints": [],
+    "input_len": 32,
+    "output_len": 16
+  },
+  "best_configurations": {
+    "best_input_throughput": {
+      "throughput": 289.9810498872597,
+      "config": {
+        "framework": "sglang",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "max_concurrency": 2,
+          "num_prompts": 10
+        },
+        "server_args": {
+          "tp_size": 1
+        },
+        "server_cmd_args": [
+          "--tp-size=1"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_concurrency": 2,
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "num_prompts": 10,
+          "input_length": 32,
+          "output_length": 16,
+          "world_size": 1
+        }
+      },
+      "cmd": "python3 -m sglang.launch_server --model-path Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 30000 --tp-size=1"
+    },
+    "best_output_throughput": {
+      "throughput": 235.45469862640746,
+      "config": {
+        "framework": "sglang",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "max_concurrency": 2,
+          "num_prompts": 10
+        },
+        "server_args": {
+          "tp_size": 1
+        },
+        "server_cmd_args": [
+          "--tp-size=1"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_concurrency": 2,
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "num_prompts": 10,
+          "input_length": 32,
+          "output_length": 16,
+          "world_size": 1
+        }
+      },
+      "cmd": "python3 -m sglang.launch_server --model-path Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 30000 --tp-size=1"
+    },
+    "best_input_throughput_constrained": null,
+    "best_output_throughput_constrained": null
+  },
+  "test_results": [
+    {
+      "config": {
+        "framework": "sglang",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "max_concurrency": 2,
+          "num_prompts": 10
+        },
+        "server_args": {
+          "tp_size": 1
+        },
+        "server_cmd_args": [
+          "--tp-size=1"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_concurrency": 2,
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "num_prompts": 10,
+          "input_length": 32,
+          "output_length": 16,
+          "world_size": 1
+        }
+      },
+      "results": {
+        "backend": "vllm",
+        "dataset_name": "random",
+        "request_rate": null,
+        "max_concurrency": 2,
+        "sharegpt_output_len": null,
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "random_range_ratio": null,
+        "duration": 0.40347464099977515,
+        "completed": 10,
+        "total_input_tokens": 117,
+        "total_output_tokens": 95,
+        "total_output_tokens_retokenized": 95,
+        "request_throughput": 24.784705118569207,
+        "input_throughput": 289.9810498872597,
+        "output_throughput": 235.45469862640746,
+        "total_throughput": 525.4357485136671,
+        "mean_e2e_latency_ms": 78.66248689997519,
+        "median_e2e_latency_ms": 65.24857349995727,
+        "std_e2e_latency_ms": 45.24991536758476,
+        "p95_e2e_latency_ms": 163.67954965000987,
+        "p99_e2e_latency_ms": 173.3349379299989,
+        "mean_ttft_ms": 54.42637099990861,
+        "median_ttft_ms": 38.64464799994494,
+        "std_ttft_ms": 41.644131844245756,
+        "p95_ttft_ms": 136.33306145000006,
+        "p99_ttft_ms": 136.47813389008206,
+        "mean_tpot_ms": 2.7653582245065103,
+        "median_tpot_ms": 2.2322957499909535,
+        "std_tpot_ms": 1.1415816731487993,
+        "p95_tpot_ms": 4.62017517335577,
+        "p99_tpot_ms": 5.207806945796215,
+        "mean_itl_ms": 2.850471529408798,
+        "median_itl_ms": 1.6932600001382525,
+        "std_itl_ms": 4.4396886862552405,
+        "p95_itl_ms": 4.616486000031726,
+        "p99_itl_ms": 20.627862800083626,
+        "concurrency": 1.9496265417091982,
+        "accept_length": null
+      },
+      "cmd": "python3 -m sglang.launch_server --model-path Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 30000 --tp-size=1",
+      "constraints": [],
+      "metadata": {
+        "gpu_type": "H200",
+        "gpu_count": 1,
+        "model_tag": "Qwen/Qwen3.5-0.8B",
+        "input_tokens": 32,
+        "output_tokens": 16
+      }
+    },
+    {
+      "config": {
+        "framework": "sglang",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "max_concurrency": 8,
+          "num_prompts": 10
+        },
+        "server_args": {
+          "tp_size": 1
+        },
+        "server_cmd_args": [
+          "--tp-size=1"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_concurrency": 8,
+          "random_input_len": 32,
+          "random_output_len": 16,
+          "num_prompts": 10,
+          "input_length": 32,
+          "output_length": 16,
+          "world_size": 1
+        }
+      },
+      "results": {
+        "backend": "vllm",
+        "dataset_name": "random",
+        "request_rate": null,
+        "max_concurrency": 8,
+        "sharegpt_output_len": null,
+        "random_input_len": 32,
+        "random_output_len": 16,
+        "random_range_ratio": null,
+        "duration": 2.930882303999624,
+        "completed": 10,
+        "total_input_tokens": 117,
+        "total_output_tokens": 95,
+        "total_output_tokens_retokenized": 95,
+        "request_throughput": 3.4119418532615637,
+        "input_throughput": 39.919719683160295,
+        "output_throughput": 32.41344760598486,
+        "total_throughput": 72.33316728914515,
+        "mean_e2e_latency_ms": 2329.0049638999335,
+        "median_e2e_latency_ms": 2887.3900995001804,
+        "std_e2e_latency_ms": 1130.5007960939506,
+        "p95_e2e_latency_ms": 2920.5848509997622,
+        "p99_e2e_latency_ms": 2923.0381069997156,
+        "mean_ttft_ms": 2280.6582232999517,
+        "median_ttft_ms": 2843.2358270001714,
+        "std_ttft_ms": 1124.5385808120575,
+        "p95_ttft_ms": 2843.80205704972,
+        "p99_ttft_ms": 2843.8212562096805,
+        "mean_tpot_ms": 6.002964208799553,
+        "median_tpot_ms": 5.963473249948947,
+        "std_tpot_ms": 1.9435200132122512,
+        "p95_tpot_ms": 8.731756780025535,
+        "p99_tpot_ms": 9.696895756051163,
+        "mean_itl_ms": 5.687163988236802,
+        "median_itl_ms": 2.1102430000610184,
+        "std_itl_ms": 8.688323795324738,
+        "p95_itl_ms": 31.502800199996273,
+        "p99_itl_ms": 31.519887639879013,
+        "concurrency": 7.946429512784121,
+        "accept_length": null
+      },
+      "cmd": "python3 -m sglang.launch_server --model-path Qwen/Qwen3.5-0.8B --host 127.0.0.1 --port 30000 --tp-size=1",
+      "constraints": [],
+      "metadata": {
+        "gpu_type": "H200",
+        "gpu_count": 1,
+        "model_tag": "Qwen/Qwen3.5-0.8B",
+        "input_tokens": 32,
+        "output_tokens": 16
+      }
+    }
+  ]
+}

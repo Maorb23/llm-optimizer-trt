@@ -43,6 +43,7 @@
             '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe',
             '#00f2fe', '#43e97b', '#38f9d7', '#fa709a', '#fee140'
         ];
+        const STAR_SYMBOL = 'path://M0,-10 L2.35,-3.24 L9.51,-3.09 L3.8,1.24 L5.88,8.09 L0,4 L-5.88,8.09 L-3.8,1.24 L-9.51,-3.09 L-2.35,-3.24 Z';
 
         // Get constraint field options from config
         function getConstraintFieldOptions() {
@@ -505,7 +506,7 @@
                         const t = {
                             [xAxis]: xVal,
                             [yAxis]: yVal,
-                            framework: getNestedValue(p, 'framework'),
+                            framework: getNestedValue(p, 'config.framework'),
                             _original: p
                         };
 
@@ -535,10 +536,18 @@
                 const pareto = getParetoPoints(pts);
                 const paretoSet = new Set(pareto.map(p => p.original));
                 const paretoData = dataset.filter(d => paretoSet.has(d));
-                const nonParetoData = dataset.filter(d => !paretoSet.has(d));
+                const frameworks = Array.from(
+                    new Set(dataset.map(d => d.framework || 'unknown'))
+                ).sort();
+                const frameworkColors = new Map(
+                    frameworks.map((framework, index) => [
+                        framework,
+                        colors[index % colors.length]
+                    ])
+                );
 
                 const series = [];
-            if (showLines && paretoData.length > 1) {
+                if (showLines && paretoData.length > 1) {
                     const sorted = [...paretoData].sort((a, b) => a[xAxis] - b[xAxis]);
                     series.push({
                         type: 'line', name: 'Pareto front', smooth: 0.2, symbol: 'none',
@@ -550,72 +559,87 @@
                     });
                 }
                 if (showPoints) {
-                    if (paretoData.length) {
-                        const withC = paretoData.map(d => ({ d, ok: checkConstraints(d._original, dynamicConstraints) }));
-                        const sat = withC.filter(p => p.ok).map(({ d }) => d);
-                        const uns = withC.filter(p => !p.ok).map(({ d }) => d);
-                        if (sat.length) series.push({
-                            type: 'scatter', name: 'Pareto + Constraints', symbol: 'circle', symbolSize: 13,
-                            zlevel: 3,
-                            itemStyle: { color: '#10b981', borderColor: '#a7f3d0', borderWidth: 2 },
-                            emphasis: { scale: 1.15, focus: 'series' },
-                            tooltip: {
-                                trigger: 'item',
-                                backgroundColor: 'rgba(0,0,0,0)',
-                                borderWidth: 0,
-                                padding: 0,
-                                extraCssText: 'background: linear-gradient(180deg, #22c55e 0%, #065f46 85%, #000000 100%); border-radius: 10px; padding: 12px; color: #ffffff; word-wrap: break-word; white-space: normal;',
-                                formatter: (p) => {
-                                    const d = p.data?.__row;
-                                    const txt = d ? generateHoverText(d._original || d) : '';
-                                    const title = '<span style=\'color:#dcfce7;font-weight:800\'>Pareto ✓ (constraints)</span>';
-                                    return `<div style=\'color:#ffffff;max-width:360px;letter-spacing:.2px;word-wrap:break-word;white-space:normal;\'>${title}<div style=\'margin-top:8px;\'>${txt}</div></div>`;
-                                }
+                    frameworks.forEach(framework => {
+                        const color = frameworkColors.get(framework);
+                        const frameworkPoints = dataset.filter(
+                            d => (d.framework || 'unknown') === framework
+                        );
+                        const pointGroups = [
+                            {
+                                status: 'Other',
+                                symbol: 'circle',
+                                symbolSize: 10,
+                                itemStyle: {
+                                    color,
+                                    borderColor: '#ffffff',
+                                    borderWidth: 1,
+                                    opacity: 0.72,
+                                },
+                                matches: d => !paretoSet.has(d),
                             },
-                            z: 3,
-                            data: sat.map(d => ({ value: [d[xAxis], d[yAxis]], __row: d, tooltip: { formatter: () => generateHoverText(d._original || d) } }))
+                            {
+                                status: 'Pareto',
+                                symbol: 'diamond',
+                                symbolSize: 13,
+                                itemStyle: {
+                                    color,
+                                    borderColor: '#0f172a',
+                                    borderWidth: 3,
+                                    opacity: 1,
+                                },
+                                matches: d => paretoSet.has(d) && !checkConstraints(
+                                    d._original,
+                                    dynamicConstraints
+                                ),
+                            },
+                            {
+                                status: 'Pareto + constraints',
+                                symbol: STAR_SYMBOL,
+                                symbolSize: 13,
+                                itemStyle: {
+                                    color,
+                                    borderColor: '#0f172a',
+                                    borderWidth: 3,
+                                    opacity: 1,
+                                },
+                                matches: d => paretoSet.has(d) && checkConstraints(
+                                    d._original,
+                                    dynamicConstraints
+                                ),
+                            },
+                        ];
+
+                        pointGroups.forEach(group => {
+                            const points = frameworkPoints
+                                .filter(group.matches)
+                                .map(d => ({ value: [d[xAxis], d[yAxis]], __row: d }));
+                            if (points.length === 0) return;
+                            series.push({
+                                type: 'scatter',
+                                name: framework,
+                                symbol: group.symbol,
+                                symbolSize: group.symbolSize,
+                                itemStyle: group.itemStyle,
+                                emphasis: { scale: 1.12, focus: 'series' },
+                                tooltip: {
+                                    formatter: params => (
+                                        `<b>${group.status}</b><br>${generateHoverText(
+                                            params.data.__row._original || params.data.__row
+                                        )}`
+                                    ),
+                                },
+                                z: 2,
+                                data: points,
+                            });
                         });
-                        if (uns.length) series.push({
-                            type: 'scatter', name: 'Pareto', symbolSize: 13,
-                            itemStyle: { color: '#0284c7', borderColor: '#fff', borderWidth: 2 },
-                            emphasis: { scale: 1.05, focus: 'series' },
-                            tooltip: {
-                                trigger: 'item',
-                                backgroundColor: 'rgba(0,0,0,0)',
-                                borderWidth: 0,
-                                padding: 0,
-                                extraCssText: 'background: linear-gradient(180deg, #0ea5e9 0%, #0369a1 35%, #000000 100%); border-radius: 10px; padding: 12px; color: #ffffff; word-wrap: break-word; white-space: normal;',
-                                formatter: (p) => {
-                                    const d = p.data?.__row;
-                                    const txt = d ? generateHoverText(d._original || d) : '';
-                                    const title = '<span style=\'color:#eafff7;font-weight:800\'>Pareto</span>';
-                                    return `<div style=\'color:#ffffff;max-width:360px;letter-spacing:.2px;word-wrap:break-word;white-space:normal;\'>${title}<div style=\'margin-top:8px;\'>${txt}</div></div>`;
-                                }
-                            },
-                            z: 2,
-                            data: uns.map(d => ({ value: [d[xAxis], d[yAxis]], __row: d, tooltip: { formatter: () => generateHoverText(d._original || d) } }))
-                        });
-                    }
-                    if (nonParetoData.length) series.push({
-                        type: 'scatter', name: 'Others', symbolSize: 10,
-                        itemStyle: { color: '#94a3b8', borderColor: '#64748b', borderWidth: 1 },
-                        emphasis: { scale: 1.05, focus: 'series' },
-                                                    tooltip: {
-                                trigger: 'item',
-                                backgroundColor: 'rgba(0,0,0,0)',
-                                borderWidth: 0,
-                                padding: 0,
-                                extraCssText: 'background: linear-gradient(180deg, #9ca3af 0%, #374151 90%, #1F2937 100%);border-radius: 10px; padding: 12px; color: #ffffff; word-wrap: break-word; white-space: normal;',
-                                formatter: (p) => { const d = p.data?.__row; const txt = d ? generateHoverText(d._original || d) : ''; const label = '<span style=\'color:#ffffff;font-weight:700\'>Non‑Pareto</span>'; return `<div style=\'color:#ffffff;max-width:320px;word-wrap:break-word;white-space:normal;\'>${label}<div style=\'margin-top:6px;\'>${txt}</div></div>`; }
-                            },
-                        z: 1,
-                        data: nonParetoData.map(d => ({ value: [d[xAxis], d[yAxis]], __row: d, tooltip: { formatter: () => generateHoverText(d._original || d) } }))
                     });
                 }
 
                 const option = {
                     backgroundColor: 'transparent',
-                    grid: { left: 70, right: 40, top: 50, bottom: 50 },
+                    color: frameworks.map(framework => frameworkColors.get(framework)),
+                    grid: { left: 70, right: 40, top: 80, bottom: 50 },
+                    legend: { data: frameworks, top: 38 },
                     xAxis: { name: getXAxisLabel(xAxis), nameLocation: 'middle', nameGap: 35, type: 'value', axisLabel: { color: '#000' }, nameTextStyle: { color: '#000' }, axisLine: { lineStyle: { color: '#000' } }, splitLine: { lineStyle: { color: '#e5e7eb' } } },
                     yAxis: { name: getYAxisLabel(yAxis), nameLocation: 'middle', nameGap: 45, type: 'value', axisLabel: { color: '#000' }, nameTextStyle: { color: '#000' }, axisLine: { lineStyle: { color: '#000' } }, splitLine: { lineStyle: { color: '#e5e7eb' } } },
                     tooltip: { trigger: 'item', backgroundColor: 'rgba(2,6,23,0.96)', textStyle: { color: '#ecfeff' }, borderWidth: 0, confine: true, transitionDuration: 0.05 },
@@ -1025,16 +1049,16 @@
                                     ]),
                                     React.createElement('div', { key: 'legendExplanation', className: 'flex items-center gap-3 text-xs text-slate-600 bg-white/90 backdrop-blur-sm rounded px-2 py-1 border border-slate-200', title: 'Pareto points lie on the frontier where no point can improve one objective without worsening the other.' }, [
                                         React.createElement('div', { key: 'lg1', className: 'flex items-center gap-1' }, [
-                                            React.createElement('span', { key: 'dot1', className: 'inline-block w-2 h-2 rounded-full', style: { backgroundColor: '#0284c7', border: '1px solid #ffffff' } }),
-                                            React.createElement('span', { key: 'txt1' }, 'Pareto')
+                                            React.createElement('span', { key: 'dot1', className: 'inline-block w-2 h-2 rotate-45', style: { backgroundColor: '#94a3b8', border: '1px solid #334155' } }),
+                                            React.createElement('span', { key: 'txt1' }, 'Diamond: Pareto')
                                         ]),
                                         React.createElement('div', { key: 'lg2', className: 'flex items-center gap-1' }, [
-                                            React.createElement('span', { key: 'dot2', className: 'inline-block w-2 h-2 rounded-full', style: { backgroundColor: '#10b981' } }),
-                                            React.createElement('span', { key: 'txt2' }, 'Pareto + constraints')
+                                            React.createElement('span', { key: 'dot2', className: 'inline-block text-sm leading-none text-slate-500' }, '★'),
+                                            React.createElement('span', { key: 'txt2' }, 'Star: Pareto + constraints')
                                         ]),
                                         React.createElement('div', { key: 'lg3', className: 'flex items-center gap-1' }, [
                                             React.createElement('span', { key: 'dot3', className: 'inline-block w-2 h-2 rounded-full', style: { backgroundColor: '#94a3b8' } }),
-                                            React.createElement('span', { key: 'txt3' }, 'Others')
+                                            React.createElement('span', { key: 'txt3' }, 'Circle: Other')
                                         ])
                                     ])
                                 ]),
