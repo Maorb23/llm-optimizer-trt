@@ -1,0 +1,31 @@
+{
+  "mix_step": {
+    "context_attention (scaled)": "mixed",
+    "context_embedding": "empirical",
+    "context_embedding_ar": "empirical",
+    "context_full_act_gate": "empirical",
+    "context_full_ar": "empirical",
+    "context_full_attn_norm": "empirical",
+    "context_full_ffn2_gemm": "silicon",
+    "context_full_ffn_ar": "empirical",
+    "context_full_ffn_norm": "empirical",
+    "context_full_gate_ffn1_gemm": "silicon",
+    "context_gdn_act_gate": "empirical",
+    "context_gdn_ar": "empirical",
+    "context_gdn_conv1d": "silicon",
+    "context_gdn_ffn2_gemm": "silicon",
+    "context_gdn_ffn_ar": "empirical",
+    "context_gdn_ffn_norm": "empirical",
+    "context_gdn_gate_ffn1_gemm": "silicon",
+    "context_gdn_in_proj_ba_gemm": "silicon",
+    "context_gdn_in_proj_gemm": "silicon",
+    "context_gdn_norm": "empirical",
+    "context_gdn_out_proj_gemm": "silicon",
+    "context_gdn_scan": "silicon",
+    "context_logits_gemm": "silicon",
+    "context_p2p": "silicon",
+    "context_proj_gemm": "silicon",
+    "context_qkv_gemm": "silicon",
+    "generation_attention": "silicon"
+  }
+}

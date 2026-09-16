@@ -1,0 +1,6 @@
+#!/home/ubuntu/llm-optimizer-trt/.venv-sglang/bin/python
+import sys
+from gguf.scripts.gguf_set_metadata import main
+if __name__ == '__main__':
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
+    sys.exit(main())

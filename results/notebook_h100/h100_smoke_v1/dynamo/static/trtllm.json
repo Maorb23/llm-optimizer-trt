@@ -1,0 +1,220 @@
+{
+  "configurations": [
+    {
+      "batch_parameters": {
+        "max_batch_size": 16,
+        "max_num_tokens": 8192
+      },
+      "cluster_gpu_count": 1,
+      "errors": [],
+      "index": 1,
+      "manifest": {
+        "apiVersion": "nvidia.com/v1beta1",
+        "kind": "DynamoGraphDeployment",
+        "metadata": {
+          "name": "meta-llama-llama-3-1-8b-instruct-trtllm-1",
+          "namespace": "dynamo"
+        },
+        "spec": {
+          "backendFramework": "trtllm",
+          "components": [
+            {
+              "name": "Frontend",
+              "podTemplate": {
+                "spec": {
+                  "containers": [
+                    {
+                      "image": "nvcr.io/nvidia/ai-dynamo/tensorrtllm-runtime:1.4.0",
+                      "name": "main"
+                    }
+                  ]
+                }
+              },
+              "replicas": 1,
+              "type": "frontend"
+            },
+            {
+              "name": "worker",
+              "podTemplate": {
+                "spec": {
+                  "containers": [
+                    {
+                      "args": [
+                        "--model-path",
+                        "meta-llama/Llama-3.1-8B-Instruct",
+                        "--tp-size",
+                        "1",
+                        "--pp-size",
+                        "1",
+                        "--cp-size",
+                        "1",
+                        "--max-batch-size",
+                        "16",
+                        "--max-num-tokens",
+                        "8192"
+                      ],
+                      "command": [
+                        "python3",
+                        "-m",
+                        "dynamo.trtllm"
+                      ],
+                      "envFrom": [
+                        {
+                          "secretRef": {
+                            "name": "hf-token-secret"
+                          }
+                        }
+                      ],
+                      "image": "nvcr.io/nvidia/ai-dynamo/tensorrtllm-runtime:1.4.0",
+                      "name": "main",
+                      "resources": {
+                        "limits": {
+                          "nvidia.com/gpu": "1"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "replicas": 1,
+              "type": "worker"
+            }
+          ]
+        }
+      },
+      "normalized_config": {
+        "batch_scope": "distributed_worker",
+        "context_parallel_size": 1,
+        "gpus_per_node": 1,
+        "max_batched_tokens": 8192,
+        "max_concurrent_sequences": 16,
+        "node_count": 1,
+        "pipeline_parallel_size": 1,
+        "tensor_parallel_size": 1,
+        "world_size": 1
+      },
+      "server_args": {
+        "cp_size": 1,
+        "max_batch_size": 16,
+        "max_num_tokens": 8192,
+        "pp_size": 1,
+        "tp_size": 1
+      },
+      "valid": true,
+      "warnings": [],
+      "worker_gpu_count": 1
+    },
+    {
+      "batch_parameters": {
+        "max_batch_size": 32,
+        "max_num_tokens": 8192
+      },
+      "cluster_gpu_count": 1,
+      "errors": [],
+      "index": 2,
+      "manifest": {
+        "apiVersion": "nvidia.com/v1beta1",
+        "kind": "DynamoGraphDeployment",
+        "metadata": {
+          "name": "meta-llama-llama-3-1-8b-instruct-trtllm-2",
+          "namespace": "dynamo"
+        },
+        "spec": {
+          "backendFramework": "trtllm",
+          "components": [
+            {
+              "name": "Frontend",
+              "podTemplate": {
+                "spec": {
+                  "containers": [
+                    {
+                      "image": "nvcr.io/nvidia/ai-dynamo/tensorrtllm-runtime:1.4.0",
+                      "name": "main"
+                    }
+                  ]
+                }
+              },
+              "replicas": 1,
+              "type": "frontend"
+            },
+            {
+              "name": "worker",
+              "podTemplate": {
+                "spec": {
+                  "containers": [
+                    {
+                      "args": [
+                        "--model-path",
+                        "meta-llama/Llama-3.1-8B-Instruct",
+                        "--tp-size",
+                        "1",
+                        "--pp-size",
+                        "1",
+                        "--cp-size",
+                        "1",
+                        "--max-batch-size",
+                        "32",
+                        "--max-num-tokens",
+                        "8192"
+                      ],
+                      "command": [
+                        "python3",
+                        "-m",
+                        "dynamo.trtllm"
+                      ],
+                      "envFrom": [
+                        {
+                          "secretRef": {
+                            "name": "hf-token-secret"
+                          }
+                        }
+                      ],
+                      "image": "nvcr.io/nvidia/ai-dynamo/tensorrtllm-runtime:1.4.0",
+                      "name": "main",
+                      "resources": {
+                        "limits": {
+                          "nvidia.com/gpu": "1"
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "replicas": 1,
+              "type": "worker"
+            }
+          ]
+        }
+      },
+      "normalized_config": {
+        "batch_scope": "distributed_worker",
+        "context_parallel_size": 1,
+        "gpus_per_node": 1,
+        "max_batched_tokens": 8192,
+        "max_concurrent_sequences": 32,
+        "node_count": 1,
+        "pipeline_parallel_size": 1,
+        "tensor_parallel_size": 1,
+        "world_size": 1
+      },
+      "server_args": {
+        "cp_size": 1,
+        "max_batch_size": 32,
+        "max_num_tokens": 8192,
+        "pp_size": 1,
+        "tp_size": 1
+      },
+      "valid": true,
+      "warnings": [],
+      "worker_gpu_count": 1
+    }
+  ],
+  "framework": "trtllm",
+  "mode": "static",
+  "model": "meta-llama/Llama-3.1-8B-Instruct",
+  "topology": {
+    "gpus_per_node": 1,
+    "node_count": 1
+  },
+  "valid": true
+}

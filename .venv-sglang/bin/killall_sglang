@@ -1,0 +1,6 @@
+#!/home/ubuntu/llm-optimizer-trt/.venv-sglang/bin/python
+import sys
+from sglang.cli.killall import main
+if __name__ == '__main__':
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
+    sys.exit(main())

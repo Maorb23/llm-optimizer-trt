@@ -1,0 +1,1523 @@
+{
+  "metadata": {
+    "gpu_type": "H200",
+    "gpu_count": 1,
+    "model_tag": "Qwen/Qwen3.5-4B",
+    "total_tests": 12,
+    "constraints": [
+      {
+        "op": "<",
+        "value": 2000.0,
+        "name": "p95_ttft_ms"
+      },
+      {
+        "op": "<",
+        "value": 100.0,
+        "name": "p95_itl_ms"
+      }
+    ],
+    "input_len": 512,
+    "output_len": 128
+  },
+  "best_configurations": {
+    "best_input_throughput": {
+      "throughput": 5641.91121235569,
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 96,
+          "max_num_tokens": 12288
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=96",
+          "--max_num_tokens=12288"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 12288,
+          "max_concurrent_sequences": 96,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 96,
+          "max_num_tokens": 12288
+        },
+        "runtime_args": {}
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=96 --max_num_tokens=12288"
+    },
+    "best_output_throughput": {
+      "throughput": 1336.8594090952583,
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 96,
+          "max_num_tokens": 12288
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=96",
+          "--max_num_tokens=12288"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 12288,
+          "max_concurrent_sequences": 96,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 96,
+          "max_num_tokens": 12288
+        },
+        "runtime_args": {}
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=96 --max_num_tokens=12288"
+    },
+    "best_input_throughput_constrained": {
+      "throughput": 5641.91121235569,
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 96,
+          "max_num_tokens": 12288
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=96",
+          "--max_num_tokens=12288"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 12288,
+          "max_concurrent_sequences": 96,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 96,
+          "max_num_tokens": 12288
+        },
+        "runtime_args": {}
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=96 --max_num_tokens=12288"
+    },
+    "best_output_throughput_constrained": {
+      "throughput": 1336.8594090952583,
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 96,
+          "max_num_tokens": 12288
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=96",
+          "--max_num_tokens=12288"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 12288,
+          "max_concurrent_sequences": 96,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 96,
+          "max_num_tokens": 12288
+        },
+        "runtime_args": {}
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=96 --max_num_tokens=12288"
+    }
+  },
+  "test_results": [
+    {
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 16,
+          "max_num_tokens": 12288
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=16",
+          "--max_num_tokens=12288"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 12288,
+          "max_concurrent_sequences": 16,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 16,
+          "max_num_tokens": 12288
+        },
+        "runtime_args": {}
+      },
+      "results": {
+        "backend": "vllm",
+        "dataset_name": "random",
+        "request_rate": null,
+        "max_concurrency": 16,
+        "sharegpt_output_len": null,
+        "random_input_len": 512,
+        "random_output_len": 128,
+        "random_range_ratio": null,
+        "duration": 5.932022089000384,
+        "completed": 127,
+        "total_input_tokens": 33433,
+        "total_output_tokens": 7922,
+        "total_output_tokens_retokenized": 7919,
+        "request_throughput": 21.40922574032441,
+        "input_throughput": 5636.020820285559,
+        "output_throughput": 1335.4636717704723,
+        "total_throughput": 6971.484492056032,
+        "mean_e2e_latency_ms": 717.2856003385886,
+        "median_e2e_latency_ms": 692.5090759996237,
+        "std_e2e_latency_ms": 375.00127678075023,
+        "p95_e2e_latency_ms": 1369.545394699162,
+        "p99_e2e_latency_ms": 1476.610709359884,
+        "mean_ttft_ms": 87.73690910225478,
+        "median_ttft_ms": 91.87292500064359,
+        "std_ttft_ms": 32.830346501800555,
+        "p95_ttft_ms": 144.42305219945408,
+        "p99_ttft_ms": 145.17859619896626,
+        "mean_tpot_ms": 10.23791839803315,
+        "median_tpot_ms": 10.593497200014617,
+        "std_tpot_ms": 2.521764480537063,
+        "p95_tpot_ms": 13.054342669730726,
+        "p99_tpot_ms": 14.023907070989438,
+        "mean_itl_ms": 10.267375334917661,
+        "median_itl_ms": 3.9340050007012906,
+        "std_itl_ms": 15.355989871180517,
+        "p95_itl_ms": 46.85390930080757,
+        "p99_itl_ms": 51.215803980085184,
+        "concurrency": 15.356529337932958,
+        "accept_length": null
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=16 --max_num_tokens=12288",
+      "constraints": [
+        {
+          "op": "<",
+          "value": 2000.0,
+          "name": "p95_ttft_ms"
+        },
+        {
+          "op": "<",
+          "value": 100.0,
+          "name": "p95_itl_ms"
+        }
+      ],
+      "metadata": {
+        "gpu_type": "H200",
+        "gpu_count": 1,
+        "model_tag": "Qwen/Qwen3.5-4B",
+        "input_tokens": 512,
+        "output_tokens": 128
+      },
+      "optimization": {
+        "trial_number": 0,
+        "objective_value": 1335.4636717704723,
+        "slo_feasible": true,
+        "study_signature": "91527699684a21ee83840bfcf5bf8fc4cdcef41af677e33a15f66b5f99fee434"
+      }
+    },
+    {
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 8,
+          "max_num_tokens": 4096
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=8",
+          "--max_num_tokens=4096"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 4096,
+          "max_concurrent_sequences": 8,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 8,
+          "max_num_tokens": 4096
+        },
+        "runtime_args": {}
+      },
+      "results": {
+        "backend": "vllm",
+        "dataset_name": "random",
+        "request_rate": null,
+        "max_concurrency": 16,
+        "sharegpt_output_len": null,
+        "random_input_len": 512,
+        "random_output_len": 128,
+        "random_range_ratio": null,
+        "duration": 8.18622643100025,
+        "completed": 127,
+        "total_input_tokens": 33433,
+        "total_output_tokens": 7922,
+        "total_output_tokens_retokenized": 7922,
+        "request_throughput": 15.513863569552187,
+        "input_throughput": 4084.055123786128,
+        "output_throughput": 967.7230488030899,
+        "total_throughput": 5051.778172589218,
+        "mean_e2e_latency_ms": 973.4419140943893,
+        "median_e2e_latency_ms": 976.9473729993479,
+        "std_e2e_latency_ms": 302.1362966709668,
+        "p95_e2e_latency_ms": 1464.642265501243,
+        "p99_e2e_latency_ms": 1555.162006860446,
+        "mean_ttft_ms": 524.3195119212004,
+        "median_ttft_ms": 557.4773250009457,
+        "std_ttft_ms": 145.03825058342608,
+        "p95_ttft_ms": 689.2840877993874,
+        "p99_ttft_ms": 721.8934718593664,
+        "mean_tpot_ms": 7.659495286380234,
+        "median_tpot_ms": 7.340368400000443,
+        "std_tpot_ms": 2.1863123560773556,
+        "p95_tpot_ms": 12.252907768438408,
+        "p99_tpot_ms": 13.695568788226714,
+        "mean_itl_ms": 7.324747411070082,
+        "median_itl_ms": 3.718747999300831,
+        "std_itl_ms": 12.03126460631945,
+        "p95_itl_ms": 42.505165100010345,
+        "p99_itl_ms": 49.86556926029154,
+        "concurrency": 15.101845048144096,
+        "accept_length": null
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=8 --max_num_tokens=4096",
+      "constraints": [
+        {
+          "op": "<",
+          "value": 2000.0,
+          "name": "p95_ttft_ms"
+        },
+        {
+          "op": "<",
+          "value": 100.0,
+          "name": "p95_itl_ms"
+        }
+      ],
+      "metadata": {
+        "gpu_type": "H200",
+        "gpu_count": 1,
+        "model_tag": "Qwen/Qwen3.5-4B",
+        "input_tokens": 512,
+        "output_tokens": 128
+      },
+      "optimization": {
+        "trial_number": 1,
+        "objective_value": 967.7230488030899,
+        "slo_feasible": true,
+        "study_signature": "91527699684a21ee83840bfcf5bf8fc4cdcef41af677e33a15f66b5f99fee434"
+      }
+    },
+    {
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 96,
+          "max_num_tokens": 12288
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=96",
+          "--max_num_tokens=12288"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 12288,
+          "max_concurrent_sequences": 96,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 96,
+          "max_num_tokens": 12288
+        },
+        "runtime_args": {}
+      },
+      "results": {
+        "backend": "vllm",
+        "dataset_name": "random",
+        "request_rate": null,
+        "max_concurrency": 16,
+        "sharegpt_output_len": null,
+        "random_input_len": 512,
+        "random_output_len": 128,
+        "random_range_ratio": null,
+        "duration": 5.92582880900045,
+        "completed": 127,
+        "total_input_tokens": 33433,
+        "total_output_tokens": 7922,
+        "total_output_tokens_retokenized": 7919,
+        "request_throughput": 21.431601231393312,
+        "input_throughput": 5641.91121235569,
+        "output_throughput": 1336.8594090952583,
+        "total_throughput": 6978.770621450948,
+        "mean_e2e_latency_ms": 715.7425242363016,
+        "median_e2e_latency_ms": 680.3884180008026,
+        "std_e2e_latency_ms": 385.0213934206917,
+        "p95_e2e_latency_ms": 1347.1849891000602,
+        "p99_e2e_latency_ms": 1605.779528260427,
+        "mean_ttft_ms": 78.22502635440108,
+        "median_ttft_ms": 65.97793699984322,
+        "std_ttft_ms": 28.86322097940206,
+        "p95_ttft_ms": 127.0235557001797,
+        "p99_ttft_ms": 134.09221673933644,
+        "mean_tpot_ms": 10.497217658792627,
+        "median_tpot_ms": 10.635722217399312,
+        "std_tpot_ms": 2.9347426298915695,
+        "p95_tpot_ms": 14.316381865953575,
+        "p99_tpot_ms": 18.699090810017275,
+        "mean_itl_ms": 10.400014083493557,
+        "median_itl_ms": 3.9575230002810713,
+        "std_itl_ms": 15.497342917761483,
+        "p95_itl_ms": 46.93063759950746,
+        "p99_itl_ms": 51.89234920027957,
+        "concurrency": 15.339508363783278,
+        "accept_length": null
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=96 --max_num_tokens=12288",
+      "constraints": [
+        {
+          "op": "<",
+          "value": 2000.0,
+          "name": "p95_ttft_ms"
+        },
+        {
+          "op": "<",
+          "value": 100.0,
+          "name": "p95_itl_ms"
+        }
+      ],
+      "metadata": {
+        "gpu_type": "H200",
+        "gpu_count": 1,
+        "model_tag": "Qwen/Qwen3.5-4B",
+        "input_tokens": 512,
+        "output_tokens": 128
+      },
+      "optimization": {
+        "trial_number": 2,
+        "objective_value": 1336.8594090952583,
+        "slo_feasible": true,
+        "study_signature": "91527699684a21ee83840bfcf5bf8fc4cdcef41af677e33a15f66b5f99fee434"
+      }
+    },
+    {
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 16,
+          "max_num_tokens": 2048
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=16",
+          "--max_num_tokens=2048"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 2048,
+          "max_concurrent_sequences": 16,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 16,
+          "max_num_tokens": 2048
+        },
+        "runtime_args": {}
+      },
+      "results": {
+        "backend": "vllm",
+        "dataset_name": "random",
+        "request_rate": null,
+        "max_concurrency": 16,
+        "sharegpt_output_len": null,
+        "random_input_len": 512,
+        "random_output_len": 128,
+        "random_range_ratio": null,
+        "duration": 6.138083569001537,
+        "completed": 127,
+        "total_input_tokens": 33433,
+        "total_output_tokens": 7922,
+        "total_output_tokens_retokenized": 7919,
+        "request_throughput": 20.6904970537341,
+        "input_throughput": 5446.814078720411,
+        "output_throughput": 1290.6308477140278,
+        "total_throughput": 6737.4449264344385,
+        "mean_e2e_latency_ms": 741.8860337322802,
+        "median_e2e_latency_ms": 714.0025070002594,
+        "std_e2e_latency_ms": 381.3565556363574,
+        "p95_e2e_latency_ms": 1385.3301371003909,
+        "p99_e2e_latency_ms": 1546.3217455996344,
+        "mean_ttft_ms": 93.21124213377294,
+        "median_ttft_ms": 91.49241399973107,
+        "std_ttft_ms": 44.64686323236324,
+        "p95_ttft_ms": 216.004554099527,
+        "p99_ttft_ms": 217.22659586081136,
+        "mean_tpot_ms": 11.156245230068095,
+        "median_tpot_ms": 10.983825093019329,
+        "std_tpot_ms": 4.85050161921411,
+        "p95_tpot_ms": 13.965135725266354,
+        "p99_tpot_ms": 28.643233081908956,
+        "mean_itl_ms": 10.582029195247111,
+        "median_itl_ms": 3.9486139994551195,
+        "std_itl_ms": 15.60225261198235,
+        "p95_itl_ms": 47.69732320055481,
+        "p99_itl_ms": 52.79877920038416,
+        "concurrency": 15.34999079514422,
+        "accept_length": null
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=16 --max_num_tokens=2048",
+      "constraints": [
+        {
+          "op": "<",
+          "value": 2000.0,
+          "name": "p95_ttft_ms"
+        },
+        {
+          "op": "<",
+          "value": 100.0,
+          "name": "p95_itl_ms"
+        }
+      ],
+      "metadata": {
+        "gpu_type": "H200",
+        "gpu_count": 1,
+        "model_tag": "Qwen/Qwen3.5-4B",
+        "input_tokens": 512,
+        "output_tokens": 128
+      },
+      "optimization": {
+        "trial_number": 3,
+        "objective_value": 1290.6308477140278,
+        "slo_feasible": true,
+        "study_signature": "91527699684a21ee83840bfcf5bf8fc4cdcef41af677e33a15f66b5f99fee434"
+      }
+    },
+    {
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 96,
+          "max_num_tokens": 2048
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=96",
+          "--max_num_tokens=2048"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 2048,
+          "max_concurrent_sequences": 96,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 96,
+          "max_num_tokens": 2048
+        },
+        "runtime_args": {}
+      },
+      "results": {
+        "backend": "vllm",
+        "dataset_name": "random",
+        "request_rate": null,
+        "max_concurrency": 16,
+        "sharegpt_output_len": null,
+        "random_input_len": 512,
+        "random_output_len": 128,
+        "random_range_ratio": null,
+        "duration": 6.16008775499904,
+        "completed": 127,
+        "total_input_tokens": 33433,
+        "total_output_tokens": 7922,
+        "total_output_tokens_retokenized": 7922,
+        "request_throughput": 20.6165894141584,
+        "input_throughput": 5427.357747114628,
+        "output_throughput": 1286.0206404642745,
+        "total_throughput": 6713.378387578903,
+        "mean_e2e_latency_ms": 744.7272032047516,
+        "median_e2e_latency_ms": 725.194807000662,
+        "std_e2e_latency_ms": 386.5285807545039,
+        "p95_e2e_latency_ms": 1418.7776777000176,
+        "p99_e2e_latency_ms": 1474.2642227397664,
+        "mean_ttft_ms": 91.65943891344423,
+        "median_ttft_ms": 92.0472459984012,
+        "std_ttft_ms": 35.89123328126519,
+        "p95_ttft_ms": 164.12181019968557,
+        "p99_ttft_ms": 164.6588783200059,
+        "mean_tpot_ms": 10.819232612850882,
+        "median_tpot_ms": 11.203293602423411,
+        "std_tpot_ms": 3.2756343695781047,
+        "p95_tpot_ms": 14.011326996620223,
+        "p99_tpot_ms": 22.41057010389218,
+        "mean_itl_ms": 10.648214672870361,
+        "median_itl_ms": 3.9641630010009976,
+        "std_itl_ms": 15.719139286227378,
+        "p95_itl_ms": 46.8437592000555,
+        "p99_itl_ms": 53.61856239942426,
+        "concurrency": 15.353734974026876,
+        "accept_length": null
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=96 --max_num_tokens=2048",
+      "constraints": [
+        {
+          "op": "<",
+          "value": 2000.0,
+          "name": "p95_ttft_ms"
+        },
+        {
+          "op": "<",
+          "value": 100.0,
+          "name": "p95_itl_ms"
+        }
+      ],
+      "metadata": {
+        "gpu_type": "H200",
+        "gpu_count": 1,
+        "model_tag": "Qwen/Qwen3.5-4B",
+        "input_tokens": 512,
+        "output_tokens": 128
+      },
+      "optimization": {
+        "trial_number": 4,
+        "objective_value": 1286.0206404642745,
+        "slo_feasible": true,
+        "study_signature": "91527699684a21ee83840bfcf5bf8fc4cdcef41af677e33a15f66b5f99fee434"
+      }
+    },
+    {
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 32,
+          "max_num_tokens": 12288
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=32",
+          "--max_num_tokens=12288"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 12288,
+          "max_concurrent_sequences": 32,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 32,
+          "max_num_tokens": 12288
+        },
+        "runtime_args": {}
+      },
+      "results": {
+        "backend": "vllm",
+        "dataset_name": "random",
+        "request_rate": null,
+        "max_concurrency": 16,
+        "sharegpt_output_len": null,
+        "random_input_len": 512,
+        "random_output_len": 128,
+        "random_range_ratio": null,
+        "duration": 5.9984130909997475,
+        "completed": 127,
+        "total_input_tokens": 33433,
+        "total_output_tokens": 7922,
+        "total_output_tokens_retokenized": 7919,
+        "request_throughput": 21.1722664100203,
+        "input_throughput": 5573.640810127627,
+        "output_throughput": 1320.6826338596916,
+        "total_throughput": 6894.3234439873195,
+        "mean_e2e_latency_ms": 725.6120077403122,
+        "median_e2e_latency_ms": 698.2086870011699,
+        "std_e2e_latency_ms": 379.4782530261249,
+        "p95_e2e_latency_ms": 1386.6193525997003,
+        "p99_e2e_latency_ms": 1497.9433617405084,
+        "mean_ttft_ms": 85.8600455826025,
+        "median_ttft_ms": 90.10604100149067,
+        "std_ttft_ms": 29.164419795844108,
+        "p95_ttft_ms": 130.83428280006046,
+        "p99_ttft_ms": 134.47187923895396,
+        "mean_tpot_ms": 10.42360866995284,
+        "median_tpot_ms": 10.836051121176833,
+        "std_tpot_ms": 2.5015159444031267,
+        "p95_tpot_ms": 12.829208571431936,
+        "p99_tpot_ms": 15.155569935270854,
+        "mean_itl_ms": 10.433785789650496,
+        "median_itl_ms": 3.9633760006836383,
+        "std_itl_ms": 15.394835528829251,
+        "p95_itl_ms": 46.85967709920078,
+        "p99_itl_ms": 51.30185398069443,
+        "concurrency": 15.362850738187603,
+        "accept_length": null
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=32 --max_num_tokens=12288",
+      "constraints": [
+        {
+          "op": "<",
+          "value": 2000.0,
+          "name": "p95_ttft_ms"
+        },
+        {
+          "op": "<",
+          "value": 100.0,
+          "name": "p95_itl_ms"
+        }
+      ],
+      "metadata": {
+        "gpu_type": "H200",
+        "gpu_count": 1,
+        "model_tag": "Qwen/Qwen3.5-4B",
+        "input_tokens": 512,
+        "output_tokens": 128
+      },
+      "optimization": {
+        "trial_number": 5,
+        "objective_value": 1320.6826338596916,
+        "slo_feasible": true,
+        "study_signature": "91527699684a21ee83840bfcf5bf8fc4cdcef41af677e33a15f66b5f99fee434"
+      }
+    },
+    {
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 24,
+          "max_num_tokens": 6144
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=24",
+          "--max_num_tokens=6144"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 6144,
+          "max_concurrent_sequences": 24,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 24,
+          "max_num_tokens": 6144
+        },
+        "runtime_args": {}
+      },
+      "results": {
+        "backend": "vllm",
+        "dataset_name": "random",
+        "request_rate": null,
+        "max_concurrency": 16,
+        "sharegpt_output_len": null,
+        "random_input_len": 512,
+        "random_output_len": 128,
+        "random_range_ratio": null,
+        "duration": 6.002838009999323,
+        "completed": 127,
+        "total_input_tokens": 33433,
+        "total_output_tokens": 7922,
+        "total_output_tokens_retokenized": 7919,
+        "request_throughput": 21.15665953144958,
+        "input_throughput": 5569.532268621683,
+        "output_throughput": 1319.7091087255399,
+        "total_throughput": 6889.2413773472235,
+        "mean_e2e_latency_ms": 725.294353149695,
+        "median_e2e_latency_ms": 683.3924080001452,
+        "std_e2e_latency_ms": 384.956140972677,
+        "p95_e2e_latency_ms": 1407.000370299829,
+        "p99_e2e_latency_ms": 1523.482678680666,
+        "mean_ttft_ms": 87.13641357484104,
+        "median_ttft_ms": 91.3053280000895,
+        "std_ttft_ms": 27.37699334346739,
+        "p95_ttft_ms": 132.37621639927966,
+        "p99_ttft_ms": 136.3029928403921,
+        "mean_tpot_ms": 10.33716430878865,
+        "median_tpot_ms": 10.890366411212344,
+        "std_tpot_ms": 2.5630368385043125,
+        "p95_tpot_ms": 13.104602665598142,
+        "p99_tpot_ms": 14.646645220830813,
+        "mean_itl_ms": 10.407778397199866,
+        "median_itl_ms": 3.956837999794516,
+        "std_itl_ms": 15.409761907880576,
+        "p95_itl_ms": 46.78652019938454,
+        "p99_itl_ms": 52.79875142052333,
+        "concurrency": 15.344805689671054,
+        "accept_length": null
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=24 --max_num_tokens=6144",
+      "constraints": [
+        {
+          "op": "<",
+          "value": 2000.0,
+          "name": "p95_ttft_ms"
+        },
+        {
+          "op": "<",
+          "value": 100.0,
+          "name": "p95_itl_ms"
+        }
+      ],
+      "metadata": {
+        "gpu_type": "H200",
+        "gpu_count": 1,
+        "model_tag": "Qwen/Qwen3.5-4B",
+        "input_tokens": 512,
+        "output_tokens": 128
+      },
+      "optimization": {
+        "trial_number": 6,
+        "objective_value": 1319.7091087255399,
+        "slo_feasible": true,
+        "study_signature": "91527699684a21ee83840bfcf5bf8fc4cdcef41af677e33a15f66b5f99fee434"
+      }
+    },
+    {
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 8,
+          "max_num_tokens": 12288
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=8",
+          "--max_num_tokens=12288"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 12288,
+          "max_concurrent_sequences": 8,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 8,
+          "max_num_tokens": 12288
+        },
+        "runtime_args": {}
+      },
+      "results": {
+        "backend": "vllm",
+        "dataset_name": "random",
+        "request_rate": null,
+        "max_concurrency": 16,
+        "sharegpt_output_len": null,
+        "random_input_len": 512,
+        "random_output_len": 128,
+        "random_range_ratio": null,
+        "duration": 8.482801730000574,
+        "completed": 127,
+        "total_input_tokens": 33433,
+        "total_output_tokens": 7922,
+        "total_output_tokens_retokenized": 7919,
+        "request_throughput": 14.97146863056428,
+        "input_throughput": 3941.268588390989,
+        "output_throughput": 933.88956292386,
+        "total_throughput": 4875.1581513148485,
+        "mean_e2e_latency_ms": 1010.6473637323095,
+        "median_e2e_latency_ms": 985.9064480006055,
+        "std_e2e_latency_ms": 313.1800597550858,
+        "p95_e2e_latency_ms": 1513.3634251998951,
+        "p99_e2e_latency_ms": 1624.4019111003581,
+        "mean_ttft_ms": 544.1366881101761,
+        "median_ttft_ms": 580.8616340000299,
+        "std_ttft_ms": 147.33795340974189,
+        "p95_ttft_ms": 714.9451778996081,
+        "p99_ttft_ms": 764.0954257194608,
+        "mean_tpot_ms": 8.087659416669526,
+        "median_tpot_ms": 7.650679643484182,
+        "std_tpot_ms": 2.6034076756863813,
+        "p95_tpot_ms": 13.621257662341828,
+        "p99_tpot_ms": 16.991982983618385,
+        "mean_itl_ms": 7.608347029923774,
+        "median_itl_ms": 3.720570000950829,
+        "std_itl_ms": 12.478075480173095,
+        "p95_itl_ms": 42.7909253992766,
+        "p99_itl_ms": 51.20889767898917,
+        "concurrency": 15.130875302680758,
+        "accept_length": null
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=8 --max_num_tokens=12288",
+      "constraints": [
+        {
+          "op": "<",
+          "value": 2000.0,
+          "name": "p95_ttft_ms"
+        },
+        {
+          "op": "<",
+          "value": 100.0,
+          "name": "p95_itl_ms"
+        }
+      ],
+      "metadata": {
+        "gpu_type": "H200",
+        "gpu_count": 1,
+        "model_tag": "Qwen/Qwen3.5-4B",
+        "input_tokens": 512,
+        "output_tokens": 128
+      },
+      "optimization": {
+        "trial_number": 7,
+        "objective_value": 933.88956292386,
+        "slo_feasible": true,
+        "study_signature": "91527699684a21ee83840bfcf5bf8fc4cdcef41af677e33a15f66b5f99fee434"
+      }
+    },
+    {
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 64,
+          "max_num_tokens": 4096
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=64",
+          "--max_num_tokens=4096"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 4096,
+          "max_concurrent_sequences": 64,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 64,
+          "max_num_tokens": 4096
+        },
+        "runtime_args": {}
+      },
+      "results": {
+        "backend": "vllm",
+        "dataset_name": "random",
+        "request_rate": null,
+        "max_concurrency": 16,
+        "sharegpt_output_len": null,
+        "random_input_len": 512,
+        "random_output_len": 128,
+        "random_range_ratio": null,
+        "duration": 6.080077610000444,
+        "completed": 127,
+        "total_input_tokens": 33433,
+        "total_output_tokens": 7922,
+        "total_output_tokens_retokenized": 7919,
+        "request_throughput": 20.88789126492593,
+        "input_throughput": 5498.778493387942,
+        "output_throughput": 1302.9438944940412,
+        "total_throughput": 6801.722387881983,
+        "mean_e2e_latency_ms": 735.442288220473,
+        "median_e2e_latency_ms": 692.6680529995792,
+        "std_e2e_latency_ms": 390.2739384389738,
+        "p95_e2e_latency_ms": 1393.16631469992,
+        "p99_e2e_latency_ms": 1577.2394738799628,
+        "mean_ttft_ms": 84.00387063001268,
+        "median_ttft_ms": 85.36096999887377,
+        "std_ttft_ms": 30.67725102643263,
+        "p95_ttft_ms": 134.87106800039328,
+        "p99_ttft_ms": 139.0359368400095,
+        "mean_tpot_ms": 10.654383271854018,
+        "median_tpot_ms": 11.053776290593197,
+        "std_tpot_ms": 2.8724486361817574,
+        "p95_tpot_ms": 13.655199226356535,
+        "p99_tpot_ms": 15.860641304260836,
+        "mean_itl_ms": 10.624382795300695,
+        "median_itl_ms": 3.9724760008539306,
+        "std_itl_ms": 15.629262237727554,
+        "p95_itl_ms": 46.85849019952002,
+        "p99_itl_ms": 53.08069360005902,
+        "concurrency": 15.361838547977555,
+        "accept_length": null
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=64 --max_num_tokens=4096",
+      "constraints": [
+        {
+          "op": "<",
+          "value": 2000.0,
+          "name": "p95_ttft_ms"
+        },
+        {
+          "op": "<",
+          "value": 100.0,
+          "name": "p95_itl_ms"
+        }
+      ],
+      "metadata": {
+        "gpu_type": "H200",
+        "gpu_count": 1,
+        "model_tag": "Qwen/Qwen3.5-4B",
+        "input_tokens": 512,
+        "output_tokens": 128
+      },
+      "optimization": {
+        "trial_number": 8,
+        "objective_value": 1302.9438944940412,
+        "slo_feasible": true,
+        "study_signature": "91527699684a21ee83840bfcf5bf8fc4cdcef41af677e33a15f66b5f99fee434"
+      }
+    },
+    {
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 8,
+          "max_num_tokens": 2048
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=8",
+          "--max_num_tokens=2048"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 2048,
+          "max_concurrent_sequences": 8,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 8,
+          "max_num_tokens": 2048
+        },
+        "runtime_args": {}
+      },
+      "results": {
+        "backend": "vllm",
+        "dataset_name": "random",
+        "request_rate": null,
+        "max_concurrency": 16,
+        "sharegpt_output_len": null,
+        "random_input_len": 512,
+        "random_output_len": 128,
+        "random_range_ratio": null,
+        "duration": 8.162307761000193,
+        "completed": 127,
+        "total_input_tokens": 33433,
+        "total_output_tokens": 7922,
+        "total_output_tokens_retokenized": 7919,
+        "request_throughput": 15.559325097591968,
+        "input_throughput": 4096.022960533797,
+        "output_throughput": 970.5588458513666,
+        "total_throughput": 5066.581806385164,
+        "mean_e2e_latency_ms": 971.0024558976221,
+        "median_e2e_latency_ms": 944.1916160012624,
+        "std_e2e_latency_ms": 306.3563661632869,
+        "p95_e2e_latency_ms": 1484.3638458012715,
+        "p99_e2e_latency_ms": 1593.5497658201348,
+        "mean_ttft_ms": 525.5806122125601,
+        "median_ttft_ms": 552.0435599992197,
+        "std_ttft_ms": 146.70188389685825,
+        "p95_ttft_ms": 709.1629527996702,
+        "p99_ttft_ms": 747.6002091196642,
+        "mean_tpot_ms": 7.575052756212316,
+        "median_tpot_ms": 7.1938085135066965,
+        "std_tpot_ms": 2.3422197118535464,
+        "p95_tpot_ms": 12.295128238195652,
+        "p99_tpot_ms": 14.788113233501324,
+        "mean_itl_ms": 7.266267144251365,
+        "median_itl_ms": 3.72071799938567,
+        "std_itl_ms": 11.735457854737525,
+        "p95_itl_ms": 41.46544359937252,
+        "p99_itl_ms": 49.70207128069887,
+        "concurrency": 15.10814288187131,
+        "accept_length": null
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=8 --max_num_tokens=2048",
+      "constraints": [
+        {
+          "op": "<",
+          "value": 2000.0,
+          "name": "p95_ttft_ms"
+        },
+        {
+          "op": "<",
+          "value": 100.0,
+          "name": "p95_itl_ms"
+        }
+      ],
+      "metadata": {
+        "gpu_type": "H200",
+        "gpu_count": 1,
+        "model_tag": "Qwen/Qwen3.5-4B",
+        "input_tokens": 512,
+        "output_tokens": 128
+      },
+      "optimization": {
+        "trial_number": 9,
+        "objective_value": 970.5588458513666,
+        "slo_feasible": true,
+        "study_signature": "91527699684a21ee83840bfcf5bf8fc4cdcef41af677e33a15f66b5f99fee434"
+      }
+    },
+    {
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 96,
+          "max_num_tokens": 8192
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=96",
+          "--max_num_tokens=8192"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 8192,
+          "max_concurrent_sequences": 96,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 96,
+          "max_num_tokens": 8192
+        },
+        "runtime_args": {}
+      },
+      "results": {
+        "backend": "vllm",
+        "dataset_name": "random",
+        "request_rate": null,
+        "max_concurrency": 16,
+        "sharegpt_output_len": null,
+        "random_input_len": 512,
+        "random_output_len": 128,
+        "random_range_ratio": null,
+        "duration": 6.108687038999051,
+        "completed": 127,
+        "total_input_tokens": 33433,
+        "total_output_tokens": 7922,
+        "total_output_tokens_retokenized": 7919,
+        "request_throughput": 20.79006490088741,
+        "input_throughput": 5473.025510483219,
+        "output_throughput": 1296.841686179764,
+        "total_throughput": 6769.867196662983,
+        "mean_e2e_latency_ms": 738.0703731418981,
+        "median_e2e_latency_ms": 721.4179610000429,
+        "std_e2e_latency_ms": 391.3429362137705,
+        "p95_e2e_latency_ms": 1395.8166780008462,
+        "p99_e2e_latency_ms": 1531.2803666198304,
+        "mean_ttft_ms": 84.88008974025318,
+        "median_ttft_ms": 88.15019999929063,
+        "std_ttft_ms": 28.84444999947634,
+        "p95_ttft_ms": 130.58946860019205,
+        "p99_ttft_ms": 131.53794497928175,
+        "mean_tpot_ms": 10.650133076779797,
+        "median_tpot_ms": 11.053512233350679,
+        "std_tpot_ms": 2.693732995116085,
+        "p95_tpot_ms": 13.835114805715417,
+        "p99_tpot_ms": 16.218468112811628,
+        "mean_itl_ms": 10.652951089251719,
+        "median_itl_ms": 3.9567439998791087,
+        "std_itl_ms": 15.385190506415091,
+        "p95_itl_ms": 44.67838069940626,
+        "p99_itl_ms": 51.92447681980412,
+        "concurrency": 15.34453095904225,
+        "accept_length": null
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=96 --max_num_tokens=8192",
+      "constraints": [
+        {
+          "op": "<",
+          "value": 2000.0,
+          "name": "p95_ttft_ms"
+        },
+        {
+          "op": "<",
+          "value": 100.0,
+          "name": "p95_itl_ms"
+        }
+      ],
+      "metadata": {
+        "gpu_type": "H200",
+        "gpu_count": 1,
+        "model_tag": "Qwen/Qwen3.5-4B",
+        "input_tokens": 512,
+        "output_tokens": 128
+      },
+      "optimization": {
+        "trial_number": 10,
+        "objective_value": 1296.841686179764,
+        "slo_feasible": true,
+        "study_signature": "91527699684a21ee83840bfcf5bf8fc4cdcef41af677e33a15f66b5f99fee434"
+      }
+    },
+    {
+      "config": {
+        "framework": "trtllm",
+        "client_args": {
+          "dataset_name": "random",
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "seed": 1,
+          "max_concurrency": 16
+        },
+        "server_args": {
+          "tp_size": 1,
+          "max_batch_size": 16,
+          "max_num_tokens": 16384
+        },
+        "server_cmd_args": [
+          "--tp_size=1",
+          "--max_batch_size=16",
+          "--max_num_tokens=16384"
+        ],
+        "normalized_config": {
+          "tensor_parallel_size": 1,
+          "max_batched_tokens": 16384,
+          "max_concurrent_sequences": 16,
+          "max_concurrency": 16,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "num_prompts": 128,
+          "input_length": 512,
+          "output_length": 128,
+          "world_size": 1
+        },
+        "engine_args": {
+          "tp_size": 1,
+          "max_batch_size": 16,
+          "max_num_tokens": 16384
+        },
+        "runtime_args": {}
+      },
+      "results": {
+        "backend": "vllm",
+        "dataset_name": "random",
+        "request_rate": null,
+        "max_concurrency": 16,
+        "sharegpt_output_len": null,
+        "random_input_len": 512,
+        "random_output_len": 128,
+        "random_range_ratio": null,
+        "duration": 6.122254500000054,
+        "completed": 127,
+        "total_input_tokens": 33433,
+        "total_output_tokens": 7922,
+        "total_output_tokens_retokenized": 7919,
+        "request_throughput": 20.74399226624749,
+        "input_throughput": 5460.896798720097,
+        "output_throughput": 1293.967769552855,
+        "total_throughput": 6754.864568272952,
+        "mean_e2e_latency_ms": 740.6675680630019,
+        "median_e2e_latency_ms": 726.5062569986185,
+        "std_e2e_latency_ms": 389.0115118329886,
+        "p95_e2e_latency_ms": 1411.9172571005035,
+        "p99_e2e_latency_ms": 1545.1524319990856,
+        "mean_ttft_ms": 86.76888195272271,
+        "median_ttft_ms": 91.04568400107382,
+        "std_ttft_ms": 28.84501849969319,
+        "p95_ttft_ms": 129.19550189872098,
+        "p99_ttft_ms": 136.24001527921791,
+        "mean_tpot_ms": 10.631602267682684,
+        "median_tpot_ms": 11.05207387099067,
+        "std_tpot_ms": 2.493684353005797,
+        "p95_tpot_ms": 13.661866604280867,
+        "p99_tpot_ms": 15.031175502028313,
+        "mean_itl_ms": 10.664510676640603,
+        "median_itl_ms": 3.949953999835998,
+        "std_itl_ms": 15.55506059733326,
+        "p95_itl_ms": 46.48290469958738,
+        "p99_itl_ms": 51.90532729855477,
+        "concurrency": 15.364402303759247,
+        "accept_length": null
+      },
+      "cmd": "trtllm-serve Qwen/Qwen3.5-4B --host 127.0.0.1 --port 8001 --tp_size=1 --max_batch_size=16 --max_num_tokens=16384",
+      "constraints": [
+        {
+          "op": "<",
+          "value": 2000.0,
+          "name": "p95_ttft_ms"
+        },
+        {
+          "op": "<",
+          "value": 100.0,
+          "name": "p95_itl_ms"
+        }
+      ],
+      "metadata": {
+        "gpu_type": "H200",
+        "gpu_count": 1,
+        "model_tag": "Qwen/Qwen3.5-4B",
+        "input_tokens": 512,
+        "output_tokens": 128
+      },
+      "optimization": {
+        "trial_number": 11,
+        "objective_value": 1293.967769552855,
+        "slo_feasible": true,
+        "study_signature": "91527699684a21ee83840bfcf5bf8fc4cdcef41af677e33a15f66b5f99fee434"
+      }
+    }
+  ],
+  "optimization": {
+    "strategy": "optuna",
+    "study_name": "h100_smoke_v1-trtllm-native",
+    "study_signature": "91527699684a21ee83840bfcf5bf8fc4cdcef41af677e33a15f66b5f99fee434",
+    "sampler": "TPESampler",
+    "objective": "output_throughput",
+    "direction": "maximize",
+    "budget": 12,
+    "timeout": 7200.0,
+    "seed": 1,
+    "search_space_size": 42,
+    "trial_state_counts": {
+      "COMPLETE": 12
+    },
+    "stop_reason": "trial_budget",
+    "best_feasible_trial": {
+      "number": 2,
+      "objective_value": 1336.8594090952583,
+      "config_id": "client_dataset_name-random-max_concurrency-16-num_prompts-128-random_input_len-512-random_output_len-128-seed-1_server_max_batch_size-96-max_num_tokens-12288-tp_size-1",
+      "slo_feasible": true
+    },
+    "best_unconstrained_trial": {
+      "number": 2,
+      "objective_value": 1336.8594090952583,
+      "config_id": "client_dataset_name-random-max_concurrency-16-num_prompts-128-random_input_len-512-random_output_len-128-seed-1_server_max_batch_size-96-max_num_tokens-12288-tp_size-1",
+      "slo_feasible": true
+    },
+    "storage_kind": "sqlite"
+  }
+}
