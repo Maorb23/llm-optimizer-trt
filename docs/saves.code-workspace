@@ -1,0 +1,50 @@
+{
+	"folders": [
+		{
+			"path": "../../../receiver_aware_comm_poc"
+		},
+		{
+			"path": "../../../Book_tree"
+		},
+		{
+			"path": "../../../Speculative_decoding"
+		},
+		{
+			"path": "../../../lightricks_videos"
+		},
+		{
+			"path": "../../../hf_validator"
+		},
+		{
+			"path": "../../../vllm_spec"
+		},
+		{
+			"path": "../../../guild_build"
+		},
+		{
+			"path": "../../../AgentChange"
+		},
+		{
+			"path": "../../../manim_skill"
+		},
+		{
+			"path": "../../../video_editing_skill"
+		},
+		{
+			"path": "../../../jobagent"
+		},
+		{
+			"path": "../../../aie_course"
+		},
+		{
+			"path": "../../../gym_app"
+		},
+		{
+			"path": "../../../condition_alerts"
+		},
+		{
+			"path": "../.."
+		}
+	],
+	"settings": {}
+}
