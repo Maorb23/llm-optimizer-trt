@@ -28,8 +28,6 @@ share/python-wheels/
 MANIFEST
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
 
@@ -43,7 +41,7 @@ htmlcov/
 .nox/
 .coverage
 .coverage.*
-.cache
+.cache/
 nosetests.xml
 coverage.xml
 *.cover
@@ -55,18 +53,18 @@ coverage.xml
 *.mo
 *.pot
 
-# Django stuff:
+# Django
 *.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
-# Flask stuff:
+# Flask
 instance/
-.webassets-cache
+.webassets-cache/
 
-# Scrapy stuff:
-.scrapy
+# Scrapy
+.scrapy/
 
 # Sphinx documentation
 docs/_build/
@@ -74,8 +72,8 @@ docs/_build/
 # PyBuilder
 target/
 
-# Jupyter Notebook
-.ipynb_checkpoints
+# Jupyter
+.ipynb_checkpoints/
 
 # IPython
 profile_default/
@@ -84,47 +82,65 @@ ipython_config.py
 # pyenv
 .python-version
 
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install different versions of packages depending
-#   on the platform. Pipfile.lock may vary on different platforms.
-#   For more information, see: https://pipenv.pypa.io/en/latest/advanced/#pipfile-lock-security
-# Pipfile.lock
-
-# PEP 582; used by PDM, PEP 582 proposal
+# PEP 582 / PDM
 __pypackages__/
 
-# Celery stuff
+# Celery
 celerybeat-schedule
 celerybeat.pid
 
-# SageMath parsed files
+# SageMath
 *.sage.py
 
 # Environments
 .env
-.venv
+.env.*
+.venv/
+.venv-*/
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
 
-# Spyder project settings
+# Spyder
 .spyderproject
 .spyderworkspace
 
-# Rope project settings
-.ropeproject
+# Rope
+.ropeproject/
 
-# mkdocs documentation
-/site
+# MkDocs
+/site/
 
 # mypy
 .mypy_cache/
 .dmypy.json
 dmypy.json
 
-# Pyre type checker
+# Pyre
 .pyre/
+
+# Ruff
+.ruff_cache/
+
+# W&B local runtime/cache files
+wandb/
+docs/wandb/
+
+# Misc editor / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Keep experiment outputs, including Optuna DB files.
+# Do NOT add a global *.db ignore rule.
+!*.db
