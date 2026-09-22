@@ -1,7 +1,7 @@
 # LLM Optimizer Benchmarking and Optuna Audit
 
-Audit date: 2026-09-22  
-Repository: `/mnt/c/Users/maorb/work/bento_extend/llm-optimizer`  
+Audit date: 2026-09-22
+Repository: `/mnt/c/Users/maorb/work/bento_extend/llm-optimizer`
 Optuna installed in the audit environment: **4.9.0** (`pyproject.toml` permits `>=4,<5`).
 
 This is a read-only audit. No source, configuration, dependency, or benchmark file was modified.
