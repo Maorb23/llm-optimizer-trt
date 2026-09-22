@@ -10,11 +10,12 @@ import hashlib
 import json
 import math
 import pathlib
+import re
 import typing as t
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
-from llm_optimizer.args import ArgSet, BaseArg
+from llm_optimizer.args import Arg, ArgConfig, ArgScope, ArgSet, BaseArg
 
 THROUGHPUT_OBJECTIVES = {
     "request_throughput",
@@ -57,6 +58,8 @@ def objective_direction(metric: str) -> str:
 def extract_objective(metrics: dict[str, t.Any], metric: str) -> float:
     """Extract a finite numeric objective value, rejecting bools and missing data."""
     objective_direction(metric)  # also validates the name
+    if metrics.get("benchmark_valid") is False or metrics.get("failure_rate", 0) != 0:
+        raise ValueError("Benchmark is failed or incomplete; objective is invalid")
     value = metrics.get(metric)
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError(f"Objective metric '{metric}' is missing or non-numeric")
@@ -132,14 +135,102 @@ def satisfies_constraints(
 
 
 @dataclass(frozen=True)
-class OptunaSearchSpace:
-    """A finite product of ArgSets sampled through categorical indices."""
+class IntRange:
+    """An inclusive, stepped Optuna integer distribution."""
 
-    arg_sets: tuple[ArgSet, ...]
+    scope: ArgScope
+    name: str
+    low: int
+    high: int
+    step: int = 1
 
     @property
     def cardinality(self) -> int:
-        return math.prod(len(arg_set.values) for arg_set in self.arg_sets)
+        return (self.high - self.low) // self.step + 1
+
+
+_INT_RANGE_RE = re.compile(
+    r"^((?:--)?[A-Za-z][A-Za-z0-9_-]*)\s*=\s*int\(\s*"
+    r"(-?\d+)\s*,\s*(-?\d+)\s*"
+    r"(?:,\s*(?:step\s*=\s*)?(\d+)\s*)?\)$"
+)
+
+
+def parse_int_ranges(
+    specifications: t.Sequence[str],
+    scope: ArgScope,
+    configs: t.Mapping[str, ArgConfig[t.Any]],
+) -> tuple[IntRange, ...]:
+    """Parse Optuna-only ``name=int(low,high[,step])`` definitions."""
+    ranges: list[IntRange] = []
+    seen: set[str] = set()
+    for specification in specifications:
+        for part in specification.split(";"):
+            part = part.strip()
+            if not part:
+                continue
+            match = _INT_RANGE_RE.fullmatch(part)
+            if match is None:
+                raise ValueError(
+                    f"Invalid Optuna integer range '{part}'; expected "
+                    "name=int(low,high[,step])"
+                )
+            raw_name = match.group(1)
+            name = (
+                raw_name[2:] if raw_name.startswith("--") else raw_name
+            ).replace("-", "_")
+            if name not in configs or configs[name].arg_type is not int:
+                raise ValueError(
+                    f"Optuna integer range '{name}' needs a known integer argument"
+                )
+            if name in seen:
+                raise ValueError(f"Duplicate Optuna integer range '{name}'")
+            low, high = int(match.group(2)), int(match.group(3))
+            step = int(match.group(4) or 1)
+            if step < 1 or high < low or (high - low) % step:
+                raise ValueError(
+                    f"Optuna integer range '{name}' needs low <= high, a positive "
+                    "step, and a high bound reachable by that step"
+                )
+            ranges.append(IntRange(scope, name, low, high, step))
+            seen.add(name)
+    return tuple(ranges)
+
+
+@dataclass(frozen=True)
+class OptunaSearchSpace:
+    """A product of categorical ArgSets and Optuna integer distributions."""
+
+    arg_sets: tuple[ArgSet, ...]
+    int_ranges: tuple[IntRange, ...] = ()
+
+    def __post_init__(self) -> None:
+        names: set[tuple[ArgScope, str]] = set()
+        for arg_set in self.arg_sets:
+            for name in (
+                arg_set.name if isinstance(arg_set.name, tuple) else (arg_set.name,)
+            ):
+                key = (arg_set.scope, name)
+                if key in names:
+                    raise ValueError(
+                        f"Duplicate argument '{arg_set.scope.name.lower()}:{name}'"
+                    )
+                names.add(key)
+        for int_range in self.int_ranges:
+            key = (int_range.scope, int_range.name)
+            if key in names:
+                scoped_name = f"{int_range.scope.name.lower()}:{int_range.name}"
+                raise ValueError(
+                    f"Optuna integer range '{scoped_name}' "
+                    "also appears in fixed or categorical arguments"
+                )
+            names.add(key)
+
+    @property
+    def cardinality(self) -> int:
+        return math.prod(len(arg_set.values) for arg_set in self.arg_sets) * math.prod(
+            int_range.cardinality for int_range in self.int_ranges
+        )
 
     @staticmethod
     def parameter_name(arg_set: ArgSet) -> str:
@@ -162,10 +253,20 @@ class OptunaSearchSpace:
                 self.parameter_name(arg_set), list(range(len(choices)))
             )
             selected.append(choices[index])
+        for int_range in self.int_ranges:
+            value = trial.suggest_int(
+                f"{int_range.scope.name.lower()}:{int_range.name}",
+                int_range.low,
+                int_range.high,
+                step=int_range.step,
+            )
+            selected.append(
+                Arg[int](scope=int_range.scope, name=int_range.name, value=value)
+            )
         return selected
 
     def canonical(self) -> list[dict[str, t.Any]]:
-        return [
+        categorical = [
             {
                 "scope": arg_set.scope.name.lower(),
                 "name": list(arg_set.name)
@@ -175,6 +276,30 @@ class OptunaSearchSpace:
             }
             for arg_set in self.arg_sets
         ]
+        if not self.int_ranges:
+            return categorical
+        return categorical + [
+            {
+                "scope": int_range.scope.name.lower(),
+                "name": int_range.name,
+                "distribution": "int",
+                "low": int_range.low,
+                "high": int_range.high,
+                "step": int_range.step,
+            }
+            for int_range in self.int_ranges
+        ]
+
+    def grid_search_space(self) -> dict[str, list[t.Any]]:
+        """Return the concrete Optuna GridSampler domain for this space."""
+        values: dict[str, list[t.Any]] = {}
+        for arg_set in self.arg_sets:
+            values[self.parameter_name(arg_set)] = list(range(len(arg_set.values)))
+        for int_range in self.int_ranges:
+            values[f"{int_range.scope.name.lower()}:{int_range.name}"] = list(
+                range(int_range.low, int_range.high + 1, int_range.step)
+            )
+        return values
 
 
 def canonical_signature(payload: dict[str, t.Any]) -> tuple[str, str]:

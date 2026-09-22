@@ -11,10 +11,14 @@ python3 -m sglang.bench_serving --backend sglang --num-prompt 10
 python3 -m sglang.bench_serving --backend sglang --dataset-name random --num-prompts 3000 --random-input 1024 --random-output 1024 --random-range-ratio 0.5
 """
 
+from __future__ import annotations
+
 import argparse
 import asyncio
+import hashlib
 import json
 import os
+import platform
 import pickle
 import random
 import resource
@@ -35,12 +39,18 @@ import aiohttp
 import numpy as np
 import requests
 from tqdm.asyncio import tqdm
-from transformers import (
-    AutoTokenizer,
-    PreTrainedTokenizer,
-    PreTrainedTokenizerBase,
-    PreTrainedTokenizerFast,
-)
+try:
+    from transformers import (
+        AutoTokenizer,
+        PreTrainedTokenizer,
+        PreTrainedTokenizerBase,
+        PreTrainedTokenizerFast,
+    )
+except ImportError:  # Keep metric/unit-test imports lightweight.
+    AutoTokenizer = None
+    PreTrainedTokenizer = t.Any
+    PreTrainedTokenizerBase = t.Any
+    PreTrainedTokenizerFast = t.Any
 
 ASSISTANT_SUFFIX = "Assistant:"
 
@@ -85,6 +95,7 @@ class RequestFuncOutput:
     itl: list[float] = field(default_factory=list)  # List of inter-token latencies
     prompt_len: int = 0
     error: str = ""
+    error_category: str = ""
     output_len: int = 0
 
     @staticmethod
@@ -92,6 +103,50 @@ class RequestFuncOutput:
         output = RequestFuncOutput()
         output.prompt_len = request_func_input.prompt_len
         return output
+
+
+def classify_error(error: str, status: Optional[int] = None) -> str:
+    """Return a stable, small error vocabulary for benchmark accounting."""
+    text = (error or "").lower()
+    if status is not None:
+        if status in (408, 429):
+            return "request_rejected"
+        if status >= 500:
+            if "out of memory" in text or "oom" in text:
+                return "oom"
+            return "server_error"
+        if status >= 400:
+            return "request_rejected"
+    if "timeout" in text or "timed out" in text:
+        return "timeout"
+    if "out of memory" in text or "oom" in text:
+        return "oom"
+    if "cancel" in text:
+        return "cancelled"
+    return "client_error"
+
+
+def _mark_failure(output: RequestFuncOutput, error: str, status: Optional[int] = None):
+    output.success = False
+    output.error = error
+    output.error_category = classify_error(error, status)
+
+
+def _mark_success_or_empty_failure(output: RequestFuncOutput) -> None:
+    if output.ttft <= 0.0:
+        _mark_failure(output, "Successful response contained no streamed token.")
+    else:
+        output.success = True
+
+
+async def _response_error(response: Any) -> str:
+    """Include response text so backend OOM messages can be categorized."""
+    error = response.reason or ""
+    try:
+        body = await response.text()
+    except Exception:
+        body = ""
+    return f"{error}: {body}" if body else error
 
 
 def remove_prefix(text: str, prefix: str) -> str:
@@ -165,16 +220,14 @@ async def async_request_trt_llm(
                         most_recent_timestamp = timestamp
 
                     output.latency = most_recent_timestamp - st
-                    output.success = True
+                    _mark_success_or_empty_failure(output)
                     output.output_len = request_func_input.output_len
 
                 else:
-                    output.error = response.reason or ""
-                    output.success = False
+                    _mark_failure(output, await _response_error(response), response.status)
         except Exception:
-            output.success = False
             exc_info = sys.exc_info()
-            output.error = "".join(traceback.format_exception(*exc_info))
+            _mark_failure(output, "".join(traceback.format_exception(*exc_info)))
 
         if pbar:
             pbar.update(1)
@@ -253,16 +306,14 @@ async def async_request_openai_completions(
                                 )
 
                     output.generated_text = generated_text
-                    output.success = True
+                    _mark_success_or_empty_failure(output)
                     output.latency = latency
                     output.output_len = output_len
                 else:
-                    output.error = response.reason or ""
-                    output.success = False
+                    _mark_failure(output, await _response_error(response), response.status)
         except Exception:
-            output.success = False
             exc_info = sys.exc_info()
-            output.error = "".join(traceback.format_exception(*exc_info))
+            _mark_failure(output, "".join(traceback.format_exception(*exc_info)))
 
     if pbar:
         pbar.update(1)
@@ -333,16 +384,14 @@ async def async_request_truss(
                                 generated_text += data["choices"][0]["text"]
 
                     output.generated_text = generated_text
-                    output.success = True
+                    _mark_success_or_empty_failure(output)
                     output.latency = latency
                     output.output_len = request_func_input.output_len
                 else:
-                    output.error = response.reason or ""
-                    output.success = False
+                    _mark_failure(output, await _response_error(response), response.status)
         except Exception:
-            output.success = False
             exc_info = sys.exc_info()
-            output.error = "".join(traceback.format_exception(*exc_info))
+            _mark_failure(output, "".join(traceback.format_exception(*exc_info)))
 
     if pbar:
         pbar.update(1)
@@ -433,16 +482,14 @@ async def async_request_sglang_generate(
                                 last_output_len = output_len
 
                     output.generated_text = generated_text
-                    output.success = True
+                    _mark_success_or_empty_failure(output)
                     output.latency = latency
                     output.output_len = output_len
                 else:
-                    output.error = response.reason or ""
-                    output.success = False
+                    _mark_failure(output, await _response_error(response), response.status)
         except Exception:
-            output.success = False
             exc_info = sys.exc_info()
-            output.error = "".join(traceback.format_exception(*exc_info))
+            _mark_failure(output, "".join(traceback.format_exception(*exc_info)))
             print(f"{output.error=}")
 
     if pbar:
@@ -493,6 +540,10 @@ def get_model(pretrained_model_name_or_path: str) -> str:
 def get_tokenizer(
     pretrained_model_name_or_path: str,
 ) -> Union[PreTrainedTokenizer, PreTrainedTokenizerFast]:
+    if AutoTokenizer is None:
+        from transformers import AutoTokenizer as _AutoTokenizer
+    else:
+        _AutoTokenizer = AutoTokenizer
     assert (
         pretrained_model_name_or_path is not None
         and pretrained_model_name_or_path != ""
@@ -508,7 +559,7 @@ def get_tokenizer(
         pretrained_model_name_or_path
     ):
         pretrained_model_name_or_path = get_model(pretrained_model_name_or_path)
-    return AutoTokenizer.from_pretrained(
+    return _AutoTokenizer.from_pretrained(
         pretrained_model_name_or_path, trust_remote_code=True
     )
 
@@ -574,6 +625,17 @@ def get_dataset(
     return input_requests
 
 
+def prepare_workload_manifest(args_dict: dict[str, t.Any]) -> tuple[dict[str, t.Any], dict[str, t.Any]]:
+    """Load/tokenize the workload once so subsequent trials reuse exact requests."""
+    tokenizer_id = args_dict.get("tokenizer") or args_dict["model"]
+    tokenizer = get_tokenizer(tokenizer_id)
+    input_requests = get_dataset(args_dict, tokenizer)
+    manifest = build_workload_manifest(
+        input_requests, args_dict, args_dict["model"], tokenizer_id
+    )
+    return manifest, workload_metadata(manifest, args_dict, args_dict["model"], tokenizer_id)
+
+
 ASYNC_REQUEST_FUNCS = {
     "sglang": async_request_sglang_generate,
     "sglang-native": async_request_sglang_generate,
@@ -588,7 +650,12 @@ ASYNC_REQUEST_FUNCS = {
 
 @dataclass
 class BenchmarkMetrics:
+    total_requests: int
     completed: int
+    failed: int
+    failure_rate: float
+    failure_categories: dict[str, int]
+    benchmark_valid: bool
     total_input: int
     total_output: int
     total_output_retokenized: int
@@ -623,6 +690,74 @@ class BenchmarkMetrics:
 
 
 SHAREGPT_URL = "https://huggingface.co/datasets/anon8231489123/ShareGPT_Vicuna_unfiltered/resolve/main/ShareGPT_V3_unfiltered_cleaned_split.json"
+
+
+def build_workload_manifest(
+    input_requests: list[DatasetRow], args_dict: dict[str, t.Any], model: str,
+    tokenizer_id: str,
+) -> dict[str, t.Any]:
+    """Serialize the exact requests used by every trial and fingerprint them."""
+    requests = [
+        {
+            "prompt": request.prompt,
+            "prompt_len": request.prompt_len,
+            "output_len": request.output_len,
+        }
+        for request in input_requests
+    ]
+    payload = {
+        "requests": requests,
+        "workload": {
+            key: args_dict.get(key)
+            for key in (
+                "dataset_name", "dataset_path", "num_prompts", "request_rate",
+                "max_concurrency", "seed", "random_input_len", "random_output_len",
+                "random_range_ratio", "sharegpt_output_len", "sharegpt_context_len",
+                "prompt_suffix", "apply_chat_template", "disable_ignore_eos",
+                "extra_request_body",
+                "framework", "model_revision", "tokenizer_revision",
+            )
+        },
+        "model": model,
+        "tokenizer": tokenizer_id,
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return {
+        **payload,
+        "sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+    }
+
+
+def workload_metadata(
+    manifest: dict[str, t.Any], args_dict: dict[str, t.Any], model: str,
+    tokenizer_id: str,
+) -> dict[str, t.Any]:
+    """Return compact persisted identity/environment metadata for a run."""
+    import importlib.metadata
+
+    versions = {}
+    for package in (
+        "llm-optimizer", "numpy", "aiohttp", "transformers", "optuna",
+        "vllm", "sglang", "tensorrt-llm",
+    ):
+        try:
+            versions[package] = importlib.metadata.version(package)
+        except importlib.metadata.PackageNotFoundError:
+            pass
+    return {
+        "workload_sha256": manifest["sha256"],
+        "dataset": {key: args_dict.get(key) for key in ("dataset_name", "dataset_path", "num_prompts")},
+        "seed": args_dict.get("seed", 1),
+        "model": model,
+        "model_revision": args_dict.get("model_revision"),
+        "tokenizer": tokenizer_id,
+        "tokenizer_revision": args_dict.get("tokenizer_revision"),
+        "framework": args_dict.get("framework"),
+        "python_version": platform.python_version(),
+        "platform": platform.platform(),
+        "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
+        "package_versions": versions,
+    }
 
 
 def download_and_cache_file(url: str, filename: Optional[str] = None):
@@ -1148,6 +1283,7 @@ def calculate_metrics(
     retokenized_output_lens: list[int] = []
     total_input = 0
     completed = 0
+    failure_categories: dict[str, int] = {}
     itls: list[float] = []
     tpots: list[float] = []
     ttfts: list[float] = []
@@ -1172,6 +1308,8 @@ def calculate_metrics(
         else:
             output_lens.append(0)
             retokenized_output_lens.append(0)
+            category = outputs[i].error_category or classify_error(outputs[i].error)
+            failure_categories[category] = failure_categories.get(category, 0) + 1
 
     if completed == 0:
         warnings.warn(
@@ -1179,8 +1317,15 @@ def calculate_metrics(
             "on the benchmark arguments.",
             stacklevel=2,
         )
+    total_requests = len(outputs)
+    failed = total_requests - completed
     metrics = BenchmarkMetrics(
+        total_requests=total_requests,
         completed=completed,
+        failed=failed,
+        failure_rate=failed / total_requests if total_requests else 1.0,
+        failure_categories=failure_categories,
+        benchmark_valid=total_requests > 0 and completed == total_requests,
         total_input=total_input,
         total_output=sum(output_lens),
         total_output_retokenized=sum(retokenized_output_lens),
@@ -1208,11 +1353,11 @@ def calculate_metrics(
         p95_itl_ms=np.percentile(itls or 0, 95) * 1000,
         p99_itl_ms=np.percentile(itls or 0, 99) * 1000,
         max_itl_ms=np.max(itls or 0) * 1000,
-        mean_e2e_latency_ms=np.mean(e2e_latencies) * 1000,
-        median_e2e_latency_ms=np.median(e2e_latencies) * 1000,
-        std_e2e_latency_ms=np.std(e2e_latencies) * 1000,
-        p95_e2e_latency_ms=np.percentile(e2e_latencies, 95) * 1000,
-        p99_e2e_latency_ms=np.percentile(e2e_latencies, 99) * 1000,
+        mean_e2e_latency_ms=np.mean(e2e_latencies or [np.nan]) * 1000,
+        median_e2e_latency_ms=np.median(e2e_latencies or [np.nan]) * 1000,
+        std_e2e_latency_ms=np.std(e2e_latencies or [np.nan]) * 1000,
+        p95_e2e_latency_ms=np.percentile(e2e_latencies or [np.nan], 95) * 1000,
+        p99_e2e_latency_ms=np.percentile(e2e_latencies or [np.nan], 99) * 1000,
         concurrency=np.sum(e2e_latencies) / dur_s,
     )
 
@@ -1503,7 +1648,12 @@ async def benchmark(
             "random_range_ratio": args_dict.get("random_range_ratio"),
             # Results
             "duration": benchmark_duration,
+            "total_requests": metrics.total_requests,
             "completed": metrics.completed,
+            "failed": metrics.failed,
+            "failure_rate": metrics.failure_rate,
+            "failure_categories": metrics.failure_categories,
+            "benchmark_valid": metrics.benchmark_valid,
             "total_input_tokens": metrics.total_input,
             "total_output_tokens": metrics.total_output,
             "total_output_tokens_retokenized": metrics.total_output_retokenized,
@@ -1545,6 +1695,7 @@ async def benchmark(
         "itls": [output.itl for output in outputs],
         "generated_texts": [output.generated_text for output in outputs],
         "errors": [output.error for output in outputs],
+        "error_categories": [output.error_category for output in outputs],
     }
 
     if args_dict.get("output_details"):
@@ -1677,7 +1828,11 @@ def run_benchmark(args_dict: dict[str, t.Any]):
     model_id = model
     tokenizer_id = args_dict.get("tokenizer", model_id)
     tokenizer = get_tokenizer(tokenizer_id)
-    input_requests = get_dataset(args_dict, tokenizer)
+    manifest = args_dict.get("_request_manifest")
+    if manifest is not None:
+        input_requests = [DatasetRow(**item) for item in manifest["requests"]]
+    else:
+        input_requests = get_dataset(args_dict, tokenizer)
 
     flush_cache = args_dict.get("flush_cache", False)
 

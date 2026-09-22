@@ -1,3 +1,4 @@
+import importlib
 import json
 import pathlib
 import time
@@ -15,7 +16,7 @@ from llm_optimizer.cli_utils import (
     normalize_gpu_choice,
 )
 from llm_optimizer.logging import get_logger, setup_logging
-from llm_optimizer.optimization import satisfies_constraints
+from llm_optimizer.optimization import IntRange, parse_int_ranges, satisfies_constraints
 from llm_optimizer.performance import (
     PerformanceEstimationParams,
     display_performance_estimation_results,
@@ -85,6 +86,26 @@ def extract_token_lengths(client_params: dict) -> tuple[int, int]:
     return input_len, output_len
 
 
+def validate_fixed_workload(
+    client_args_sets: list[lo_args.ArgSet], int_ranges: tuple[IntRange, ...] = ()
+) -> None:
+    """Engine searches must not silently change the benchmark workload."""
+    variable = [
+        arg_set.name
+        for arg_set in client_args_sets
+        if len(arg_set.get_all_possible_arg_values()) > 1
+    ]
+    variable.extend(
+        range_.name for range_ in int_ranges if range_.scope == lo_args.ArgScope.CLIENT
+    )
+    if variable:
+        names = ", ".join(str(name) for name in variable)
+        raise click.UsageError(
+            "Workload parameters must be fixed while optimizing engine parameters: "
+            f"{names}"
+        )
+
+
 def find_best_throughput_configs(
     all_results: list, constraints: t.Optional[list] = None
 ) -> dict:
@@ -102,6 +123,8 @@ def find_best_throughput_configs(
             continue
 
         metrics = result["results"]
+        if metrics.get("benchmark_valid") is False or metrics.get("failure_rate", 0) != 0:
+            continue
         input_tp = metrics.get("input_throughput", 0)
         output_tp = metrics.get("output_throughput", 0)
 
@@ -189,6 +212,7 @@ def _write_combined_results(
     constraints_for_viz: list,
     parsed_constraints: list,
     optimization_metadata: t.Optional[dict[str, t.Any]] = None,
+    workload_metadata: t.Optional[dict[str, t.Any]] = None,
 ) -> None:
     all_results = _load_jsonl(output_jsonl) if output_jsonl.exists() else []
     input_len = output_len = None
@@ -204,6 +228,7 @@ def _write_combined_results(
             "constraints": constraints_for_viz,
             "input_len": input_len,
             "output_len": output_len,
+            **(workload_metadata or {}),
         },
         "best_configurations": find_best_throughput_configs(
             all_results, parsed_constraints
@@ -236,9 +261,11 @@ def run_single_configuration(
     trial_number: t.Optional[int] = None,
     study_signature: t.Optional[str] = None,
     parsed_constraints: t.Optional[list] = None,
+    workload_manifest: t.Optional[dict[str, t.Any]] = None,
+    workload_metadata: t.Optional[dict[str, t.Any]] = None,
 ) -> tuple[dict[str, t.Any], t.Optional[float]]:
     """Run and persist one configuration, always cleaning up its server."""
-    import llm_optimizer.bench_client as bench_client
+    bench_client = importlib.import_module("llm_optimizer.bench_client")
     from llm_optimizer.optimization import extract_objective
 
     client_params = benchmark_settings["client_args"]
@@ -268,13 +295,12 @@ def run_single_configuration(
             "seed": 1,
         }
         benchmark_args.update(client_params)
+        if workload_manifest is not None:
+            benchmark_args["_request_manifest"] = workload_manifest
         benchmark_result = bench_client.run_benchmark(benchmark_args)
         if not isinstance(benchmark_result, dict):
             raise RuntimeError("Benchmark did not return a result")
 
-        objective_value = (
-            extract_objective(benchmark_result, objective) if objective else None
-        )
         feasible = satisfies_constraints(
             benchmark_result, parsed_constraints or []
         )
@@ -290,15 +316,27 @@ def run_single_configuration(
                 "model_tag": model,
                 "input_tokens": input_len,
                 "output_tokens": output_len,
+                **(workload_metadata or {}),
             },
         }
         if trial_number is not None:
             result["optimization"] = {
                 "trial_number": trial_number,
-                "objective_value": objective_value,
+                "objective_value": None,
                 "slo_feasible": feasible,
                 "study_signature": study_signature,
             }
+        objective_error = None
+        try:
+            objective_value = (
+                extract_objective(benchmark_result, objective) if objective else None
+            )
+        except ValueError as exc:
+            objective_value = None
+            objective_error = str(exc)
+            result.setdefault("optimization", {})["failure_reason"] = objective_error
+        if trial_number is not None:
+            result["optimization"]["objective_value"] = objective_value
         if output_jsonl_path:
             with output_jsonl_path.open("a") as stream:
                 stream.write(json.dumps(result, cls=InfinityToNullEncoder) + "\n")
@@ -307,6 +345,8 @@ def run_single_configuration(
             with output_file_path.open("w") as stream:
                 json.dump(result, stream, indent=2, cls=InfinityToNullEncoder)
             logger.info(f"Benchmark results saved to {output_file_path}")
+        if objective_error and objective is not None:
+            raise ValueError(objective_error)
         return result, objective_value
     finally:
         if server_process:
@@ -326,6 +366,7 @@ def _run_optuna_search(
     *,
     server_args_sets: list[lo_args.ArgSet],
     client_args_sets: list[lo_args.ArgSet],
+    int_ranges: tuple[IntRange, ...],
     framework: str,
     model: str,
     server_cmd: str,
@@ -349,6 +390,12 @@ def _run_optuna_search(
     seed: int,
     storage: t.Optional[str],
     study_name: t.Optional[str],
+    sampler_name: str,
+    sampler_kwargs_text: str,
+    pruner_name: str,
+    pruner_kwargs_text: str,
+    workload_manifest: t.Optional[dict[str, t.Any]] = None,
+    workload_metadata: t.Optional[dict[str, t.Any]] = None,
 ) -> None:
     from llm_optimizer.optimization import (
         OptunaSearchSpace,
@@ -365,7 +412,12 @@ def _run_optuna_search(
     output_path = pathlib.Path(output_json)
     jsonl_path = output_path.with_suffix(".jsonl")
     storage_url = storage or default_storage_url(output_path)
-    space = OptunaSearchSpace(tuple(server_args_sets + client_args_sets))
+    try:
+        space = OptunaSearchSpace(
+            tuple(server_args_sets + client_args_sets), int_ranges
+        )
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from exc
     signature_payload = {
         "model": model,
         "server_command": server_cmd,
@@ -374,6 +426,11 @@ def _run_optuna_search(
         "objective": objective,
         "direction": direction,
         "constraints": constraints_text or "",
+        "workload_sha256": (workload_metadata or {}).get("workload_sha256"),
+        "sampler": sampler_name,
+        "sampler_kwargs": sampler_kwargs_text,
+        "pruner": pruner_name,
+        "pruner_kwargs": pruner_kwargs_text,
         "gpu_count": gpus,
         "host": host,
         "port": port,
@@ -386,6 +443,8 @@ def _run_optuna_search(
         click.echo(f"Framework: {framework}")
         click.echo(f"Search-space size: {space.cardinality}")
         click.echo(f"Objective: {objective} ({direction})")
+        click.echo(f"Sampler: {sampler_name}")
+        click.echo(f"Pruner: {pruner_name}")
         click.echo(f"Trial budget: {trials_budget}")
         click.echo(f"Timeout: {timeout if timeout is not None else 'none'}")
         click.echo(f"Storage: {storage_kind(storage_url)}")
@@ -437,15 +496,66 @@ def _run_optuna_search(
             ),
         )
 
-    sampler_kwargs: dict[str, t.Any] = {"seed": seed}
-    if parsed_constraints:
+    def build_optuna_component(
+        component_name: str,
+        kwargs_text: str,
+        namespace: t.Any,
+        default_name: str,
+    ) -> t.Any:
+        name = component_name or default_name
+        component_cls = getattr(namespace, name, None)
+        if component_cls is None and "." in name:
+            module_name, class_name = name.rsplit(".", 1)
+            component_cls = getattr(importlib.import_module(module_name), class_name)
+        if component_cls is None or not callable(component_cls):
+            raise click.UsageError(f"Unknown Optuna component: {name}")
+        try:
+            kwargs = json.loads(kwargs_text) if kwargs_text else {}
+        except json.JSONDecodeError as exc:
+            raise click.UsageError(
+                f"Invalid JSON for Optuna component '{name}': {exc}"
+            ) from exc
+        if not isinstance(kwargs, dict):
+            raise click.UsageError(
+                f"Optuna component kwargs for '{name}' must be a JSON object."
+            )
+        return component_cls(**kwargs)
+
+    sampler_kwargs: dict[str, t.Any] = {} if sampler_name.endswith("GridSampler") else {"seed": seed}
+    if sampler_kwargs_text:
+        try:
+            parsed_sampler_kwargs = json.loads(sampler_kwargs_text)
+        except json.JSONDecodeError as exc:
+            raise click.UsageError(f"Invalid JSON for Optuna sampler: {exc}") from exc
+        if not isinstance(parsed_sampler_kwargs, dict):
+            raise click.UsageError("Optuna sampler kwargs must be a JSON object.")
+        sampler_kwargs.update(parsed_sampler_kwargs)
+    if parsed_constraints and "constraints_func" not in sampler_kwargs:
         sampler_kwargs["constraints_func"] = constraints_func
-    sampler = optuna.samplers.TPESampler(**sampler_kwargs)
+    sampler_cls = getattr(optuna.samplers, sampler_name, None)
+    if sampler_cls is None and "." in sampler_name:
+        module_name, class_name = sampler_name.rsplit(".", 1)
+        sampler_cls = getattr(importlib.import_module(module_name), class_name)
+    if sampler_cls is None or not callable(sampler_cls):
+        raise click.UsageError(f"Unknown Optuna sampler: {sampler_name}")
+    if sampler_cls.__name__ == "GridSampler":
+        if "search_space" in sampler_kwargs:
+            raise click.UsageError(
+                "GridSampler search_space is generated from the benchmark search space"
+            )
+        sampler_kwargs["search_space"] = space.grid_search_space()
+        if parsed_constraints and "constraints_func" in sampler_kwargs:
+            sampler_kwargs.pop("constraints_func")
+    sampler = sampler_cls(**sampler_kwargs)
+    pruner = build_optuna_component(
+        pruner_name, pruner_kwargs_text, optuna.pruners, "NopPruner"
+    )
     study = optuna.create_study(
         study_name=resolved_study_name,
         storage=storage_url,
         direction=direction,
         sampler=sampler,
+        pruner=pruner,
         load_if_exists=continue_flag,
     )
     existing_signature = study.user_attrs.get("llm_optimizer_signature")
@@ -497,9 +607,12 @@ def _run_optuna_search(
 
     started = time.monotonic()
     attempts = 0
-    max_attempts = max(100, trials_budget * 20, space.cardinality * 10)
+    max_attempts = max(100, trials_budget * 20, min(space.cardinality * 10, 10000))
     stop_reason = "trial_budget"
-    while len(evaluated_ids) < trials_budget:
+    effective_trials_budget = (
+        space.cardinality if sampler.__class__.__name__ == "GridSampler" else trials_budget
+    )
+    while len(evaluated_ids) < effective_trials_budget:
         if len(evaluated_ids) >= space.cardinality:
             stop_reason = "search_space_exhausted"
             break
@@ -543,13 +656,21 @@ def _run_optuna_search(
                 trial_number=trial.number,
                 study_signature=signature,
                 parsed_constraints=parsed_constraints,
+                workload_manifest=workload_manifest,
+                workload_metadata=workload_metadata,
             )
             violations = constraint_violations(result["results"], parsed_constraints)
             feasible = all(item <= 0 for item in violations)
             trial.set_user_attr("constraint_values", violations)
             trial.set_user_attr("slo_feasible", feasible)
             assert benchmark_value is not None
-            study.tell(trial, benchmark_value)
+            try:
+                study.tell(trial, benchmark_value)
+            except RuntimeError as exc:
+                # Optuna's GridSampler marks the final trial complete and then
+                # calls Study.stop(), which is only legal inside optimize().
+                if "Study.stop" not in str(exc):
+                    raise
         except KeyboardInterrupt:
             trial.set_user_attr("slo_feasible", False)
             study.tell(trial, state=optuna.trial.TrialState.FAIL)
@@ -562,7 +683,7 @@ def _run_optuna_search(
             )
             study.tell(trial, state=optuna.trial.TrialState.FAIL)
         evaluated_ids.add(config_id)
-        if len(evaluated_ids) < min(trials_budget, space.cardinality) and rest:
+        if len(evaluated_ids) < min(effective_trials_budget, space.cardinality) and rest:
             logger.info(f"Resting for {rest} seconds before the next run.")
             time.sleep(rest)
 
@@ -587,7 +708,11 @@ def _run_optuna_search(
         "strategy": "optuna",
         "study_name": resolved_study_name,
         "study_signature": signature,
-        "sampler": "TPESampler",
+        "sampler": sampler.__class__.__name__,
+        "sampler_kwargs": {
+            key: value for key, value in sampler_kwargs.items() if key != "search_space"
+        },
+        "pruner": pruner.__class__.__name__,
         "objective": objective,
         "direction": direction,
         "budget": trials_budget,
@@ -613,6 +738,7 @@ def _run_optuna_search(
         constraints_for_viz,
         parsed_constraints,
         metadata,
+        workload_metadata,
     )
     logger.info(f"Optuna benchmark results saved to {output_path}")
 
@@ -698,10 +824,42 @@ def _run_optuna_search(
     help="TPE sampler seed.",
 )
 @click.option(
+    "--optuna-sampler",
+    default="TPESampler",
+    show_default=True,
+    help="Optuna sampler class name or import path.",
+)
+@click.option(
+    "--optuna-sampler-kwargs",
+    default="",
+    help="JSON object of keyword arguments passed to the sampler.",
+)
+@click.option(
+    "--optuna-pruner",
+    default="NopPruner",
+    show_default=True,
+    help="Optuna pruner class name or import path.",
+)
+@click.option(
+    "--optuna-pruner-kwargs",
+    default="",
+    help="JSON object of keyword arguments passed to the pruner.",
+)
+@click.option(
     "--optuna-storage", type=str, help="Optuna/SQLAlchemy RDB storage URL."
 )
 @click.option(
     "--optuna-study-name", type=str, help="Study name; derived when omitted."
+)
+@click.option(
+    "--optuna-server-args",
+    multiple=True,
+    help="Optuna-only server integer ranges: name=int(low,high[,step]).",
+)
+@click.option(
+    "--optuna-client-args",
+    multiple=True,
+    help="Optuna-only client integer ranges: name=int(low,high[,step]).",
 )
 @click.pass_context
 def cli(
@@ -727,8 +885,14 @@ def cli(
     optuna_timeout,
     optuna_objective,
     optuna_seed,
+    optuna_sampler,
+    optuna_sampler_kwargs,
+    optuna_pruner,
+    optuna_pruner_kwargs,
     optuna_storage,
     optuna_study_name,
+    optuna_server_args,
+    optuna_client_args,
 ):
     """A CLI tool to optimize LLM performance."""
     if ctx.invoked_subcommand is None:
@@ -755,8 +919,14 @@ def cli(
             optuna_timeout,
             optuna_objective,
             optuna_seed,
+            optuna_sampler,
+            optuna_sampler_kwargs,
+            optuna_pruner,
+            optuna_pruner_kwargs,
             optuna_storage,
             optuna_study_name,
+            optuna_server_args,
+            optuna_client_args,
         )
 
 
@@ -782,8 +952,14 @@ def benchmark(
     optuna_timeout=None,
     optuna_objective="output_throughput",
     optuna_seed=1,
+    optuna_sampler="TPESampler",
+    optuna_sampler_kwargs="",
+    optuna_pruner="NopPruner",
+    optuna_pruner_kwargs="",
     optuna_storage=None,
     optuna_study_name=None,
+    optuna_server_args=(),
+    optuna_client_args=(),
 ):
     """A CLI tool to optimize LLM performance."""
     from llm_optimizer.performance import parse_slo_constraints
@@ -823,6 +999,9 @@ def benchmark(
             objective_direction(optuna_objective)
         except ValueError as exc:
             raise click.UsageError(str(exc)) from exc
+
+    workload_manifest = None
+    workload_metadata = None
     if managed_server:
         if not model or not framework:
             raise click.UsageError(
@@ -877,13 +1056,87 @@ def benchmark(
         strict=True,
     )
 
-    all_combinations = lo_args.get_all_arg_combinations(
-        client_args_sets=client_args_sets,
-        server_args_sets=server_args_sets,
-    )
+    if search_strategy != "optuna" and (optuna_server_args or optuna_client_args):
+        raise click.UsageError(
+            "--optuna-server-args and --optuna-client-args require "
+            "--search-strategy optuna."
+        )
+    int_ranges: tuple[IntRange, ...] = ()
+    if search_strategy == "optuna":
+        try:
+            int_ranges = parse_int_ranges(
+                optuna_server_args,
+                lo_args.ArgScope.SERVER,
+                server_configs or {},
+            ) + parse_int_ranges(
+                optuna_client_args,
+                lo_args.ArgScope.CLIENT,
+                predefined.CLIENT_CONFIGS,
+            )
+        except ValueError as exc:
+            raise click.UsageError(str(exc)) from exc
 
-    total_configs = len(all_combinations)
-    logger.info(f"Generated {total_configs} configuration(s) to run.")
+    if search_strategy == "optuna":
+        # Fail on a missing optional dependency before importing the heavyweight
+        # benchmark client (which also depends on transformers).
+        from llm_optimizer.optimization import require_optuna
+
+        try:
+            require_optuna()
+        except RuntimeError as exc:
+            raise click.ClickException(str(exc)) from exc
+
+    if not dry_run and framework and model:
+        bench_client = importlib.import_module("llm_optimizer.bench_client")
+
+        if hasattr(bench_client, "prepare_workload_manifest"):
+            validate_fixed_workload(client_args_sets, int_ranges)
+            fixed_client_args = {
+                key: value
+                for arg_set in client_args_sets
+                for key, value in lo_args.get_all_kv_pairs(
+                    [arg_set.get_all_possible_arg_values()[0]]
+                ).items()
+            }
+            workload_args = {
+                "backend": predefined.get_framework_spec(framework).benchmark_backend,
+                "framework": framework,
+                "model": model,
+                "host": host,
+                "port": port,
+                "dataset_name": "sharegpt",
+                "num_prompts": 1000,
+                "request_rate": float("inf"),
+                "seed": 1,
+            }
+            workload_args.update(fixed_client_args)
+            fixed_server_args = {
+                key: value
+                for arg_set in server_args_sets
+                for key, value in lo_args.get_all_kv_pairs(
+                    [arg_set.get_all_possible_arg_values()[0]]
+                ).items()
+            }
+            workload_args["model_revision"] = next(
+                (fixed_server_args.get(key) for key in ("revision", "hf_revision") if key in fixed_server_args),
+                None,
+            )
+            workload_args["tokenizer_revision"] = fixed_server_args.get(
+                "tokenizer_revision"
+            )
+            workload_manifest, workload_metadata = bench_client.prepare_workload_manifest(
+                workload_args
+            )
+            manifest_path = (
+                pathlib.Path(output_json).with_suffix(".workload.json")
+                if output_json
+                else pathlib.Path(output_dir) / "workload_manifest.json"
+            )
+            manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            manifest_path.write_text(
+                json.dumps(workload_manifest, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
 
     ready_url = f"http://{host}:{port}{ready_endpoint}"
 
@@ -891,6 +1144,7 @@ def benchmark(
         _run_optuna_search(
             server_args_sets=server_args_sets,
             client_args_sets=client_args_sets,
+            int_ranges=int_ranges,
             framework=framework,
             model=model,
             server_cmd=server_cmd,
@@ -912,10 +1166,23 @@ def benchmark(
             timeout=optuna_timeout,
             objective=optuna_objective,
             seed=optuna_seed,
+            sampler_name=optuna_sampler,
+            sampler_kwargs_text=optuna_sampler_kwargs,
+            pruner_name=optuna_pruner,
+            pruner_kwargs_text=optuna_pruner_kwargs,
             storage=optuna_storage,
             study_name=optuna_study_name,
+            workload_manifest=workload_manifest,
+            workload_metadata=workload_metadata,
         )
         return
+
+    all_combinations = lo_args.get_all_arg_combinations(
+        client_args_sets=client_args_sets,
+        server_args_sets=server_args_sets,
+    )
+    total_configs = len(all_combinations)
+    logger.info(f"Generated {total_configs} configuration(s) to run.")
 
     output_dir = pathlib.Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1031,6 +1298,8 @@ def benchmark(
                 output_jsonl_path=output_jsonl_path,
                 output_file_path=output_file_path,
                 parsed_constraints=parsed_constraints,
+                workload_manifest=workload_manifest,
+                workload_metadata=workload_metadata,
             )
         except Exception as e:
             logger.error(f"Error during run for config {config_id}: {e}")
@@ -1068,6 +1337,7 @@ def benchmark(
                 "constraints": constraints_for_viz,
                 "input_len": input_len,
                 "output_len": output_len,
+                **(workload_metadata or {}),
             },
             "best_configurations": best_configs,
             "test_results": all_results,

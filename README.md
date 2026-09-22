@@ -104,7 +104,11 @@ This command will:
 Grid search remains the default. Add `--search-strategy optuna` to tune one
 framework and model with Optuna's seeded TPE sampler. The existing scalar,
 list, `range(...)`, boolean, and coupled `tp_size*dp_size` syntax is reused as a
-finite categorical space. `--output-json` is required.
+finite categorical space. Optuna-only integer distributions use separate
+`--optuna-server-args` and `--optuna-client-args` options. `--output-json` is
+required. Samplers and pruners can be selected by Optuna class name or fully
+qualified import path, with JSON keyword arguments passed through using
+`--optuna-sampler-kwargs` and `--optuna-pruner-kwargs`.
 
 ```bash
 # vLLM: maximize output throughput (the default objective)
@@ -129,6 +133,26 @@ llm-optimizer --framework trtllm --model meta-llama/Llama-3.1-8B-Instruct \
   --search-strategy optuna --optuna-seed 7 --optuna-trials 16 \
   --output-json trtllm_optuna.json
 ```
+
+For a genuine Optuna integer search, keep fixed and categorical arguments in
+the existing options and put numeric ranges in the Optuna-only options:
+
+```bash
+llm-optimizer --framework vllm --model meta-llama/Llama-3.1-8B-Instruct \
+  --server-args "tensor_parallel_size=1" \
+  --optuna-server-args "max_num_seqs=int(16,64);max_num_batched_tokens=int(4096,16384,4096)" \
+  --client-args "dataset_name=random;num_prompts=128" \
+  --optuna-client-args "max_concurrency=int(8,32,8)" \
+  --search-strategy optuna --optuna-trials 20 \
+  --output-json vllm_integer_optuna.json
+```
+
+`int(low,high[,step])` includes both bounds; the step defaults to 1 and must
+land exactly on the high bound. These values use Optuna's `suggest_int`, not
+categorical sampling. Do not repeat a parameter in both argument options.
+Grid search does not accept the Optuna-only options. Changing a range changes
+the study signature, so use a fresh output/study or the original range when
+resuming with `--continue`.
 
 Throughput objectives (`request_throughput`, `input_throughput`,
 `output_throughput`, and `total_throughput`) are maximized. Mean, median, p95,
