@@ -1,5 +1,6 @@
 import importlib
 import json
+import os
 import pathlib
 import time
 import typing as t
@@ -456,6 +457,18 @@ def _run_optuna_search(
     except RuntimeError as exc:
         raise click.ClickException(str(exc)) from exc
 
+    from llm_optimizer.wandb_tracking import WandbTracker
+
+    tracking_run_id = os.getenv("LLM_OPTIMIZER_RUN_ID") or signature
+    wandb_tracker = WandbTracker.start(
+        study_name=resolved_study_name,
+        framework=framework,
+        model=model,
+        gpu=gpu_type,
+        run_id=tracking_run_id,
+        objective=objective,
+    )
+
     if not continue_flag and (output_path.exists() or jsonl_path.exists()):
         raise click.ClickException(
             f"Output files already exist. Use --continue to resume: {output_path}"
@@ -682,6 +695,17 @@ def _run_optuna_search(
                 "constraint_values", [float("inf")] * len(parsed_constraints)
             )
             study.tell(trial, state=optuna.trial.TrialState.FAIL)
+        frozen_trial = next(
+            item
+            for item in study.get_trials(deepcopy=False)
+            if item.number == trial.number
+        )
+        wandb_tracker.trial(
+            frozen_trial,
+            result.get("results", {}) if "result" in locals() else None,
+        )
+        if "result" in locals():
+            del result
         evaluated_ids.add(config_id)
         if len(evaluated_ids) < min(effective_trials_budget, space.cardinality) and rest:
             logger.info(f"Resting for {rest} seconds before the next run.")
@@ -740,6 +764,11 @@ def _run_optuna_search(
         metadata,
         workload_metadata,
     )
+    wandb_tracker.artifacts(
+        [output_path, jsonl_path, output_path.with_suffix(".workload.json")],
+        name=f"{resolved_study_name}-results",
+    )
+    wandb_tracker.finish()
     logger.info(f"Optuna benchmark results saved to {output_path}")
 
 
@@ -1096,7 +1125,7 @@ def benchmark(
                 for arg_set in client_args_sets
                 for key, value in lo_args.get_all_kv_pairs(
                     [arg_set.get_all_possible_arg_values()[0]]
-                ).items()
+                )
             }
             workload_args = {
                 "backend": predefined.get_framework_spec(framework).benchmark_backend,
@@ -1115,7 +1144,7 @@ def benchmark(
                 for arg_set in server_args_sets
                 for key, value in lo_args.get_all_kv_pairs(
                     [arg_set.get_all_possible_arg_values()[0]]
-                ).items()
+                )
             }
             workload_args["model_revision"] = next(
                 (fixed_server_args.get(key) for key in ("revision", "hf_revision") if key in fixed_server_args),

@@ -1,0 +1,21 @@
+  {
+    "model": "Qwen/Qwen3-4B",
+    "frameworks": ["vllm"],
+    "gpu_type": "gpu-l40s-d",
+    "gpu_count": 1,
+    "preset": "1gpu-16vcpu-96gb",
+    "images": {
+      "vllm": "cr.eu-north1.nebius.cloud/e00p24e8mwqab11v1e/llm-optimizer-vllm:wandb-1"
+    },
+    "bucket": "hf-model-watch",
+    "prefix": "llm-optimizer",
+    "client_args": [
+      "dataset_name=random;random_input_len=128;random_output_len=32;num_prompts=16"
+    ],
+    "server_args": {"vllm": ["max_num_seqs=[8,16]"]},
+    "search_strategy": "optuna",
+    "optuna": {"trials": 2, "seed": 7},
+    "timeout_minutes": 120,
+    "preemptible": true,
+    "dry_run": false
+  }

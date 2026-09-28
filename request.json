@@ -1,0 +1,25 @@
+{
+    "model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "frameworks": ["vllm"],
+    "gpu_type": "gpu-h100-sxm",
+    "gpu_count": 1,
+    "preset": "1gpu-16vcpu-96gb",
+    "images": {
+      "vllm": "llm-optimizer-vllm:local"
+    },
+    "bucket": "hf-model-watch",
+    "prefix": "llm-optimizer",
+    "client_args": [
+      "dataset_name=random;random_input_len=128;random_output_len=32;num_prompts=16"
+    ],
+    "server_args": {
+      "vllm": ["max_num_seqs=[8,16]"]
+    },
+    "search_strategy": "optuna",
+    "optuna": {
+      "trials": 2,
+      "seed": 7
+    },
+    "timeout_minutes": 180,
+    "dry_run": true
+  }

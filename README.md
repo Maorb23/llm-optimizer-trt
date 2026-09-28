@@ -2,6 +2,8 @@
 
 llm-optimizer is a Python tool for benchmarking and optimizing inference performance of any open-source LLMs.
 
+For remote GPU jobs, see [Run a Nebius GPU optimization job](#run-a-nebius-gpu-optimization-job).
+
 - 🧩 Benchmark SGLang, vLLM, and NVIDIA TensorRT-LLM using native arguments
 - ⚡️ Find the optimal setup automatically for your use case without endless trial and error
 - 🎯 Apply SLO constraints to focus only on configurations that meet your performance goals
@@ -31,6 +33,221 @@ Optuna-based Bayesian search is an optional installation:
 ```bash
 pip install -e '.[optuna]'
 ```
+
+## Run a Nebius GPU optimization job
+
+### Build framework worker images
+
+The remote worker must include vLLM and this repository's Python package. Build
+the supplied image once from the repository root. Pin the vLLM image tag you
+have tested rather than relying on `latest`:
+
+```bash
+docker build \
+  --file docker/vllm.Dockerfile \
+  --build-arg VLLM_IMAGE=vllm/vllm-openai:latest \
+  --tag llm-optimizer-vllm:local \
+  .
+```
+
+The image you build locally must be pushed to a registry that Nebius can pull
+from. Use the resulting registry image reference in `request.json` under
+`images.vllm`.
+
+SGLang and TensorRT-LLM use separate base images and Dockerfiles. Build only
+the frameworks you select in the request. Build from the repository root:
+
+```bash
+docker build --file docker/sglang.Dockerfile \
+  --tag llm-optimizer-sglang:local .
+
+docker build --file docker/trtllm.Dockerfile \
+  --tag llm-optimizer-trtllm:local .
+```
+
+The defaults use versioned upstream images. Override `SGLANG_IMAGE` or
+`TRTLLM_IMAGE` with `--build-arg` only after checking GPU, CUDA, and optimizer
+argument compatibility. The SGLang Dockerfile uses the official SGLang release
+image; the TensorRT-LLM Dockerfile uses NVIDIA's prebuilt release image, so it
+does not compile TensorRT-LLM from source. Each build checks that the framework
+and optimizer worker import successfully. A GPU job is still needed to verify
+serving and benchmarking.
+
+For a Nebius registry, use the registry ID suffix (without `registry-`) in the
+image path, not the project ID. For example, after creating a registry and
+configuring Docker credentials:
+
+```bash
+nebius registry configure-helper
+docker tag llm-optimizer-sglang:local \
+  cr.eu-north1.nebius.cloud/REGISTRY_ID/llm-optimizer-sglang:v1
+docker push cr.eu-north1.nebius.cloud/REGISTRY_ID/llm-optimizer-sglang:v1
+
+docker tag llm-optimizer-trtllm:local \
+  cr.eu-north1.nebius.cloud/REGISTRY_ID/llm-optimizer-trtllm:v1
+docker push cr.eu-north1.nebius.cloud/REGISTRY_ID/llm-optimizer-trtllm:v1
+```
+
+Set `images.sglang` and `images.trtllm` to those full registry references when
+selecting those frameworks. Check available disk space and Docker's footprint
+before pulling another large framework image:
+
+```bash
+docker system df
+df -h .
+```
+
+Remote execution is opt-in. `submit` queues a run in a persistent controller;
+the controller creates one Nebius job per framework. A dry run creates the job
+plan without starting a GPU or uploading artifacts.
+
+### Set up the controller and worker images
+
+1. Install the controller dependencies: `pip install -e '.[remote]'`.
+2. [Install and configure the Nebius CLI](https://docs.nebius.com/cli/install)
+   on the controller host. Its active profile must have permission to create,
+   inspect, and cancel jobs in your Nebius project. For an unattended controller,
+   use Nebius's [service-account setup](https://docs.nebius.com/cli/configure).
+3. Create an S3-compatible bucket and credentials that can upload and download
+   objects. The controller and GPU workers both need access to it. Install the
+   AWS CLI if you want to use the download command below.
+4. Build or select a **separate image for each framework**. Each image must
+   contain this `llm-optimizer` package, that framework's GPU runtime, its
+   benchmark dependencies, `boto3`, and `optuna` for Optuna requests. Check
+   CUDA and driver compatibility for the requested GPU. Replace the image and
+   bucket placeholders below with real values; the repository does not publish
+   ready-to-run framework images.
+5. Put the controller SQLite database on durable local storage and run one
+   controller process for that database.
+
+Copy the environment template, replace every placeholder, and source it in the
+shell where you configure Nebius and start the controller:
+
+```bash
+cp .env.example .env
+# Edit .env with your project, service-account, S3, and optional HF values.
+set -a
+. ./.env
+set +a
+mkdir -p .local
+```
+
+`.env` is ignored by Git. Sourcing it exports its values to the Nebius CLI and
+optimizer processes; merely creating the file does not load it automatically.
+
+`hf_validator` configures its CLI profile in
+`scripts/run_prefect_controller_job.sh` in that repository.
+This optimizer invokes the Nebius CLI directly, so configure a profile **once
+on the controller host** before starting `serve`. Create a Nebius service
+account and authorized key, then copy its service-account ID, public-key ID,
+and PEM private-key path from your Nebius setup:
+
+```bash
+nebius profile create \
+  --endpoint api.nebius.cloud \
+  --service-account-id "$SA_ID" \
+  --public-key-id "$PUBLIC_KEY_ID" \
+  --private-key-file "$NEBIUS_PRIVATE_KEY_PATH" \
+  --profile llm-optimizer-controller \
+  --parent-id "$NB_PROJECT_ID"
+nebius profile list
+nebius ai job list --parent-id "$NB_PROJECT_ID" --format json
+```
+
+The last command checks CLI authentication without starting a GPU job. For a
+local browser login, create the profile this way instead:
+
+```bash
+nebius profile create \
+  --profile llm-optimizer-controller \
+  --endpoint api.nebius.cloud \
+  --federation-endpoint auth.nebius.com \
+  --parent-id "$NB_PROJECT_ID"
+nebius ai job list --parent-id "$NB_PROJECT_ID" --format json
+```
+
+The `NEBIUS_CONFIG_YAML_B64` and
+`NEBIUS_SERVICE_ACCOUNT_KEY_B64` bootstrap inputs in `hf_validator` are handled
+by its script; this optimizer does not decode them. It uses the active Nebius
+CLI profile and `NB_PROJECT_ID`. The `AWS_*` variables in `.env` authenticate S3;
+they do not authenticate the Nebius CLI.
+
+`HF_TOKEN` is needed for gated models. The controller database path in `.env`
+is relative to the repository root; use an absolute path when running the
+controller from another directory.
+
+Create `request.json` for one vLLM job. The GPU platform and preset must be
+available in your Nebius project. The preset's GPU count must match `gpu_count`.
+Nebius job timeouts must be between 60 and 10,080 minutes.
+
+```json
+{
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "frameworks": ["vllm"],
+  "gpu_type": "gpu-h100-sxm",
+  "gpu_count": 1,
+  "preset": "1gpu-16vcpu-96gb",
+  "images": {"vllm": "registry.example/vllm-optimizer:cuda-tag"},
+  "bucket": "your-results-bucket",
+  "prefix": "llm-optimizer",
+  "client_args": ["dataset_name=random;random_input_len=128;random_output_len=32;num_prompts=16"],
+  "server_args": {"vllm": ["max_num_seqs=[8,16]"]},
+  "search_strategy": "optuna",
+  "optuna": {"trials": 2, "seed": 7},
+  "timeout_minutes": 180,
+  "dry_run": true
+}
+```
+
+Start the controller and submit from the same configured shell. For a lasting
+deployment, run `serve` as a supervised service instead of a shell background
+process:
+
+```bash
+python -m llm_optimizer.remote serve --interval 15 >.local/controller.log 2>&1 &
+python -m llm_optimizer.remote submit request.json --idempotency-key example-dry-run-001
+```
+
+The `submit` response contains `run_id`. Use it to inspect the dry-run plan:
+
+```bash
+RUN_ID="run-id-from-submit-response"
+python -m llm_optimizer.remote status "$RUN_ID"
+```
+
+To launch a **billable GPU job**, set `"dry_run": false` in `request.json` and
+submit it with a **new idempotency key**. Keep the controller running; it submits
+the queued job and polls its state. `submit` itself returns immediately.
+
+```bash
+python -m llm_optimizer.remote submit request.json --idempotency-key example-live-001
+```
+
+Set `RUN_ID` to the new `run_id` returned by this live submission before using
+the status and download commands below.
+
+For a multi-framework run, add framework names to `frameworks`, an image for
+each one in `images`, and any framework-specific settings in `server_args`.
+For example, add `"sglang"` and a compatible SGLang image to run vLLM and
+SGLang as independent jobs. Start the controller with
+`python -m llm_optimizer.remote --concurrency 2 serve` to allow both
+jobs to run at once. Use `optuna_by_framework` if their Optuna search spaces
+differ. Each framework gets its own S3 prefix and a failure in one does not
+discard the other's results.
+
+Check progress and retrieve results:
+
+```bash
+python -m llm_optimizer.remote status "$RUN_ID"
+python -m llm_optimizer.remote results "$RUN_ID"
+aws s3 sync "s3://your-results-bucket/llm-optimizer/$RUN_ID/" ./downloaded-run/ \
+  --endpoint-url "$AWS_ENDPOINT_URL_S3"
+```
+
+The framework manifests and `aggregate.json` contain artifact references.
+Use `python -m llm_optimizer.remote cancel "$RUN_ID"` to cancel the whole run,
+or add `--framework vllm` for one job. See [Nebius remote optimization](docs/nebius-remote.md)
+for the full request schema, checkpoint recovery, and controller behavior.
 
 ## Get started
 

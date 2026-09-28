@@ -130,6 +130,39 @@ def test_grid_sampler_runs_every_engine_configuration(tmp_path, monkeypatch):
     assert report["metadata"]["total_tests"] == 2
 
 
+def test_optuna_prepares_fixed_workload_from_argument_pairs(tmp_path, monkeypatch):
+    pytest.importorskip("optuna")
+    import types
+    import sys
+    import llm_optimizer.cli as cli_module
+
+    captured = []
+    fake_client = types.ModuleType("llm_optimizer.bench_client")
+    fake_client.prepare_workload_manifest = lambda args: (
+        captured.append(args) or {"sha256": "test-workload"},
+        {"workload_sha256": "test-workload"},
+    )
+    fake_client.run_benchmark = lambda args: {"output_throughput": 1.0}
+    monkeypatch.setitem(sys.modules, "llm_optimizer.bench_client", fake_client)
+    monkeypatch.setattr(cli_module, "start_server", lambda *args: object())
+    monkeypatch.setattr(cli_module, "terminate_process_top_down", lambda process: None)
+
+    result = CliRunner().invoke(
+        cli,
+        [
+            "--framework", "vllm", "--model", "example/model", "--gpus", "1",
+            "--server-args", "max_num_seqs=[8,16];revision=abc123",
+            "--client-args", "dataset_name=random;random_input_len=128;random_output_len=32;num_prompts=16",
+            "--search-strategy", "optuna", "--optuna-trials", "2",
+            "--rest", "0", "--output-json", str(tmp_path / "result.json"),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert captured[0]["dataset_name"] == "random"
+    assert captured[0]["num_prompts"] == 16
+    assert captured[0]["model_revision"] == "abc123"
+
+
 def test_optuna_integer_ranges_use_suggest_int_and_preserve_scopes():
     server_ranges = parse_int_ranges(
         ["max_num_seqs=int(16,64);max_num_batched_tokens=int(4096,16384,step=4096)"],

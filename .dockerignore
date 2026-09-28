@@ -1,0 +1,8 @@
+# Send only the package and Dockerfiles to the build daemon.
+*
+!pyproject.toml
+!README.md
+!src/
+!src/**
+!docker/
+!docker/*.Dockerfile

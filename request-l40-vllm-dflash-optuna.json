@@ -1,0 +1,41 @@
+{
+    "model": "Qwen/Qwen3-4B",
+    "frameworks": [
+      "vllm"
+    ],
+    "gpu_type": "gpu-l40s-d",
+    "gpu_count": 1,
+    "preset": "1gpu-16vcpu-96gb",
+    "images": {
+      "vllm": "cr.eu-north1.nebius.cloud/e00p24e8mwqab11v1e/llm-optimizer-vllm:wandb-1"
+    },
+    "bucket": "hf-model-watch",
+    "prefix": "llm-optimizer",
+    "speculative_heads": "z-lab/Qwen3-4B-DFlash-b16",
+    "client_args": [
+      "dataset_name=random;random_input_len=512;random_output_len=256;num_prompts=128;max_concurrency=32"
+    ],
+    "server_args": {
+      "vllm": [
+        "speculative_config=\"'{\\\"method\\\":\\\"dflash\\\",\\\"model\\\":\\\"z-lab/Qwen3-4B-DFlash-b16\\\",\\\"num_speculative_tokens\\\":15}'\";gpu_memory_utilization=[0.7,0.8,0.9]"
+      ]
+    },
+    "search_strategy": "optuna",
+    "optuna": {
+      "trials": 16,
+      "objective": "output_throughput",
+      "sampler": "TPESampler",
+      "server_args": [
+        "max_num_seqs=int(8,128,8);max_num_batched_tokens=int(4096,16384,4096)"
+      ],
+      "sampler_kwargs": {
+        "multivariate": true,
+        "group": true
+      },
+      "seed": 7,
+      "pruner": "NopPruner"
+    },
+    "timeout_minutes": 240,
+    "preemptible": true,
+    "dry_run": false
+  }
