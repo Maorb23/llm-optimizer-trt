@@ -146,3 +146,9 @@ Thumbs.db
 # Keep experiment outputs, including Optuna DB files.
 # Do NOT add a global *.db ignore rule.
 !*.db
+
+# Downloaded Hugging Face models
+/models/
+
+# Additional local model caches
+.huggingface/

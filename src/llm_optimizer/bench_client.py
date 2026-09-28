@@ -1721,7 +1721,8 @@ def run_benchmark(args_dict: dict[str, t.Any]):
     args_dict.get("output_details", False)
     tokenize_prompt = args_dict.get("tokenize_prompt", False)
 
-    print(f"benchmark_args={args_dict}")
+    safe_args = {k: v for k, v in args_dict.items() if k != "_request_manifest"}
+    print(f"benchmark_args={safe_args}")
 
     # Set global environments
     set_ulimit()
@@ -1822,7 +1823,7 @@ def run_benchmark(args_dict: dict[str, t.Any]):
             "Because when the tokenizer counts the output tokens, if there is gibberish, it might count incorrectly.\n"
         )
 
-    print(f"{args_dict}\n")
+    pass  # Suppress full manifest output
 
     # Read dataset
     model_id = model
