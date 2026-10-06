@@ -1,0 +1,10 @@
+cuda_graph_config:
+  batch_sizes:
+  - 1
+  - 2
+  - 4
+  - 8
+  - 16
+  enable_padding: true
+kv_cache_config:
+  free_gpu_memory_fraction: 0.65
