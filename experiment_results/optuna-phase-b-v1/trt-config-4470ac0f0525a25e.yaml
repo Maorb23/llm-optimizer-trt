@@ -1,0 +1,17 @@
+attn_backend: TRTLLM
+cuda_graph_config:
+  batch_sizes:
+  - 1
+  - 2
+  - 4
+  - 8
+  - 16
+  - 32
+  - 128
+  enable_padding: true
+enable_chunked_prefill: true
+kv_cache_config:
+  enable_block_reuse: true
+  free_gpu_memory_fraction: 0.65
+scheduler_config:
+  capacity_scheduler_policy: MAX_UTILIZATION

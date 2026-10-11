@@ -1,0 +1,13 @@
+{
+  "study": "B-trtllm-c128-pareto_throughput-gp-s11-r22",
+  "identity": {
+    "framework": "trtllm",
+    "phase": "B",
+    "model": "/workspace/llm-optimizer/models/qwen3.5-4b",
+    "concurrency": 128
+  },
+  "max_consecutive_rejections": 10,
+  "failures": [],
+  "rejections": [],
+  "stops": []
+}
