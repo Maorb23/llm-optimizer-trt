@@ -29,6 +29,7 @@ class OptimizationRequest:
     timeout_minutes: int = 180
     dry_run: bool = True
     preemptible: bool = False
+    semantic_context: dict[str, Any] | None = None
 
     @classmethod
     def parse(cls, data: dict[str, Any]) -> OptimizationRequest:
@@ -106,6 +107,7 @@ class OptimizationRequest:
             "trials",
             "timeout",
             "objective",
+            "objectives",
             "seed",
             "sampler",
             "sampler_kwargs",
@@ -132,6 +134,23 @@ class OptimizationRequest:
         for config in [request.optuna, *request.optuna_by_framework.values()]:
             if set(config) - allowed:
                 raise ValueError("unsupported Optuna setting")
+            if "objectives" in config:
+                from llm_optimizer.optimization import objective_direction
+
+                names = config["objectives"]
+                if (
+                    not isinstance(names, list)
+                    or len(names) < 2
+                    or any(not isinstance(name, str) for name in names)
+                    or len(set(names)) != len(names)
+                    or "objective" in config
+                ):
+                    raise ValueError(
+                        "objectives must be a unique list of at least two metrics; "
+                        "omit objective"
+                    )
+                for name in names:
+                    objective_direction(name)
             storage = config.get("storage")
             if isinstance(storage, str) and storage.startswith("sqlite:"):
                 raise ValueError(
@@ -151,6 +170,12 @@ class OptimizationRequest:
                     or any(not isinstance(x, str) for x in config[key])
                 ):
                     raise ValueError(f"{key} must be a list of strings")
+        for framework in request.frameworks:
+            merged = request.optuna_for(framework)
+            if "objective" in merged and "objectives" in merged:
+                raise ValueError(
+                    "Merged Optuna settings must omit objective when objectives is set"
+                )
         return request
 
     def optuna_for(self, framework: str) -> dict[str, Any]:

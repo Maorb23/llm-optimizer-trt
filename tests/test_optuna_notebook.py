@@ -244,6 +244,8 @@ def lab(tmp_path):
             compile(ast.Module(body=definitions, type_ignores=[]), str(path), "exec"),
             namespace,
         )
+    # Saved notebooks may contain real-run settings; unit tests remain CPU-only.
+    namespace.update(RUN_REAL_GPU=False, WANDB_ENABLED=False)
     return namespace
 
 
@@ -1004,3 +1006,34 @@ def test_validation_simulator_uses_reserved_noise_and_request_seeds(lab):
     assert validation.rng.bit_generator.state != next_repeat.rng.bit_generator.state
     assert validation.workload_seed == 50000
     assert validation.num_prompts == 1000
+
+
+def test_notebook_gp_rejections_stop_and_write_json(lab):
+    # A deterministic proposal stream exercises the policy without torch/GPU.
+    lab["make_sampler"] = lambda *a, **k: optuna.samplers.RandomSampler(seed=11)
+    lab["suggest_config"] = lambda *a, **k: {"max_num_tokens": 2048}
+    launches = []
+
+    class FailingBenchmark:
+        supports_checkpoints = False
+
+        def measure(self, *args):
+            launches.append(args)
+            raise lab["BenchmarkFailure"]("invalid engine config")
+
+    study = lab["run_study"](
+        "gp-blocked", "trtllm", "gp", concurrency=1,
+        trials=3, benchmark=FailingBenchmark(),
+    )
+    assert len(launches) == 1
+    assert len(study.trials) == 11
+    audit = json.loads(Path(study.user_attrs["gp_failure_log"]).read_text())
+    assert len(audit["failures"]) == 1
+    assert len(audit["rejections"]) == 10
+    assert audit["stops"]
+    resumed = lab["run_study"](
+        "gp-blocked", "trtllm", "gp", concurrency=1,
+        trials=3, benchmark=FailingBenchmark(),
+    )
+    assert len(launches) == 1
+    assert len(resumed.trials) == 21

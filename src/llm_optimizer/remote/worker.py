@@ -47,7 +47,9 @@ def optimizer_command(payload: dict[str, Any], output: Path) -> list[str]:
     for value in request.server_args.get(framework, []):
         args += ["--server-args", value]
     if request.revision:
-        revision_arg = "huggingface_model_revision" if framework == "max" else "revision"
+        revision_arg = (
+            "huggingface_model_revision" if framework == "max" else "revision"
+        )
         args += ["--server-args", f"{revision_arg}={request.revision}"]
     for value in request.client_args:
         args += ["--client-args", value]
@@ -62,6 +64,8 @@ def optimizer_command(payload: dict[str, Any], output: Path) -> list[str]:
             "storage": "--optuna-storage",
             "study_name": "--optuna-study-name",
         }
+        if "objectives" in optuna:
+            args += ["--optuna-objective", ",".join(optuna["objectives"])]
         for key, flag in mapping.items():
             if key in optuna:
                 value = optuna[key]
@@ -181,7 +185,10 @@ def run_worker(
         "preset": request.preset,
         "image": request.images[framework],
         "workload": request.client_args,
-        "objectives": optuna.get("objective", "output_throughput")
+        "semantic_context": request.semantic_context,
+        "objectives": optuna.get(
+            "objectives", optuna.get("objective", "output_throughput")
+        )
         if request.search_strategy == "optuna"
         else "throughput",
         "constraints": request.constraints,
@@ -262,6 +269,10 @@ def run_worker(
             if process.returncode != 0:
                 raise RuntimeError(f"optimizer exited with code {process.returncode}")
         result = json.loads(output.read_text(encoding="utf-8"))
+        manifest["test_results"] = result.get("test_results", [])
+        manifest["study_summary"] = result.get("optimization", {}).get(
+            "study_summary", {}
+        )
         manifest["best_configurations"] = result.get("best_configurations")
         manifest["total_tests"] = result.get("metadata", {}).get("total_tests")
         manifest["workload_sha256"] = result.get("metadata", {}).get("workload_sha256")
@@ -292,6 +303,47 @@ def run_worker(
                 process.kill()
         manifest["error"] = f"{type(exc).__name__}: {exc}"
     finally:
+        # Keep successful measurements even when a later trial/process fails.
+        if not manifest.get("test_results"):
+            records = folder / "results.jsonl"
+            rows = []
+            if records.exists():
+                for line in records.read_text(encoding="utf-8").splitlines():
+                    try:
+                        row = json.loads(line)
+                        if isinstance(row, dict):
+                            rows.append(row)
+                    except json.JSONDecodeError:
+                        continue
+            manifest["test_results"] = rows
+        if not manifest.get("study_summary") and request.search_strategy == "optuna":
+            try:
+                from llm_optimizer.optimization import (
+                    objective_names,
+                    require_optuna,
+                    summarize_study,
+                )
+
+                library = require_optuna()
+                database = folder / "results.optuna.db"
+                storage = optuna.get("storage") or f"sqlite:///{database.resolve()}"
+                names = manifest["objectives"]
+                objectives = (
+                    names if isinstance(names, list) else objective_names(names)
+                )
+                if optuna.get("storage") or database.exists():
+                    studies = library.get_all_study_summaries(storage)
+                    name = optuna.get("study_name")
+                    if name:
+                        name = f"{name}-{run_id}-{framework}"
+                    elif len(studies) == 1:
+                        name = studies[0].study_name
+                    if name:
+                        study = library.load_study(study_name=name, storage=storage)
+                        manifest["study_summary"] = summarize_study(study, objectives)
+            except Exception:
+                # Analysis cannot replace the original execution failure.
+                pass
         try:
             manifest["artifacts"].update(_checkpoint(store, folder, run_id, framework))
             manifest["sha256"] = {
@@ -308,9 +360,7 @@ def run_worker(
         try:
             from llm_optimizer.wandb_tracking import WandbTracker
 
-            study_name = str(
-                optuna.get("study_name", f"llm-optimizer-{framework}")
-            )
+            study_name = str(optuna.get("study_name", f"llm-optimizer-{framework}"))
             tracker = WandbTracker.start(
                 study_name=study_name,
                 framework=framework,

@@ -661,3 +661,10 @@ This project uses the following open-source projects:
 - [sgl-project/sglang](https://github.com/sgl-project/sglang) for production level LLM backend and benchmark client codes
 
 We are grateful to the developers and contributors of these projects for their hard work and dedication.
+
+### Optuna lab commands
+
+Use `llm-optimizer experiment run`, `experiment validate`, and `experiment report`
+with `--config` and `--run-dir` to run the notebook lab from Python commands.
+See [the workflow guide](docs/optuna_experiment.md) and
+[the launcher notebook](docs/optuna_experiment_cli.ipynb).

@@ -7,3 +7,7 @@ class LLMOptimizerError(Exception):
 
 class ServerNotReadyError(LLMOptimizerError):
     pass
+
+
+class ServerCleanupError(LLMOptimizerError):
+    """Owned server processes remain alive; further trials must not run."""

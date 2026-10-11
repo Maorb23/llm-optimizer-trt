@@ -23,9 +23,7 @@ def stable_run_id(run_id: str, study_name: str, framework: str) -> str:
 
 def _tags() -> list[str]:
     return [
-        tag.strip()
-        for tag in os.getenv("WANDB_TAGS", "").split(",")
-        if tag.strip()
+        tag.strip() for tag in os.getenv("WANDB_TAGS", "").split(",") if tag.strip()
     ]
 
 
@@ -85,8 +83,20 @@ class WandbTracker:
                 "trial/number": trial.number,
                 "trial/state": trial.state.name,
             }
-            if trial.value is not None:
-                payload["trial/objective"] = trial.value
+            values = (
+                trial.values
+                if hasattr(trial, "values")
+                else ([trial.value] if trial.value is not None else None)
+            )
+            if values and len(values) == 1:
+                payload["trial/objective"] = values[0]
+            elif values:
+                payload.update(
+                    {
+                        f"trial/objective/{index}": value
+                        for index, value in enumerate(values)
+                    }
+                )
             payload.update(
                 {f"parameters/{key}": value for key, value in trial.params.items()}
             )

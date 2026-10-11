@@ -55,7 +55,7 @@ def objective_direction(metric: str) -> str:
     )
 
 
-def extract_objective(metrics: dict[str, t.Any], metric: str) -> float:
+def _extract_single_objective(metrics: dict[str, t.Any], metric: str) -> float:
     """Extract a finite numeric objective value, rejecting bools and missing data."""
     objective_direction(metric)  # also validates the name
     if metrics.get("benchmark_valid") is False or metrics.get("failure_rate", 0) != 0:
@@ -69,17 +69,97 @@ def extract_objective(metrics: dict[str, t.Any], metric: str) -> float:
     return numeric
 
 
+def objective_names(value: str) -> list[str]:
+    names = [name.strip() for name in value.split(",")]
+    if not names or len(set(names)) != len(names):
+        raise ValueError("Objectives must be nonempty and unique")
+    for name in names:
+        objective_direction(name)
+    return names
+
+
+def extract_objective(metrics: dict[str, t.Any], metric: str) -> t.Any:
+    names = objective_names(metric)
+    values = [_extract_single_objective(metrics, name) for name in names]
+    return values[0] if len(values) == 1 else values
+
+
+def summarize_study(study: t.Any, objectives: list[str]) -> dict[str, t.Any]:
+    """Preserve the complete unconstrained frontier and report importance per target."""
+    optuna = require_optuna()
+    trials = [
+        trial
+        for trial in study.trials
+        if trial.state == optuna.trial.TrialState.COMPLETE
+    ]
+
+    def record(trial: t.Any) -> dict[str, t.Any]:
+        return {
+            "number": trial.number,
+            "values": trial.values,
+            "params": trial.params,
+            "config_id": trial.user_attrs.get("config_id"),
+            "slo_feasible": trial.user_attrs.get("slo_feasible", True),
+        }
+
+    def losses(trial: t.Any) -> list[float]:
+        return [
+            value * (-1 if objective_direction(name) == "maximize" else 1)
+            for name, value in zip(objectives, trial.values)
+        ]
+
+    # Compute from all complete trials; constrained samplers can hide infeasible
+    # points in Study.best_trials, which would lose measured tradeoffs.
+    front = [
+        trial
+        for trial in trials
+        if not any(
+            all(a <= b for a, b in zip(losses(other), losses(trial)))
+            and any(a < b for a, b in zip(losses(other), losses(trial)))
+            for other in trials
+        )
+    ]
+    importance = {}
+    best = {}
+    for index, name in enumerate(objectives):
+        if trials:
+            best[name] = record(
+                min(trials, key=lambda trial: (losses(trial)[index], trial.number))
+            )
+        try:
+            values = optuna.importance.get_param_importances(
+                study,
+                evaluator=optuna.importance.FanovaImportanceEvaluator(seed=0),
+                target=lambda trial, index=index: trial.values[index],
+            )
+            importance[name] = {"status": "available", "values": values}
+        except (ValueError, RuntimeError, ImportError) as exc:
+            importance[name] = {
+                "status": "unavailable",
+                "values": {},
+                "reason": str(exc),
+            }
+    return {
+        "objectives": objectives,
+        "directions": [objective_direction(name) for name in objectives],
+        "completed_trials": len(trials),
+        "pareto_front": [record(trial) for trial in front],
+        "best_per_objective": best,
+        "importance_per_objective": importance,
+    }
+
+
 def constraint_metric_name(constraint: t.Any) -> str:
     """Map an SLO constraint to the benchmark result field name."""
+    if constraint.metric in THROUGHPUT_OBJECTIVES:
+        return constraint.metric
     aliases = {
         "ttft": f"{constraint.stat_type}_ttft_ms",
         "itl": f"{constraint.stat_type}_itl_ms",
         "tpot": f"{constraint.stat_type}_tpot_ms",
         "e2e_latency": f"{constraint.stat_type}_e2e_latency_ms",
     }
-    return aliases.get(
-        constraint.metric, f"{constraint.stat_type}_{constraint.metric}"
-    )
+    return aliases.get(constraint.metric, f"{constraint.stat_type}_{constraint.metric}")
 
 
 def constraint_violations(

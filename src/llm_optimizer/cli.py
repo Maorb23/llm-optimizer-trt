@@ -16,6 +16,7 @@ from llm_optimizer.cli_utils import (
     get_gpu_count,
     normalize_gpu_choice,
 )
+from llm_optimizer.experiment.commands import experiment
 from llm_optimizer.logging import get_logger, setup_logging
 from llm_optimizer.optimization import IntRange, parse_int_ranges, satisfies_constraints
 from llm_optimizer.performance import (
@@ -264,7 +265,7 @@ def run_single_configuration(
     parsed_constraints: t.Optional[list] = None,
     workload_manifest: t.Optional[dict[str, t.Any]] = None,
     workload_metadata: t.Optional[dict[str, t.Any]] = None,
-) -> tuple[dict[str, t.Any], t.Optional[float]]:
+) -> tuple[dict[str, t.Any], t.Optional[t.Union[float, list[float]]]]:
     """Run and persist one configuration, always cleaning up its server."""
     bench_client = importlib.import_module("llm_optimizer.bench_client")
     from llm_optimizer.optimization import extract_objective
@@ -357,7 +358,9 @@ def run_single_configuration(
 def _trial_summary(trial: t.Any) -> dict[str, t.Any]:
     return {
         "number": trial.number,
-        "objective_value": trial.value,
+        "objective_value": (
+            trial.values[0] if trial.values and len(trial.values) == 1 else trial.values
+        ),
         "config_id": trial.user_attrs.get("config_id"),
         "slo_feasible": trial.user_attrs.get("slo_feasible", True),
     }
@@ -405,11 +408,16 @@ def _run_optuna_search(
         default_storage_url,
         extract_objective,
         objective_direction,
+        objective_names,
         require_optuna,
         storage_kind,
+        summarize_study,
     )
 
-    direction = objective_direction(objective)
+    objectives = objective_names(objective)
+    directions = [objective_direction(name) for name in objectives]
+    multi_objective = len(objectives) > 1
+    direction = directions if multi_objective else directions[0]
     output_path = pathlib.Path(output_json)
     jsonl_path = output_path.with_suffix(".jsonl")
     storage_url = storage or default_storage_url(output_path)
@@ -566,11 +574,20 @@ def _run_optuna_search(
     study = optuna.create_study(
         study_name=resolved_study_name,
         storage=storage_url,
-        direction=direction,
+        **({"directions": directions} if multi_objective else {"direction": direction}),
         sampler=sampler,
         pruner=pruner,
         load_if_exists=continue_flag,
     )
+
+    def tell_trial(*args: t.Any, **kwargs: t.Any) -> None:
+        try:
+            study.tell(*args, **kwargs)
+        except RuntimeError as exc:
+            # GridSampler can call stop after committing the last COMPLETE/FAIL.
+            if "Study.stop" not in str(exc):
+                raise
+
     existing_signature = study.user_attrs.get("llm_optimizer_signature")
     if existing_signature and existing_signature != signature:
         raise click.ClickException(
@@ -606,7 +623,7 @@ def _run_optuna_search(
             resumed_trial.set_user_attr(
                 "slo_feasible", all(item <= 0 for item in violations)
             )
-            study.tell(resumed_trial, value)
+            tell_trial(resumed_trial, value)
 
     evaluated_ids = set(result_by_id)
     for frozen in study.get_trials(deepcopy=False):
@@ -617,6 +634,18 @@ def _run_optuna_search(
             config_id = frozen.user_attrs.get("config_id")
             if config_id:
                 evaluated_ids.add(config_id)
+
+    gp_policy = None
+    consecutive_gp_rejections = 0
+    if isinstance(sampler, optuna.samplers.GPSampler):
+        from llm_optimizer.experiment.gp_policy import GPFailurePolicy
+
+        gp_policy = GPFailurePolicy(
+            study,
+            jsonl_path.parent,
+            {"framework": framework, "model": model, "signature": signature},
+        )
+        study.set_user_attr("gp_failure_log", str(gp_policy.path))
 
     started = time.monotonic()
     attempts = 0
@@ -641,8 +670,53 @@ def _run_optuna_search(
         settings = construct_benchmark_settings(combo, framework)
         config_id = get_config_id(settings["client_args"], settings["server_args"])
         trial.set_user_attr("config_id", config_id)
+        if gp_policy is not None:
+            from llm_optimizer.experiment.gp_policy import BlockedGPProposal
+
+            effective = {
+                **settings["server_args"],
+                "__client_args": settings["client_args"],
+            }
+            trial.set_user_attr("config", effective)
+            # Import legacy failed trials whose native config was not persisted.
+            for previous in study.get_trials(deepcopy=False):
+                if (
+                    previous.state == optuna.trial.TrialState.FAIL
+                    and previous.user_attrs.get("config_id") == config_id
+                    and not previous.user_attrs.get("gp_rejected")
+                    and not previous.user_attrs.get("gp_non_config_failure")
+                ):
+                    canonical, fingerprint = gp_policy.fingerprint(effective)
+                    if fingerprint not in gp_policy.blocked:
+                        gp_policy.failure(
+                            previous.number,
+                            canonical,
+                            fingerprint,
+                            previous.user_attrs.get(
+                                "failure_reason", "Previously failed trial"
+                            ),
+                        )
+            try:
+                gp_policy.check(trial, effective)
+            except BlockedGPProposal:
+                tell_trial(trial, state=optuna.trial.TrialState.FAIL)
+                consecutive_gp_rejections += 1
+                if consecutive_gp_rejections >= gp_policy.max_rejections:
+                    stop_reason = "gp_blocked_proposal_limit"
+                    diagnostic = (
+                        f"GP stopped after {consecutive_gp_rejections} consecutive "
+                        "blocked proposals; no fallback sampler used. "
+                        f"See {gp_policy.path}"
+                    )
+                    gp_policy.data["stops"].append({"reason": diagnostic})
+                    gp_policy.save()
+                    study.set_user_attr("gp_stop_reason", diagnostic)
+                    logger.warning(diagnostic)
+                    break
+                continue
+            consecutive_gp_rejections = 0
         if config_id in evaluated_ids:
-            study.tell(trial, state=optuna.trial.TrialState.PRUNED)
+            tell_trial(trial, state=optuna.trial.TrialState.PRUNED)
             continue
 
         logger.info(
@@ -677,24 +751,47 @@ def _run_optuna_search(
             trial.set_user_attr("constraint_values", violations)
             trial.set_user_attr("slo_feasible", feasible)
             assert benchmark_value is not None
-            try:
-                study.tell(trial, benchmark_value)
-            except RuntimeError as exc:
-                # Optuna's GridSampler marks the final trial complete and then
-                # calls Study.stop(), which is only legal inside optimize().
-                if "Study.stop" not in str(exc):
-                    raise
+            tell_trial(trial, benchmark_value)
         except KeyboardInterrupt:
+            trial.set_user_attr("gp_non_config_failure", True)
             trial.set_user_attr("slo_feasible", False)
-            study.tell(trial, state=optuna.trial.TrialState.FAIL)
+            tell_trial(trial, state=optuna.trial.TrialState.FAIL)
+            if gp_policy is not None:
+                gp_policy.failure(
+                    trial.number,
+                    trial.user_attrs["effective_config"],
+                    trial.user_attrs["effective_config_fingerprint"],
+                    "KeyboardInterrupt",
+                    blocked=False,
+                )
+                gp_policy.data["stops"].append({"reason": "KeyboardInterrupt"})
+                gp_policy.save()
             raise
         except Exception as exc:
+            from llm_optimizer.exceptions import ServerCleanupError
+
             logger.error(f"Optuna trial {trial.number} failed for {config_id}: {exc}")
+            trial.set_user_attr("failure_reason", str(exc))
+            if isinstance(exc, ServerCleanupError):
+                trial.set_user_attr("gp_non_config_failure", True)
             trial.set_user_attr("slo_feasible", False)
             trial.set_user_attr(
                 "constraint_values", [float("inf")] * len(parsed_constraints)
             )
-            study.tell(trial, state=optuna.trial.TrialState.FAIL)
+            tell_trial(trial, state=optuna.trial.TrialState.FAIL)
+            if gp_policy is not None:
+                gp_policy.failure(
+                    trial.number,
+                    trial.user_attrs["effective_config"],
+                    trial.user_attrs["effective_config_fingerprint"],
+                    str(exc),
+                    blocked=not isinstance(exc, ServerCleanupError),
+                )
+            if isinstance(exc, ServerCleanupError):
+                if gp_policy is not None:
+                    gp_policy.data["stops"].append({"reason": str(exc)})
+                    gp_policy.save()
+                raise
         frozen_trial = next(
             item
             for item in study.get_trials(deepcopy=False)
@@ -723,11 +820,13 @@ def _run_optuna_search(
     key = (lambda trial: trial.value) if direction == "maximize" else (
         lambda trial: -trial.value
     )
-    unconstrained = max(completed, key=key) if completed else None
+    unconstrained = max(completed, key=key) if completed and not multi_objective else None
     feasible_trials = [
         trial for trial in completed if trial.user_attrs.get("slo_feasible", True)
     ]
-    best_feasible = max(feasible_trials, key=key) if feasible_trials else None
+    best_feasible = (
+        max(feasible_trials, key=key) if feasible_trials and not multi_objective else None
+    )
     metadata = {
         "strategy": "optuna",
         "study_name": resolved_study_name,
@@ -745,6 +844,7 @@ def _run_optuna_search(
         "search_space_size": space.cardinality,
         "trial_state_counts": state_counts,
         "stop_reason": stop_reason,
+        "gp_failure_log": str(gp_policy.path) if gp_policy is not None else None,
         "best_feasible_trial": (
             _trial_summary(best_feasible) if best_feasible else None
         ),
@@ -753,6 +853,7 @@ def _run_optuna_search(
         ),
         "storage_kind": storage_kind(storage_url),
     }
+    metadata["study_summary"] = summarize_study(study, objectives)
     _write_combined_results(
         output_path,
         jsonl_path,
@@ -843,7 +944,7 @@ def _run_optuna_search(
     "--optuna-objective",
     default="output_throughput",
     show_default=True,
-    help="Benchmark metric to optimize.",
+    help="Benchmark metric, or comma-separated metrics for a multi-objective study.",
 )
 @click.option(
     "--optuna-seed",
@@ -1016,7 +1117,7 @@ def benchmark(
 
     managed_server = not server_cmd
     if search_strategy == "optuna":
-        from llm_optimizer.optimization import objective_direction
+        from llm_optimizer.optimization import objective_names
 
         if not output_json:
             raise click.UsageError("--output-json is required for Optuna search.")
@@ -1025,7 +1126,7 @@ def benchmark(
                 "Optuna search requires one --framework and one --model."
             )
         try:
-            objective_direction(optuna_objective)
+            objective_names(optuna_objective)
         except ValueError as exc:
             raise click.UsageError(str(exc)) from exc
 
@@ -1880,6 +1981,9 @@ def estimate_performance(
         import traceback
 
         traceback.print_exc()
+
+
+cli.add_command(experiment)
 
 
 if __name__ == "__main__":

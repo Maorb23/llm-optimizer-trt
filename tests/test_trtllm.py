@@ -309,6 +309,7 @@ def test_startup_failure_cleans_up_process():
     process.pid = 123
     with (
         patch("llm_optimizer.server_utils.psutil.Popen", return_value=process),
+        patch("llm_optimizer.server_utils._TRTLifecycle.track"),
         patch("llm_optimizer.server_utils.wait_for_server", return_value=False),
         patch("llm_optimizer.server_utils.terminate_process_top_down") as terminate,
         pytest.raises(ServerNotReadyError),
