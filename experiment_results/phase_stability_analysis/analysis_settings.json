@@ -1,0 +1,40 @@
+{
+  "run_dirs": [
+    "/mnt/c/Users/maorb/work/bento_extend/llm-optimizer/experiment_results/optuna-inference-lab-c6qpyldd",
+    "/mnt/c/Users/maorb/work/bento_extend/llm-optimizer/experiment_results/optuna-inference-lab-ct_91ft_",
+    "/mnt/c/Users/maorb/work/bento_extend/llm-optimizer/experiment_results/optuna-inference-lab-k59lf6t5",
+    "/mnt/c/Users/maorb/work/bento_extend/llm-optimizer/experiment_results/optuna-inference-lab-p0lfaev2",
+    "/mnt/c/Users/maorb/work/bento_extend/llm-optimizer/experiment_results/optuna-phase-b-v1"
+  ],
+  "phases": [
+    "A",
+    "B"
+  ],
+  "frameworks": [
+    "vllm",
+    "sglang",
+    "trtllm"
+  ],
+  "min_repeats": 2,
+  "deviation_alert_pct": 10.0,
+  "numeric_tolerances": {
+    "max_num_seqs": 8,
+    "max_running_requests": 8,
+    "max_batch_size": 8,
+    "max_num_batched_tokens": 2048,
+    "chunked_prefill_size": 2048,
+    "max_num_tokens": 2048,
+    "max_prefill_tokens": 2048,
+    "gpu_memory_utilization": 0.05,
+    "mem_fraction_static": 0.05,
+    "free_gpu_memory_fraction": 0.05,
+    "schedule_conservativeness": 0.25
+  },
+  "max_numeric_changes": 1,
+  "include_unmatched": false,
+  "exclude_duplicate_records": true,
+  "loaded_records": 1174,
+  "selected_records": 1166,
+  "excluded_records": 8,
+  "scope": "Historical GPU observations grouped by executed settings, workload fingerprints, and declared environment; neighboring settings include parameter effects."
+}

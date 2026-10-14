@@ -208,6 +208,7 @@ def lab(tmp_path):
         "SEARCH_TRIALS",
         "DEMO_TRIALS",
         "ACTIVE_SEEDS",
+        "PRUNING_MIN_COMPLETED_REQUESTS",
         "PARETO_SAMPLERS",
         "RUN_REAL_GPU",
         "REAL_FRAMEWORKS",
@@ -593,7 +594,7 @@ def test_pruning_reports_correct_metric_and_closes_generator(lab, concurrency, t
                 yield (
                     1,
                     0.25,
-                    lab["Measurement"](500, 150, 10, 10, 0, 1, 1, "mock", 400),
+                    lab["Measurement"](500, 150, 250, 250, 0, 1, 1, "mock", 400),
                     1,
                 )
             finally:
@@ -612,7 +613,9 @@ def test_pruning_reports_correct_metric_and_closes_generator(lab, concurrency, t
         pruner=optuna.pruners.ThresholdPruner(**kwargs),
     )
     assert study.trials[0].state == optuna.trial.TrialState.PRUNED
-    assert study.trials[0].intermediate_values[1] == (150 if target == "ttft" else 500)
+    assert study.trials[0].intermediate_values[250] == (
+        150 if target == "ttft" else 500
+    )
     assert benchmark.closed
 
 
@@ -734,7 +737,7 @@ def test_pruning_matches_objective_not_concurrency(
                 yield (
                     1,
                     0.25,
-                    lab["Measurement"](500, 150, 10, 10, 0, 1, 1, "mock", 400),
+                    lab["Measurement"](500, 150, 250, 250, 0, 1, 1, "mock", 400),
                     1,
                 )
             finally:
@@ -754,7 +757,7 @@ def test_pruning_matches_objective_not_concurrency(
         pruner=optuna.pruners.ThresholdPruner(**kwargs),
     )
     assert study.trials[0].state == optuna.trial.TrialState.PRUNED
-    assert study.trials[0].intermediate_values[1] == value
+    assert study.trials[0].intermediate_values[250] == value
     assert study.user_attrs["contract"]["metrics"] == [metric]
     assert benchmark.closed
     menu = lab["pruner_menu"](
@@ -1037,3 +1040,233 @@ def test_notebook_gp_rejections_stop_and_write_json(lab):
     )
     assert len(launches) == 1
     assert len(resumed.trials) == 21
+
+
+def test_request_based_pruners_and_nop_checkpoints(lab):
+    assert lab["checkpoint_schedule"](1000) == [250, 500, 1000]
+    assert lab["checkpoint_schedule"](384) == [96, 192, 384]
+    assert lab["checkpoint_schedule"](3) == [1, 3]
+    assert lab["checkpoint_schedule"](384, 250) == [250, 384]
+    assert lab["checkpoint_schedule"](384, 500) == [384]
+    menu = lab["pruner_menu"]("minimize", max_requests=1000)
+    assert "threshold" not in menu
+    assert menu["median"][1]["n_warmup_steps"] == 250
+    assert menu["hyperband"][1] == {
+        "min_resource": 250,
+        "max_resource": 1000,
+        "reduction_factor": 2,
+    }
+    study = lab["run_study"](
+        "nop-checkpoint-baseline",
+        "vllm",
+        "random",
+        concurrency=1,
+        phase="B",
+        target="e2e",
+        trials=2,
+        checkpointed=True,
+    )
+    assert len(study.trials) == 2
+    assert all(t.state == optuna.trial.TrialState.COMPLETE for t in study.trials)
+    for trial in study.trials:
+        assert list(trial.intermediate_values) == [250, 500, 1000]
+        assert trial.value == trial.intermediate_values[1000]
+
+
+def test_gpu_pruning_group_preserves_phase_arms_seeds_and_requests(lab):
+    lab.update(
+        RUN_REAL_GPU=True,
+        REAL_FRAMEWORKS=("vllm",),
+        CONCURRENCIES=(1,),
+        ACTIVE_SEEDS=[11, 29],
+        SAMPLER_NAMES=("random", "tpe"),
+        ARM_AVAILABILITY={"random": {"enabled": True}, "tpe": {"enabled": True}},
+        REAL_PREFLIGHT={
+            ("B", "vllm"): {"expanded_choices": lab["expanded_choices"]("vllm")}
+        },
+    )
+    calls = []
+    benchmarks = []
+
+    def factory(phase, framework, concurrency, label):
+        b = SimpleNamespace(
+            workload=lab["workload_for"](concurrency, phase),
+            environment={"requests_sha256": "identical"},
+        )
+        benchmarks.append((phase, framework, concurrency, b))
+        return b
+
+    for phase in ("A", "B"):
+        for arm in ("random", "tpe"):
+            for seed in (11, 29):
+                contract = {
+                    "phase": phase,
+                    "concurrency": 1,
+                    "framework": "vllm",
+                    "target": "e2e",
+                    "sampler": arm,
+                    "sampler_settings": {"seed": seed},
+                    "workload": lab["artifact_value"](lab["workload_for"](1, phase)),
+                    "environment": {
+                        "measurement": "MEASURED",
+                        "requests_sha256": "identical",
+                    },
+                    "sampling_menu": lab["sampling_menu"](
+                        "vllm",
+                        1,
+                        "baseline" if phase == "A" else "expanded",
+                        lab["REAL_PREFLIGHT"][("B", "vllm")]["expanded_choices"]
+                        if phase == "B"
+                        else None,
+                    ),
+                }
+                lab["STUDIES"][(phase, arm, seed)] = SimpleNamespace(
+                    user_attrs={"contract": contract}
+                )
+
+    def run(name, framework, arm, **kwargs):
+        calls.append((arm, kwargs))
+        return SimpleNamespace()
+
+    lab.update(benchmark_for=factory, run_study=run, summarize=lambda s: {})
+    studies = lab["run_pruning_objective"]("e2e")
+    assert len(studies) == 2 * 2 * 2 * 5
+    assert {kw["seed"] for _, kw in calls} == {11, 29}
+    assert {arm for arm, _ in calls} == {"random", "tpe"}
+    for _arm, kw in calls:
+        assert kw["benchmark"].workload["seed"] == lab["BASE_WORKLOAD"]["seed"]
+        assert "trials" not in kw  # run_study uses the same phase trial_budget.
+        assert kw["checkpointed"] is True
+        if kw["phase"] == "B":
+            assert (
+                kw["choices"]
+                == lab["REAL_PREFLIGHT"][("B", "vllm")]["expanded_choices"]
+            )
+    benchmarks[0][3].environment["requests_sha256"] = "changed"
+    with pytest.raises(ValueError, match="requests differ"):
+        lab["verify_pruning_workload"](benchmarks[0][3], "A", 1, "vllm", "e2e")
+
+
+def test_real_adapter_propagates_pruning_and_accounts_for_cleanup(lab):
+    from llm_optimizer import cli
+
+    adapter = object.__new__(lab["RepositoryBenchmark"])
+    adapter.__dict__.update(
+        framework="vllm",
+        concurrency=1,
+        phase="A",
+        model="mock-model",
+        workload=lab["workload_for"](1, "A"),
+        fixed_server={},
+        gpu_count=1,
+        gpu_type="mock",
+        host="127.0.0.1",
+        port=8000,
+        rest_seconds=0,
+        spec=SimpleNamespace(
+            server_command="mock {model} {host} {port}", ready_endpoint="/health"
+        ),
+        manifest={"requests": []},
+        workload_metadata={},
+        environment={},
+        output_path=lab["RUN_DIR"] / "mock.jsonl",
+    )
+
+    def execute(settings, **kwargs):
+        assert kwargs["workload_manifest"] is adapter.manifest
+        assert kwargs["checkpoint_requests"] == [96, 192, 384]
+        kwargs["checkpoint_callback"](
+            {
+                "completed": 96,
+                "total_requests": 96,
+                "failed": 0,
+                "output_throughput": 100,
+                "p95_ttft_ms": 50,
+                "p95_e2e_latency_ms": 200,
+            }
+        )
+        raise AssertionError("Pruned benchmark continued")
+
+    with patch.object(cli, "run_single_configuration", side_effect=execute):
+        study = lab["run_study"](
+            "live-adapter-pruning",
+            "vllm",
+            "random",
+            concurrency=1,
+            target="e2e",
+            trials=1,
+            benchmark=adapter,
+            pruner=optuna.pruners.ThresholdPruner(upper=100),
+        )
+    trial = study.trials[0]
+    assert trial.state == optuna.trial.TrialState.PRUNED
+    assert trial.user_attrs["pruned_at_completed_requests"] == 96
+    assert (
+        trial.user_attrs["gpu_seconds"]
+        >= trial.user_attrs["checkpoint_measurements"][0]["gpu_seconds"]
+    )
+
+    # Exercise the real CLI finally block as well as the adapter's exception path.
+    from llm_optimizer import bench_client
+
+    def live_run(args):
+        assert args["_request_manifest"] is adapter.manifest
+        assert args["_checkpoint_requests"] == [96, 192, 384]
+        args["_checkpoint_callback"](
+            {
+                "completed": 96,
+                "total_requests": 96,
+                "failed": 0,
+                "output_throughput": 100,
+                "p95_ttft_ms": 50,
+                "p95_e2e_latency_ms": 200,
+            }
+        )
+        raise AssertionError("Pruned benchmark continued")
+
+    with (
+        patch.object(cli, "start_server", return_value=object()),
+        patch.object(cli, "terminate_process_top_down") as terminate,
+        patch.object(bench_client, "run_benchmark", side_effect=live_run),
+    ):
+        study = lab["run_study"](
+            "live-cli-cleanup-pruning",
+            "vllm",
+            "random",
+            concurrency=1,
+            target="e2e",
+            trials=1,
+            benchmark=adapter,
+            pruner=optuna.pruners.ThresholdPruner(upper=100),
+        )
+        assert study.trials[0].state == optuna.trial.TrialState.PRUNED
+        terminate.assert_called_once()
+        assert not adapter.output_path.exists()
+
+
+def test_gpu_pruning_recovers_prior_contract_after_kernel_restart(lab):
+    lab["RUN_REAL_GPU"] = True
+    workload = lab["artifact_value"](lab["workload_for"](1, "A"))
+    environment = {"measurement": "MEASURED", "requests_sha256": "same-requests"}
+    study = optuna.create_study(storage=lab["STORAGE"], study_name="prior-gpu-phase")
+    study.set_user_attr(
+        "contract",
+        {
+            "phase": "A",
+            "concurrency": 1,
+            "framework": "vllm",
+            "target": "e2e",
+            "sampler": "tpe",
+            "sampler_settings": {"seed": 29},
+            "workload": workload,
+            "environment": environment,
+            "sampling_menu": lab["sampling_menu"]("vllm", 1),
+        },
+    )
+    benchmark = SimpleNamespace(
+        workload=lab["workload_for"](1, "A"), environment=environment
+    )
+    assert not lab["STUDIES"]
+    lab["verify_pruning_workload"](benchmark, "A", 1, "vllm", "e2e", "tpe", 29)
+    with pytest.raises(ValueError, match="matching GPU"):
+        lab["verify_pruning_workload"](benchmark, "A", 1, "vllm", "e2e", "tpe", 47)

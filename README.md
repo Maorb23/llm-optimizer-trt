@@ -668,3 +668,15 @@ Use `llm-optimizer experiment run`, `experiment validate`, and `experiment repor
 with `--config` and `--run-dir` to run the notebook lab from Python commands.
 See [the workflow guide](docs/optuna_experiment.md) and
 [the launcher notebook](docs/optuna_experiment_cli.ipynb).
+
+[Optuna run metadata notebook](docs/optuna_run_metadata.ipynb) scans local studies
+and optionally reads W&B, lists the exact runs used, and summarizes Phase B and
+Phase A metadata per framework. Results are organized by phase, framework,
+concurrency, and objective, with scalar best results and paired Pareto frontiers.
+It includes only studies with at least five
+minutes of recorded optimization time (or a documented duration fallback).
+The bundled `experiment_results/wandb_run_snapshot.json` includes exported W&B
+results automatically, without login or network access. To refresh live data,
+install `llm-optimizer[notebook,wandb]`, authenticate with `wandb login`, and set
+`LOAD_WANDB=True`; failed refreshes retain cached results. Source errors, cache
+export timestamps, and excluded runs remain visible.

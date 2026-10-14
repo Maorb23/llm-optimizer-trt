@@ -265,6 +265,8 @@ def run_single_configuration(
     parsed_constraints: t.Optional[list] = None,
     workload_manifest: t.Optional[dict[str, t.Any]] = None,
     workload_metadata: t.Optional[dict[str, t.Any]] = None,
+    checkpoint_requests: t.Optional[list[int]] = None,
+    checkpoint_callback: t.Optional[t.Callable] = None,
 ) -> tuple[dict[str, t.Any], t.Optional[t.Union[float, list[float]]]]:
     """Run and persist one configuration, always cleaning up its server."""
     bench_client = importlib.import_module("llm_optimizer.bench_client")
@@ -299,6 +301,9 @@ def run_single_configuration(
         benchmark_args.update(client_params)
         if workload_manifest is not None:
             benchmark_args["_request_manifest"] = workload_manifest
+        if checkpoint_callback is not None:
+            benchmark_args["_checkpoint_requests"] = checkpoint_requests
+            benchmark_args["_checkpoint_callback"] = checkpoint_callback
         benchmark_result = bench_client.run_benchmark(benchmark_args)
         if not isinstance(benchmark_result, dict):
             raise RuntimeError("Benchmark did not return a result")

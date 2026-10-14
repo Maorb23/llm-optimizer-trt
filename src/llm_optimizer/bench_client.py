@@ -1408,15 +1408,46 @@ async def benchmark(
     # From https://github.com/vllm-project/vllm/pull/9390
     semaphore = asyncio.Semaphore(max_concurrency) if max_concurrency else None
 
-    async def limited_request_func(request_func_input, pbar):
+    checkpoint_callback = (args_dict or {}).get("_checkpoint_callback")
+    checkpoint_requests = set((args_dict or {}).get("_checkpoint_requests") or [])
+    finished_requests = []
+    finished_outputs = []
+    successful_requests = 0
+    checkpoint_failure = asyncio.get_running_loop().create_future()
+
+    async def limited_request_func(request_func_input, pbar, dataset_request):
+        nonlocal successful_requests
         if semaphore is None:
-            return await request_func(
+            output = await request_func(
                 request_func_input=request_func_input, pbar=pbar, **request_func_kwargs
             )
-        async with semaphore:
-            return await request_func(
-                request_func_input=request_func_input, pbar=pbar, **request_func_kwargs
-            )
+        else:
+            async with semaphore:
+                output = await request_func(
+                    request_func_input=request_func_input,
+                    pbar=pbar,
+                    **request_func_kwargs,
+                )
+        if checkpoint_callback is not None:
+            # No await between recording a completion and making the decision:
+            # the event loop cannot advance other requests past this checkpoint.
+            finished_requests.append(dataset_request)
+            finished_outputs.append(output)
+            successful_requests += int(output.success)
+            if successful_requests in checkpoint_requests or not output.success:
+                elapsed = max(time.perf_counter() - benchmark_start_time, 1e-9)
+                partial, _ = calculate_metrics(
+                    finished_requests, finished_outputs, elapsed, tokenizer, backend
+                )
+                try:
+                    checkpoint_callback(
+                        {**vars(partial), "benchmark_duration": elapsed}
+                    )
+                except Exception as exc:
+                    if not checkpoint_failure.done():
+                        checkpoint_failure.set_result(exc)
+                    raise
+        return output
 
     # Warmup
     print(f"Starting warmup with {warmup_requests} sequences...")
@@ -1496,53 +1527,70 @@ async def benchmark(
     # Run all requests
     benchmark_start_time = time.perf_counter()
     tasks: list[asyncio.Task] = []
-    async for request in get_request(input_requests, request_rate):
-        prompt, prompt_len, output_len = (
-            request.prompt,
-            request.prompt_len,
-            request.output_len,
-        )
-        if lora_names is not None and len(lora_names) != 0:
-            idx = random.randint(0, len(lora_names) - 1)
-            lora_name = lora_names[idx]
-        else:
-            lora_name = None
-
-        if "<image>" in prompt:
-            import re
-
-            image_match = re.search(r"<image>(.*?)</image>(.*)", prompt, re.DOTALL)
-            image_data = image_match.group(1) if image_match else None
-            prompt = image_match.group(2) if image_match else prompt
-        else:
-            image_data = None
-
-        request_func_input = RequestFuncInput(
-            model=model_id,
-            prompt=prompt,
-            api_url=api_url,
-            prompt_len=prompt_len,
-            output_len=output_len,
-            lora_name=lora_name,
-            image_data=image_data,
-            extra_request_body=extra_request_body,
-        )
-        tasks.append(
-            asyncio.create_task(
-                limited_request_func(request_func_input=request_func_input, pbar=pbar)
+    async def submit_requests():
+        async for request in get_request(input_requests, request_rate):
+            prompt, prompt_len, output_len = (
+                request.prompt,
+                request.prompt_len,
+                request.output_len,
             )
+            if lora_names is not None and len(lora_names) != 0:
+                idx = random.randint(0, len(lora_names) - 1)
+                lora_name = lora_names[idx]
+            else:
+                lora_name = None
+
+            if "<image>" in prompt:
+                import re
+
+                image_match = re.search(r"<image>(.*?)</image>(.*)", prompt, re.DOTALL)
+                image_data = image_match.group(1) if image_match else None
+                prompt = image_match.group(2) if image_match else prompt
+            else:
+                image_data = None
+
+            request_func_input = RequestFuncInput(
+                model=model_id,
+                prompt=prompt,
+                api_url=api_url,
+                prompt_len=prompt_len,
+                output_len=output_len,
+                lora_name=lora_name,
+                image_data=image_data,
+                extra_request_body=extra_request_body,
+            )
+            tasks.append(
+                asyncio.create_task(
+                    limited_request_func(
+                        request_func_input=request_func_input,
+                        pbar=pbar,
+                        dataset_request=request,
+                    )
+                )
+            )
+    producer = asyncio.create_task(submit_requests())
+    try:
+        # A pruning decision interrupts submission even with a finite request rate.
+        await asyncio.wait(
+            {producer, checkpoint_failure}, return_when=asyncio.FIRST_COMPLETED
         )
-    outputs: list[RequestFuncOutput] = await asyncio.gather(*tasks)
-
-    # Stop profiler
-    if profile:
-        print("Stopping profiler...")
-        profile_output = await async_request_profile(api_url=base_url + "/stop_profile")
-        if profile_output.success:
-            print("Profiler stopped")
-
-    if pbar is not None:
-        pbar.close()
+        if checkpoint_failure.done():
+            raise checkpoint_failure.result()
+        await producer
+        outputs: list[RequestFuncOutput] = await asyncio.gather(*tasks)
+    finally:
+        # Includes queued requests waiting for the semaphore. Await cancellation
+        # before the managed server is terminated by run_single_configuration.
+        if not checkpoint_failure.done():
+            checkpoint_failure.cancel()
+        for task in [producer, *tasks]:
+            if not task.done():
+                task.cancel()
+        await asyncio.gather(producer, *tasks, return_exceptions=True)
+        if pbar is not None:
+            pbar.close()
+        if profile:
+            await async_request_profile(api_url=base_url + "/stop_profile")
 
     if "sglang" in backend:
         server_info = requests.get(base_url + "/get_server_info")
@@ -1721,7 +1769,7 @@ def run_benchmark(args_dict: dict[str, t.Any]):
     args_dict.get("output_details", False)
     tokenize_prompt = args_dict.get("tokenize_prompt", False)
 
-    safe_args = {k: v for k, v in args_dict.items() if k != "_request_manifest"}
+    safe_args = {k: v for k, v in args_dict.items() if not k.startswith("_")}
     print(f"benchmark_args={safe_args}")
 
     # Set global environments
