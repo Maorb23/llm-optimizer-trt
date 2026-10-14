@@ -1,0 +1,13 @@
+{
+  "study": "B-vllm-c128-throughput-gp-s11-r1-pruner-median",
+  "identity": {
+    "framework": "vllm",
+    "phase": "B",
+    "model": "/home/ubuntu/llm-optimizer-trt/models/qwen3.5-4b",
+    "concurrency": 128
+  },
+  "max_consecutive_rejections": 10,
+  "failures": [],
+  "rejections": [],
+  "stops": []
+}
