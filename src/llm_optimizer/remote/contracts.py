@@ -113,6 +113,7 @@ class OptimizationRequest:
             "sampler_kwargs",
             "pruner",
             "pruner_kwargs",
+            "min_completed_requests",
             "storage",
             "study_name",
             "server_args",
@@ -140,17 +141,20 @@ class OptimizationRequest:
                 names = config["objectives"]
                 if (
                     not isinstance(names, list)
-                    or len(names) < 2
+                    or len(names) < 1
                     or any(not isinstance(name, str) for name in names)
                     or len(set(names)) != len(names)
                     or "objective" in config
                 ):
                     raise ValueError(
-                        "objectives must be a unique list of at least two metrics; "
+                        "objectives must be a unique list of at least one metric; "
                         "omit objective"
                     )
                 for name in names:
                     objective_direction(name)
+            minimum = config.get("min_completed_requests", 1)
+            if isinstance(minimum, bool) or not isinstance(minimum, int) or minimum < 1:
+                raise ValueError("min_completed_requests must be a positive integer")
             storage = config.get("storage")
             if isinstance(storage, str) and storage.startswith("sqlite:"):
                 raise ValueError(
@@ -172,6 +176,24 @@ class OptimizationRequest:
                     raise ValueError(f"{key} must be a list of strings")
         for framework in request.frameworks:
             merged = request.optuna_for(framework)
+            if merged.get("pruner", "NopPruner") != "NopPruner":
+                if (
+                    len(
+                        merged.get(
+                            "objectives", [merged.get("objective", "output_throughput")]
+                        )
+                    )
+                    != 1
+                    or request.constraints
+                ):
+                    raise ValueError(
+                        "Pruning requires an unconstrained scalar objective"
+                    )
+                if merged.get("pruner") == "ThresholdPruner":
+                    raise ValueError(
+                        "GPU Threshold pruning requires independent "
+                        "workload calibration"
+                    )
             if "objective" in merged and "objectives" in merged:
                 raise ValueError(
                     "Merged Optuna settings must omit objective when objectives is set"

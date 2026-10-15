@@ -34,6 +34,12 @@ def canonical_config(config):
 
 class GPFailurePolicy:
     def __init__(self, study, run_dir, identity, fixed_server=None, max_rejections=10):
+        if (
+            isinstance(max_rejections, bool)
+            or not isinstance(max_rejections, int)
+            or max_rejections < 1
+        ):
+            raise ValueError("GP max_rejections must be a positive integer")
         self.study = study
         self.identity = identity
         self.fixed_server = fixed_server or {}
@@ -63,12 +69,20 @@ class GPFailurePolicy:
         for trial in study.trials:
             if (
                 trial.state == TrialState.FAIL
-                and trial.user_attrs.get("config")
+                and (
+                    trial.user_attrs.get("effective_config")
+                    or trial.user_attrs.get("config")
+                )
                 and not trial.user_attrs.get("gp_rejected")
                 and not trial.user_attrs.get("gp_non_config_failure")
                 and trial.number not in recorded
             ):
-                effective, fingerprint = self.fingerprint(trial.user_attrs["config"])
+                # Prefer the resolved snapshot: generated YAML files may no longer
+                # exist after moving a study or restoring it on another worker.
+                config = trial.user_attrs.get("effective_config")
+                if config is None:
+                    config = trial.user_attrs["config"]
+                effective, fingerprint = self.fingerprint(config)
                 self.failure(
                     trial.number,
                     effective,
@@ -137,6 +151,7 @@ class GPFailurePolicy:
                     frozen.user_attrs["effective_config"],
                     frozen.user_attrs["effective_config_fingerprint"],
                     frozen.user_attrs.get("failure_reason", "Benchmark failed"),
+                    blocked=not frozen.user_attrs.get("gp_non_config_failure", False),
                 )
             for callback in callbacks:
                 callback(study, frozen)

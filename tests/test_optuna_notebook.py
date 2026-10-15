@@ -453,10 +453,8 @@ def test_measured_adapter_propagates_regime_and_cleans_up(
                 assert "--performance-mode=balanced" in argv
                 assert "--attention-backend=auto" in argv
         elif framework == "sglang" and space_kind == "expanded":
-            offset = argv.index("--cuda-graph-bs")
-            assert argv[offset + 1 : offset + 1 + len(cfg["cuda_graph_bs"])] == [
-                str(s) for s in cfg["cuda_graph_bs"]
-            ]
+            assert "--cuda-graph-backend-decode=full" in argv
+            assert "--cuda-graph-backend-prefill=breakable" in argv
         elif framework == "trtllm" and space_kind == "expanded":
             import yaml
 
@@ -509,6 +507,19 @@ def expanded_values(lab, framework, concurrency, graphs=True):
         schedule_conservativeness=0.75,
         max_prefill_tokens=16384,
     )
+    if framework == "sglang":
+        from llm_optimizer.experiment.sglang_space import sampling_choices
+
+        values.update(
+            {
+                key: options[0]
+                for key, options in sampling_choices(
+                    lab["EXPANDED_CHOICES"][framework]
+                ).items()
+            }
+        )
+        values["cuda_graph_backend_decode"] = "full" if graphs else "disabled"
+        values["cuda_graph_backend_prefill"] = "breakable" if graphs else "disabled"
     return values
 
 
@@ -521,8 +532,15 @@ def test_expanded_coverage_and_conditional_graphs(lab, framework, concurrency, g
     )
     cfg = lab["suggest_config"](trial, framework, concurrency, "expanded")
     assert "cuda_graph_on" not in trial.params
-    assert ("graph_capture_profile" in trial.params) is graphs
-    for name in lab["EXPANDED_CHOICES"][framework]:
+    assert ("graph_capture_profile" in trial.params) is (
+        graphs and framework != "sglang"
+    )
+    names = lab["EXPANDED_CHOICES"][framework]
+    if framework == "sglang":
+        from llm_optimizer.experiment.sglang_space import sampling_choices
+
+        names = sampling_choices(names)
+    for name in names:
         assert name in trial.params
     capacity, _, _, enabled = lab["engine_features"](framework, cfg)
     assert enabled is graphs

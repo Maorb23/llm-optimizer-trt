@@ -74,7 +74,7 @@ EXPANDED_CHOICES = {
         "enable_mixed_chunk": [False, True],
         "disable_overlap_schedule": [False, True],
         "cuda_graph_backend_decode": ["disabled", "full", "tc_piecewise"],
-        "cuda_graph_backend_prefill": ["disabled"],
+        "cuda_graph_backend_prefill": ["disabled", "breakable"],
     },
     "trtllm": {
         "attn_backend": ["TRTLLM"],
@@ -187,9 +187,15 @@ class Simulator:
             )
         )
 
-    def stream(self, framework, config, concurrency):
+    def stream(self, framework, config, concurrency, checkpoint_requests=None):
         previous_gpu = 0.0
-        for step, fraction in enumerate([0.25, 0.5, 1.0], start=1):
+        from llm_optimizer.optimization import checkpoint_schedule
+
+        count = self._context.workload_for(concurrency, self.phase, self.num_prompts)[
+            "num_prompts"
+        ]
+        for step in checkpoint_requests or checkpoint_schedule(count):
+            fraction = step / count
             m = self.measure(framework, config, concurrency, fraction)
             increment = max(0.001, m.gpu_seconds - previous_gpu)
             previous_gpu += increment
@@ -388,7 +394,7 @@ class NotebookWandbLogger:
 
 
 class RepositoryBenchmark:
-    supports_checkpoints = False
+    supports_checkpoints = True
 
     def __init__(
         self,
@@ -490,7 +496,14 @@ class RepositoryBenchmark:
             / f"{run_label}-{phase}-{framework}-c{concurrency}-measured.jsonl"
         )
 
-    def measure(self, framework, config, concurrency):
+    def measure(
+        self,
+        framework,
+        config,
+        concurrency,
+        checkpoint_callback=None,
+        checkpoint_requests=None,
+    ):
         from concurrent.futures import ThreadPoolExecutor
 
         from llm_optimizer.args import Arg, ArgScope
@@ -571,6 +584,29 @@ class RepositoryBenchmark:
                 command = self.spec.server_command.format(
                     model=shlex.quote(self.model), host=self.host, port=self.port
                 )
+
+                def report_checkpoint(values):
+                    nonlocal accounting
+                    accounting = {
+                        key: int(values[key])
+                        for key in ("completed", "total_requests", "failed")
+                    }
+                    wall = max(time.perf_counter() - started, 1e-09)
+                    m = self._context.validate_measurement(
+                        Measurement(
+                            float(values["output_throughput"]),
+                            float(values["p95_ttft_ms"]),
+                            accounting["completed"],
+                            accounting["total_requests"],
+                            accounting["failed"],
+                            wall,
+                            wall * self.gpu_count,
+                            "MEASURED_ALLOCATION_WALL_PROXY",
+                            float(values["p95_e2e_latency_ms"]),
+                        )
+                    )
+                    checkpoint_callback(m)
+
                 result, _ = run_single_configuration(
                     settings,
                     framework=framework,
@@ -585,6 +621,10 @@ class RepositoryBenchmark:
                     mute_server=False,
                     constraints_for_viz=[],
                     output_jsonl_path=self.output_path,
+                    checkpoint_requests=checkpoint_requests,
+                    checkpoint_callback=report_checkpoint
+                    if checkpoint_callback
+                    else None,
                     workload_manifest=self.manifest,
                     workload_metadata={**self.workload_metadata, **self.environment},
                 )
@@ -618,7 +658,9 @@ class RepositoryBenchmark:
             except Exception as exc:
                 from llm_optimizer.exceptions import ServerCleanupError
 
-                if isinstance(exc, ServerCleanupError):
+                if isinstance(exc, (ServerCleanupError, optuna.TrialPruned)):
+                    exc.gpu_seconds = (time.perf_counter() - started) * self.gpu_count
+                    exc.request_accounting = accounting
                     raise
                 failure = BenchmarkFailure(f"{type(exc).__name__}: {exc}")
                 failure.request_accounting = getattr(
@@ -849,10 +891,20 @@ class Lab:
             if mode != "NONE":
                 config["compilation_config"]["cudagraph_capture_sizes"] = graph_sizes()
         elif framework == "sglang":
+            from llm_optimizer.experiment.sglang_space import (
+                CACHE_POLICY_PARAMETER,
+                resolve_cache_policy,
+                sampling_choices,
+            )
+
+            domain = sampling_choices(choices)[CACHE_POLICY_PARAMETER]
+            config.update(
+                resolve_cache_policy(
+                    trial.suggest_categorical(CACHE_POLICY_PARAMETER, domain)
+                )
+            )
             for key in [
                 "attention_backend",
-                "disable_radix_cache",
-                "schedule_policy",
                 "enable_mixed_chunk",
                 "disable_overlap_schedule",
                 "cuda_graph_backend_decode",
@@ -1011,7 +1063,12 @@ class Lab:
                 "trtllm": "kv_cache_free_gpu_memory_fraction",
             }[framework]
             menu[memory] = self.SPACES[128][framework][memory]
-        menu.update(self.expanded_choices(framework, choices))
+        selected = self.expanded_choices(framework, choices)
+        if framework == "sglang":
+            from llm_optimizer.experiment.sglang_space import sampling_choices
+
+            selected = sampling_choices(selected)
+        menu.update(selected)
         menu["graph_capture_profile"] = ["powers", "dense"]
         if framework == "sglang":
             menu.update(
@@ -1160,6 +1217,8 @@ class Lab:
         phase=None,
         choices=None,
         num_prompts=None,
+        min_completed_requests=1,
+        checkpointed=False,
     ):
         phase = phase or ("B" if space_kind == "expanded" else "A")
         workload = self.workload_for(concurrency, phase, num_prompts)
@@ -1186,8 +1245,13 @@ class Lab:
             raise ValueError(
                 "Pruning is restricted to unconstrained scalar objectives."
             )
-        if active_pruning and (not benchmark.supports_checkpoints):
+        use_checkpoints = active_pruning or checkpointed
+        if use_checkpoints and (not benchmark.supports_checkpoints):
             raise ValueError("Real pruning needs checkpoints and clean cancellation.")
+        if use_checkpoints and self.RUN_REAL_GPU:
+            self.verify_pruning_workload(
+                benchmark, phase, concurrency, framework, target, sampler_name, seed
+            )
         study, default_budget = self.create_phase_a_study(
             sampler_name,
             framework,
@@ -1205,6 +1269,9 @@ class Lab:
         if budget is None:
             budget = self.grid_size(concurrency, framework)
         menu = self.sampling_menu(framework, concurrency, space_kind, choices)
+        from llm_optimizer.optimization import checkpoint_schedule
+
+        schedule = checkpoint_schedule(workload["num_prompts"], min_completed_requests)
         contract = {
             "environment": getattr(benchmark, "environment", self.ENVIRONMENT),
             "framework": framework,
@@ -1254,6 +1321,8 @@ class Lab:
             if sampler_name == "grid"
             else None,
         }
+        if use_checkpoints:
+            contract["checkpoint_requests"] = schedule
         previous = study.user_attrs.get("contract")
         if previous is not None:
             ignored = {"budget_trials", "budget_gpu_seconds", "quick_demo"}
@@ -1301,9 +1370,46 @@ class Lab:
                 gp_policy.check(trial, config)
             started = time.perf_counter()
             try:
-                if active_pruning:
+                if use_checkpoints and isinstance(benchmark, RepositoryBenchmark):
+
+                    def report(m):
+                        self.validate_measurement(m)
+                        trial.set_user_attr("gpu_seconds", m.gpu_seconds)
+                        trial.set_user_attr(
+                            "request_accounting",
+                            {
+                                "completed": m.completed,
+                                "failed": m.failed,
+                                "total_requests": m.total_requests,
+                            },
+                        )
+                        trial.report(getattr(m, metrics[0]), step=m.completed)
+                        if (
+                            active_pruning
+                            and m.completed < schedule[-1]
+                            and trial.should_prune()
+                        ):
+                            trial.set_user_attr(
+                                "pruned_at_completed_requests", m.completed
+                            )
+                            trial.set_user_attr(
+                                "pruned_at_fraction", m.completed / schedule[-1]
+                            )
+                            raise optuna.TrialPruned()
+
+                    m = benchmark.measure(
+                        framework,
+                        config,
+                        concurrency,
+                        checkpoint_callback=report,
+                        checkpoint_requests=schedule,
+                    )
+                    trial.set_user_attr("gpu_seconds", m.gpu_seconds)
+                elif use_checkpoints:
                     with closing(
-                        benchmark.stream(framework, config, concurrency)
+                        benchmark.stream(
+                            framework, config, concurrency, checkpoint_requests=schedule
+                        )
                     ) as trajectory:
                         for step, fraction, m, increment in trajectory:
                             self.validate_measurement(m)
@@ -1312,7 +1418,7 @@ class Lab:
                                 trial.user_attrs["gpu_seconds"] + increment,
                             )
                             trial.report(getattr(m, metrics[0]), step)
-                            if fraction < 1 and trial.should_prune():
+                            if active_pruning and fraction < 1 and trial.should_prune():
                                 trial.set_user_attr("pruned_at_fraction", fraction)
                                 raise optuna.TrialPruned()
                 else:
@@ -1326,6 +1432,14 @@ class Lab:
                 self.record_measurement(trial, m, concurrency)
                 scores = tuple(getattr(m, metric) for metric in metrics)
                 return scores if len(scores) > 1 else scores[0]
+            except optuna.TrialPruned as exc:
+                trial.set_user_attr(
+                    "gpu_seconds",
+                    max(
+                        trial.user_attrs["gpu_seconds"], getattr(exc, "gpu_seconds", 0)
+                    ),
+                )
+                raise
             except BenchmarkFailure as exc:
                 trial.set_user_attr("failure_reason", str(exc))
                 trial.set_user_attr(
@@ -1839,57 +1953,74 @@ class Lab:
             "threshold": float(np.percentile(scores[:, 0], 90 if minimizing else 10)),
         }
 
-    def pruner_menu(self, direction, threshold):
+    def pruner_menu(
+        self, direction, threshold=None, max_requests=None, min_completed_requests=1
+    ):
+        from llm_optimizer.optimization import checkpoint_schedule
+
         minimizing = str(direction).lower() == "minimize"
-        return {
+        max_requests = (
+            self.PHASE_REQUESTS["A"] if max_requests is None else max_requests
+        )
+        schedule = checkpoint_schedule(max_requests, min_completed_requests)
+        first = schedule[0]
+        menu = {
             "nop": (optuna.pruners.NopPruner, {}),
             "median": (
                 optuna.pruners.MedianPruner,
-                {"n_startup_trials": 4, "n_warmup_steps": 1, "n_min_trials": 3},
+                {"n_startup_trials": 10, "n_warmup_steps": first, "n_min_trials": 3},
             ),
             "percentile": (
                 optuna.pruners.PercentilePruner,
                 {
                     "percentile": 75 if minimizing else 25,
-                    "n_startup_trials": 4,
-                    "n_warmup_steps": 1,
+                    "n_startup_trials": 10,
+                    "n_warmup_steps": first,
                     "n_min_trials": 3,
                 },
             ),
             "halving": (
                 optuna.pruners.SuccessiveHalvingPruner,
-                {"min_resource": 1, "reduction_factor": 2},
+                {"min_resource": first, "reduction_factor": 2},
             ),
             "hyperband": (
                 optuna.pruners.HyperbandPruner,
-                {"min_resource": 1, "max_resource": 3, "reduction_factor": 2},
-            ),
-            "threshold": (
-                optuna.pruners.ThresholdPruner,
-                {"upper" if minimizing else "lower": threshold, "n_warmup_steps": 1},
+                {
+                    "min_resource": first,
+                    "max_resource": max_requests,
+                    "reduction_factor": 2,
+                },
             ),
         }
+        if threshold is not None:
+            menu["threshold"] = (
+                optuna.pruners.ThresholdPruner,
+                {
+                    "upper" if minimizing else "lower": threshold,
+                    "n_warmup_steps": first,
+                },
+            )
+        return menu
 
     def run_pruning_objective(self, target):
         results = {}
-        if self.RUN_REAL_GPU:
-            print(f"{target}: real pruning skipped; no continuous checkpoint adapter.")
-            return results
         self.GROUP_RUNS["pruning", target] += 1
         for phase, c, fw, task_target in self.scalar_tasks():
             if task_target != target:
                 continue
-            if (phase, c, fw, target) not in self.calibration:
-                raise ValueError(
-                    "Calibrate this phase/concurrency/objective before pruning"
-                )
-            cal = self.calibration[phase, c, fw, target]
-            if cal["workload"] != self.workload_for(c, phase):
-                raise ValueError(
-                    "Workload changed after calibration; recalibrate first"
-                )
+            threshold = None
+            if not self.RUN_REAL_GPU:
+                if (phase, c, fw, target) not in self.calibration:
+                    raise ValueError("Calibrate this task before pruning")
+                cal = self.calibration[phase, c, fw, target]
+                if cal["workload"] != self.workload_for(c, phase):
+                    raise ValueError("Workload changed after calibration")
+                threshold = cal["threshold"]
+            direction = self.objective_spec(target, c)[2][0]
             for name, (pruner_type, settings) in self.pruner_menu(
-                cal["direction"], cal["threshold"]
+                direction,
+                threshold,
+                max_requests=self.workload_for(c, phase)["num_prompts"],
             ).items():
                 key = (phase, c, fw, target, name)
                 study = self.run_study(
@@ -1902,7 +2033,14 @@ class Lab:
                     space_kind="baseline" if phase == "A" else "expanded",
                     pruner=pruner_type(**settings),
                     pruner_settings=settings,
+                    checkpointed=True,
                     trials=12 if self.QUICK_DEMO else 32,
+                    benchmark=self.benchmark_for(
+                        phase, fw, c, f"pruning-{target}-{name}"
+                    ),
+                    choices=self.REAL_PREFLIGHT[phase, fw].get("expanded_choices")
+                    if self.RUN_REAL_GPU and phase == "B"
+                    else None,
                 )
                 results[key] = study
         display([self.summarize(s) for s in results.values()])
@@ -2152,3 +2290,87 @@ class Lab:
         if isinstance(value, float) and math.isinf(value):
             return "inf" if value > 0 else "-inf"
         return value
+
+    def verify_pruning_workload(
+        self,
+        benchmark,
+        phase,
+        concurrency,
+        framework,
+        target,
+        sampler_name=None,
+        seed=None,
+    ):
+        """Check the previous GPU phase contract before starting a server."""
+        if not self.RUN_REAL_GPU:
+            return
+
+        def matches(contract):
+            return (
+                contract.get("phase") == phase
+                and contract.get("concurrency") == concurrency
+                and (contract.get("framework") == framework)
+                and (contract.get("target") == target)
+                and (contract.get("environment", {}).get("measurement") == "MEASURED")
+                and (not contract.get("checkpoint_requests"))
+                and (sampler_name is None or contract.get("sampler") == sampler_name)
+                and (
+                    seed is None
+                    or contract.get("sampler_settings", {}).get("seed") == seed
+                )
+            )
+
+        previous = [
+            s.user_attrs["contract"]
+            for s in getattr(self, "STUDIES", {}).values()
+            if matches(s.user_attrs.get("contract", {}))
+        ]
+        if not previous:
+            summaries = optuna.get_all_study_summaries(
+                storage=self.STORAGE, include_best_trial=False
+            )
+            previous = [
+                summary.user_attrs["contract"]
+                for summary in reversed(summaries)
+                if matches(summary.user_attrs.get("contract", {}))
+            ][:1]
+        if not previous:
+            return
+        workload = {
+            k: "inf" if isinstance(v, float) and math.isinf(v) else v
+            for k, v in benchmark.workload.items()
+        }
+        choices = (
+            self.REAL_PREFLIGHT[phase, framework].get("expanded_choices")
+            if phase == "B"
+            else None
+        )
+        menu = self.sampling_menu(
+            framework, concurrency, "baseline" if phase == "A" else "expanded", choices
+        )
+        for contract in previous:
+            if (
+                contract["workload"] != workload
+                or contract["environment"].get("requests_sha256")
+                != benchmark.environment["requests_sha256"]
+            ):
+                raise ValueError(
+                    "Pruning requests differ from the previous phase study"
+                )
+            if contract.get("sampling_menu") != menu:
+                raise ValueError(
+                    "Pruning search space differs from the previous phase study"
+                )
+            for field in (
+                "framework_version",
+                "cuda_version",
+                "driver_version",
+                "model_revision",
+                "model",
+                "gpu_type",
+                "gpu_count",
+            ):
+                if contract["environment"].get(field) != benchmark.environment.get(
+                    field
+                ):
+                    raise ValueError(f"Pruning environment changed: {field}")

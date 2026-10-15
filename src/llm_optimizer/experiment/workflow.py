@@ -275,21 +275,20 @@ def run_search(lab, c):
                                 gpu_budget=c["gpu_budget"],
                             )
     if c["pruning"]:
-        if lab.RUN_REAL_GPU:
-            lab.SKIPPED_ARMS.append(
-                {
-                    "arm": "pruning",
-                    "reason": "Real pruning skipped; no continuous checkpoint "
-                    "adapter or clean cancellation.",
-                }
-            )
-        else:
-            for phase in c["phases"]:
-                for concurrency in lab.CONCURRENCIES:
-                    for framework in frameworks:
-                        for target in c["objectives"][str(lab.regime_key(concurrency))]:
-                            if target.startswith("pareto"):
-                                continue
+        for phase in c["phases"]:
+            for concurrency in lab.CONCURRENCIES:
+                for framework in frameworks:
+                    for target in c["objectives"][str(lab.regime_key(concurrency))]:
+                        if target.startswith("pareto"):
+                            continue
+                        if lab.RUN_REAL_GPU:
+                            cal = {
+                                "direction": lab.objective_spec(target, concurrency)[2][
+                                    0
+                                ],
+                                "threshold": None,
+                            }
+                        else:
                             cal = lab.calibrate_pruning(
                                 phase,
                                 concurrency,
@@ -300,20 +299,34 @@ def run_search(lab, c):
                             lab.calibration[(phase, concurrency, framework, target)] = (
                                 cal
                             )
-                            for name, (pruner_type, settings) in lab.pruner_menu(
-                                cal["direction"], cal["threshold"]
-                            ).items():
-                                lab.run_study(
-                                    f"pruning-{phase}-{framework}-c{concurrency}-{target}-{name}",
+                        for name, (pruner_type, settings) in lab.pruner_menu(
+                            cal["direction"],
+                            cal["threshold"],
+                            max_requests=lab.workload_for(concurrency, phase)[
+                                "num_prompts"
+                            ],
+                        ).items():
+                            lab.run_study(
+                                f"pruning-{phase}-{framework}-c{concurrency}-{target}-{name}",
+                                framework,
+                                concurrency=concurrency,
+                                phase=phase,
+                                target=target,
+                                space_kind="baseline" if phase == "A" else "expanded",
+                                pruner=pruner_type(**settings),
+                                pruner_settings=settings,
+                                checkpointed=True,
+                                trials=c["pruning_trials"],
+                                benchmark=lab.benchmark_for(
+                                    phase,
                                     framework,
-                                    concurrency=concurrency,
-                                    phase=phase,
-                                    target=target,
-                                    space_kind="baseline"
-                                    if phase == "A"
-                                    else "expanded",
-                                    pruner=pruner_type(**settings),
-                                    pruner_settings=settings,
-                                    trials=c["pruning_trials"],
-                                    seed=lab.ACTIVE_SEEDS[0],
+                                    concurrency,
+                                    f"pruning-{target}-{name}",
+                                ),
+                                choices=lab.REAL_PREFLIGHT[phase, framework].get(
+                                    "expanded_choices"
                                 )
+                                if lab.RUN_REAL_GPU and phase == "B"
+                                else None,
+                                seed=lab.ACTIVE_SEEDS[0],
+                            )

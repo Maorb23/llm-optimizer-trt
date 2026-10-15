@@ -143,6 +143,15 @@ def summarize_study(study: t.Any, objectives: list[str]) -> dict[str, t.Any]:
         "objectives": objectives,
         "directions": [objective_direction(name) for name in objectives],
         "completed_trials": len(trials),
+        "trial_states": {str(trial.number): trial.state.name for trial in study.trials},
+        "trial_state_counts": {
+            state.name: sum(trial.state == state for trial in study.trials)
+            for state in optuna.trial.TrialState
+        },
+        "gpu_seconds": sum(
+            trial.user_attrs.get("gpu_seconds", 0) for trial in study.trials
+        ),
+        "validation_status": "not_independently_validated",
         "pareto_front": [record(trial) for trial in front],
         "best_per_objective": best,
         "importance_per_objective": importance,
@@ -256,9 +265,9 @@ def parse_int_ranges(
                     "name=int(low,high[,step])"
                 )
             raw_name = match.group(1)
-            name = (
-                raw_name[2:] if raw_name.startswith("--") else raw_name
-            ).replace("-", "_")
+            name = (raw_name[2:] if raw_name.startswith("--") else raw_name).replace(
+                "-", "_"
+            )
             if name not in configs or configs[name].arg_type is not int:
                 raise ValueError(
                     f"Optuna integer range '{name}' needs a known integer argument"
@@ -316,9 +325,7 @@ class OptunaSearchSpace:
     def parameter_name(arg_set: ArgSet) -> str:
         scope = arg_set.scope.name.lower()
         name = (
-            "*".join(arg_set.name)
-            if isinstance(arg_set.name, tuple)
-            else arg_set.name
+            "*".join(arg_set.name) if isinstance(arg_set.name, tuple) else arg_set.name
         )
         return f"{scope}:{name}"
 
@@ -397,3 +404,20 @@ def storage_kind(storage_url: str) -> str:
     """Return only the database scheme; never expose credentials."""
     scheme = urlsplit(storage_url).scheme.split("+")[0]
     return scheme or "unknown"
+
+
+def checkpoint_schedule(
+    max_requests: int, min_completed_requests: int = 1
+) -> list[int]:
+    """Cumulative completed-request checkpoints from the pruning notebook."""
+    for value in (max_requests, min_completed_requests):
+        if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+            raise ValueError(
+                "Request budgets and observation minimums must be positive integers"
+            )
+    return sorted(
+        {
+            min(max_requests, max(min_completed_requests, int(max_requests * f), 1))
+            for f in (0.25, 0.5, 1.0)
+        }
+    )

@@ -125,7 +125,10 @@ def find_best_throughput_configs(
             continue
 
         metrics = result["results"]
-        if metrics.get("benchmark_valid") is False or metrics.get("failure_rate", 0) != 0:
+        if (
+            metrics.get("benchmark_valid") is False
+            or metrics.get("failure_rate", 0) != 0
+        ):
             continue
         input_tp = metrics.get("input_throughput", 0)
         output_tp = metrics.get("output_throughput", 0)
@@ -308,9 +311,7 @@ def run_single_configuration(
         if not isinstance(benchmark_result, dict):
             raise RuntimeError("Benchmark did not return a result")
 
-        feasible = satisfies_constraints(
-            benchmark_result, parsed_constraints or []
-        )
+        feasible = satisfies_constraints(benchmark_result, parsed_constraints or [])
         input_len, output_len = extract_token_lengths(client_params)
         result: dict[str, t.Any] = {
             "config": construct_result_config(benchmark_settings, framework),
@@ -403,12 +404,14 @@ def _run_optuna_search(
     sampler_kwargs_text: str,
     pruner_name: str,
     pruner_kwargs_text: str,
+    min_completed_requests: int = 1,
     workload_manifest: t.Optional[dict[str, t.Any]] = None,
     workload_metadata: t.Optional[dict[str, t.Any]] = None,
 ) -> None:
     from llm_optimizer.optimization import (
         OptunaSearchSpace,
         canonical_signature,
+        checkpoint_schedule,
         constraint_violations,
         default_storage_url,
         extract_objective,
@@ -449,6 +452,9 @@ def _run_optuna_search(
         "host": host,
         "port": port,
     }
+    if pruner_name != "NopPruner":
+        signature_payload["min_completed_requests"] = min_completed_requests
+        signature_payload["pruning_resource"] = "completed_requests"
     signature, canonical_payload = canonical_signature(signature_payload)
     resolved_study_name = study_name or f"llm-optimizer-{framework}-{signature[:12]}"
 
@@ -547,7 +553,9 @@ def _run_optuna_search(
             )
         return component_cls(**kwargs)
 
-    sampler_kwargs: dict[str, t.Any] = {} if sampler_name.endswith("GridSampler") else {"seed": seed}
+    sampler_kwargs: dict[str, t.Any] = (
+        {} if sampler_name.endswith("GridSampler") else {"seed": seed}
+    )
     if sampler_kwargs_text:
         try:
             parsed_sampler_kwargs = json.loads(sampler_kwargs_text)
@@ -576,6 +584,13 @@ def _run_optuna_search(
     pruner = build_optuna_component(
         pruner_name, pruner_kwargs_text, optuna.pruners, "NopPruner"
     )
+    active_pruning = not isinstance(pruner, optuna.pruners.NopPruner)
+    if active_pruning and (multi_objective or parsed_constraints):
+        raise click.UsageError("Pruning requires an unconstrained scalar objective")
+    if active_pruning and isinstance(pruner, optuna.pruners.ThresholdPruner):
+        raise click.UsageError(
+            "GPU Threshold pruning requires independent workload calibration"
+        )
     study = optuna.create_study(
         study_name=resolved_study_name,
         storage=storage_url,
@@ -585,7 +600,14 @@ def _run_optuna_search(
         load_if_exists=continue_flag,
     )
 
+    allocation_started = None
+
     def tell_trial(*args: t.Any, **kwargs: t.Any) -> None:
+        trial_to_finish = args[0]
+        if allocation_started is not None and hasattr(trial_to_finish, "set_user_attr"):
+            elapsed = time.monotonic() - allocation_started
+            trial_to_finish.set_user_attr("allocation_wall_seconds", elapsed)
+            trial_to_finish.set_user_attr("gpu_seconds", elapsed * gpus)
         try:
             study.tell(*args, **kwargs)
         except RuntimeError as exc:
@@ -635,10 +657,12 @@ def _run_optuna_search(
         if frozen.state in (
             optuna.trial.TrialState.COMPLETE,
             optuna.trial.TrialState.FAIL,
+            optuna.trial.TrialState.PRUNED,
         ):
             config_id = frozen.user_attrs.get("config_id")
             if config_id:
-                evaluated_ids.add(config_id)
+                allocation_started = None
+        evaluated_ids.add(config_id)
 
     gp_policy = None
     consecutive_gp_rejections = 0
@@ -657,7 +681,9 @@ def _run_optuna_search(
     max_attempts = max(100, trials_budget * 20, min(space.cardinality * 10, 10000))
     stop_reason = "trial_budget"
     effective_trials_budget = (
-        space.cardinality if sampler.__class__.__name__ == "GridSampler" else trials_budget
+        space.cardinality
+        if sampler.__class__.__name__ == "GridSampler"
+        else trials_budget
     )
     while len(evaluated_ids) < effective_trials_budget:
         if len(evaluated_ids) >= space.cardinality:
@@ -729,6 +755,26 @@ def _run_optuna_search(
             f"({len(evaluated_ids) + 1}/{min(trials_budget, space.cardinality)}): "
             f"{config_id}"
         )
+        allocation_started = time.monotonic()
+        schedule = checkpoint_schedule(
+            int(settings["client_args"].get("num_prompts", 1000)),
+            min_completed_requests,
+        )
+
+        def report_checkpoint(values, trial=trial, schedule=schedule):
+            accounting = {
+                key: int(values[key])
+                for key in ("completed", "total_requests", "failed")
+            }
+            trial.set_user_attr("request_accounting", accounting)
+            value = extract_objective(values, objective)
+            done = accounting["completed"]
+            trial.report(value, step=done)
+            if done < schedule[-1] and done >= schedule[0] and trial.should_prune():
+                trial.set_user_attr("pruned_at_completed_requests", done)
+                trial.set_user_attr("pruned_at_fraction", done / schedule[-1])
+                raise optuna.TrialPruned()
+
         try:
             result, benchmark_value = run_single_configuration(
                 settings,
@@ -745,6 +791,8 @@ def _run_optuna_search(
                 constraints_for_viz=constraints_for_viz,
                 output_jsonl_path=jsonl_path,
                 objective=objective,
+                checkpoint_requests=schedule if active_pruning else None,
+                checkpoint_callback=report_checkpoint if active_pruning else None,
                 trial_number=trial.number,
                 study_signature=signature,
                 parsed_constraints=parsed_constraints,
@@ -757,6 +805,8 @@ def _run_optuna_search(
             trial.set_user_attr("slo_feasible", feasible)
             assert benchmark_value is not None
             tell_trial(trial, benchmark_value)
+        except optuna.TrialPruned:
+            tell_trial(trial, state=optuna.trial.TrialState.PRUNED)
         except KeyboardInterrupt:
             trial.set_user_attr("gp_non_config_failure", True)
             trial.set_user_attr("slo_feasible", False)
@@ -808,8 +858,12 @@ def _run_optuna_search(
         )
         if "result" in locals():
             del result
+        allocation_started = None
         evaluated_ids.add(config_id)
-        if len(evaluated_ids) < min(effective_trials_budget, space.cardinality) and rest:
+        if (
+            len(evaluated_ids) < min(effective_trials_budget, space.cardinality)
+            and rest
+        ):
             logger.info(f"Resting for {rest} seconds before the next run.")
             time.sleep(rest)
 
@@ -822,15 +876,21 @@ def _run_optuna_search(
         for trial in frozen_trials
         if trial.state == optuna.trial.TrialState.COMPLETE
     ]
-    key = (lambda trial: trial.value) if direction == "maximize" else (
-        lambda trial: -trial.value
+    key = (
+        (lambda trial: trial.value)
+        if direction == "maximize"
+        else (lambda trial: -trial.value)
     )
-    unconstrained = max(completed, key=key) if completed and not multi_objective else None
+    unconstrained = (
+        max(completed, key=key) if completed and not multi_objective else None
+    )
     feasible_trials = [
         trial for trial in completed if trial.user_attrs.get("slo_feasible", True)
     ]
     best_feasible = (
-        max(feasible_trials, key=key) if feasible_trials and not multi_objective else None
+        max(feasible_trials, key=key)
+        if feasible_trials and not multi_objective
+        else None
     )
     metadata = {
         "strategy": "optuna",
@@ -970,6 +1030,12 @@ def _run_optuna_search(
     help="JSON object of keyword arguments passed to the sampler.",
 )
 @click.option(
+    "--optuna-min-completed-requests",
+    type=click.IntRange(min=1),
+    default=1,
+    help="Minimum completed requests before pruning checkpoints.",
+)
+@click.option(
     "--optuna-pruner",
     default="NopPruner",
     show_default=True,
@@ -980,12 +1046,8 @@ def _run_optuna_search(
     default="",
     help="JSON object of keyword arguments passed to the pruner.",
 )
-@click.option(
-    "--optuna-storage", type=str, help="Optuna/SQLAlchemy RDB storage URL."
-)
-@click.option(
-    "--optuna-study-name", type=str, help="Study name; derived when omitted."
-)
+@click.option("--optuna-storage", type=str, help="Optuna/SQLAlchemy RDB storage URL.")
+@click.option("--optuna-study-name", type=str, help="Study name; derived when omitted.")
 @click.option(
     "--optuna-server-args",
     multiple=True,
@@ -1024,6 +1086,7 @@ def cli(
     optuna_sampler_kwargs,
     optuna_pruner,
     optuna_pruner_kwargs,
+    optuna_min_completed_requests,
     optuna_storage,
     optuna_study_name,
     optuna_server_args,
@@ -1062,6 +1125,7 @@ def cli(
             optuna_study_name,
             optuna_server_args,
             optuna_client_args,
+            optuna_min_completed_requests,
         )
 
 
@@ -1095,6 +1159,7 @@ def benchmark(
     optuna_study_name=None,
     optuna_server_args=(),
     optuna_client_args=(),
+    optuna_min_completed_requests=1,
 ):
     """A CLI tool to optimize LLM performance."""
     from llm_optimizer.performance import parse_slo_constraints
@@ -1253,14 +1318,18 @@ def benchmark(
                 )
             }
             workload_args["model_revision"] = next(
-                (fixed_server_args.get(key) for key in ("revision", "hf_revision") if key in fixed_server_args),
+                (
+                    fixed_server_args.get(key)
+                    for key in ("revision", "hf_revision")
+                    if key in fixed_server_args
+                ),
                 None,
             )
             workload_args["tokenizer_revision"] = fixed_server_args.get(
                 "tokenizer_revision"
             )
-            workload_manifest, workload_metadata = bench_client.prepare_workload_manifest(
-                workload_args
+            workload_manifest, workload_metadata = (
+                bench_client.prepare_workload_manifest(workload_args)
             )
             manifest_path = (
                 pathlib.Path(output_json).with_suffix(".workload.json")
@@ -1305,6 +1374,7 @@ def benchmark(
             sampler_kwargs_text=optuna_sampler_kwargs,
             pruner_name=optuna_pruner,
             pruner_kwargs_text=optuna_pruner_kwargs,
+            min_completed_requests=optuna_min_completed_requests,
             storage=optuna_storage,
             study_name=optuna_study_name,
             workload_manifest=workload_manifest,
@@ -1745,9 +1815,7 @@ def dynamo_check(
     show_default=True,
     help="AI Configurator executable, including an absolute path if needed.",
 )
-@click.option(
-    "--timeout", type=click.IntRange(min=1), default=600, show_default=True
-)
+@click.option("--timeout", type=click.IntRange(min=1), default=600, show_default=True)
 @click.option(
     "--output",
     type=click.Path(dir_okay=False, path_type=pathlib.Path),

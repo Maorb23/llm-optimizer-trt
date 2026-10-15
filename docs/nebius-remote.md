@@ -158,3 +158,30 @@ framework, model, GPU type, controller run ID, and study name are recorded. The
 final result JSON, manifest, JSONL trial log, and execution log are uploaded as
 a W&B artifact. W&B initialization, logging, upload, and shutdown errors are
 warnings only and never change optimization or checkpoint status.
+
+## Live Optuna pruning
+
+Use a scalar `objective` (or a one-element `objectives` list) with a relative
+pruner such as `MedianPruner`, `PercentilePruner`, `SuccessiveHalvingPruner`,
+or `HyperbandPruner`. Multiobjective and constrained studies require `NopPruner`.
+GPU `ThresholdPruner` is rejected pending independent workload calibration.
+
+```json
+{"optuna": {"trials": 30, "objective": "p95_e2e_latency_ms",
+ "sampler": "TPESampler", "pruner": "MedianPruner",
+ "pruner_kwargs": {"n_startup_trials": 10, "n_min_trials": 3},
+ "min_completed_requests": 64}}
+```
+
+One continuous post-warmup benchmark reports cumulative metrics at 25%, 50%,
+and 100% of the request budget. The minimum completed-request setting delays
+checkpoints; it does not guarantee tail-statistic precision. Optuna steps are
+completed-request counts. No pruning occurs at the final checkpoint. Request
+failures produce `FAIL`; statistical early stops produce `PRUNED`. Pending
+client tasks are cancelled and the managed server is cleaned up before the next
+trial. Pruned configurations count toward the attempted configuration budget,
+including after resume, and are not written as completed benchmark candidates.
+Study summaries expose trial states, allocation GPU seconds (wall-time proxy),
+and an explicit unvalidated status. Independently validate shortlisted configs
+at the full request budget before deployment. Rebuild worker images with this
+package version before submitting jobs.

@@ -414,9 +414,7 @@ def test_uncertain_cancellation_does_not_consume_concurrency_slot(tmp_path):
     )
     controller._update(cancelled["run_id"], "vllm", "submission_unknown")
     controller.cancel(cancelled["run_id"], "vllm")
-    queued = controller.submit(
-        request(frameworks=["vllm"], images={"vllm": "image"})
-    )
+    queued = controller.submit(request(frameworks=["vllm"], images={"vllm": "image"}))
 
     controller.tick()
 
@@ -535,3 +533,42 @@ def test_worker_uploads_result_manifest_and_deployment(tmp_path, monkeypatch):
     assert result["resolved_revision"] == "abc123"
     assert {"results.json", "deployment.json", "manifest.json"} <= set(store.files)
     assert result["sha256"]["results.json"]
+
+
+def test_scalar_pruning_request_and_minimum_propagation(tmp_path):
+    data = request(
+        search_strategy="optuna",
+        optuna={
+            "objectives": ["mean_e2e_latency_ms"],
+            "pruner": "MedianPruner",
+            "min_completed_requests": 64,
+        },
+    )
+    parsed = OptimizationRequest.parse(data)
+    assert parsed.optuna["objectives"] == ["mean_e2e_latency_ms"]
+    command = optimizer_command(
+        {"request": data, "framework": "vllm"}, tmp_path / "out.json"
+    )
+    assert command[command.index("--optuna-min-completed-requests") + 1] == "64"
+    for minimum in (0, -1, True, 1.5):
+        data["optuna"]["min_completed_requests"] = minimum
+        with pytest.raises(ValueError, match="positive integer"):
+            OptimizationRequest.parse(data)
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {
+            "optuna": {
+                "objectives": ["mean_e2e_latency_ms", "output_throughput"],
+                "pruner": "MedianPruner",
+            }
+        },
+        {"constraints": "ttft:mean<=100ms", "optuna": {"pruner": "MedianPruner"}},
+        {"optuna": {"pruner": "ThresholdPruner"}},
+    ],
+)
+def test_remote_rejects_unsupported_pruning(changes):
+    with pytest.raises(ValueError, match="pruning|Pruning"):
+        OptimizationRequest.parse(request(search_strategy="optuna", **changes))

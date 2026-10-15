@@ -112,6 +112,10 @@ def test_notebook_search_validation_and_export_parity(
     lab["CONCURRENCIES"] = [1, 16, 128]
     lab["WANDB_ENABLED"] = False
     lab["RUN_REAL_GPU"] = False
+    # Compare algorithms on the same finite space; saved notebook spaces are editable.
+    lab["SPACES"] = extracted.SPACES
+    lab["PHASE_REQUESTS"] = extracted.PHASE_REQUESTS
+    lab["VALIDATION_REQUESTS"] = extracted.VALIDATION_REQUESTS
     kwargs = {
         "concurrency": concurrency,
         "phase": phase,
@@ -154,7 +158,7 @@ def test_notebook_search_validation_and_export_parity(
         assert a["attrs"]["measurement"] == b.user_attrs["measurement"]
 
 
-def test_real_gpu_routes_repository_adapter_and_skips_pruning(config_path, tmp_path):
+def test_real_gpu_routes_repository_adapter_and_runs_pruning(config_path, tmp_path):
     import llm_optimizer.bench_client as client
     import llm_optimizer.cli as cli_module
 
@@ -189,6 +193,14 @@ def test_real_gpu_routes_repository_adapter_and_skips_pruning(config_path, tmp_p
         "failed": 0,
         "benchmark_valid": True,
     }
+
+    def run_configuration(*args, **kwargs):
+        callback = kwargs.get("checkpoint_callback")
+        if callback:
+            for done in kwargs["checkpoint_requests"]:
+                callback({**metrics, "completed": done, "total_requests": done})
+        return {"results": metrics}, None
+
     with (
         patch.object(
             client,
@@ -201,7 +213,7 @@ def test_real_gpu_routes_repository_adapter_and_skips_pruning(config_path, tmp_p
         patch.object(
             cli_module,
             "run_single_configuration",
-            return_value=({"results": metrics}, None),
+            side_effect=run_configuration,
         ) as benchmark,
     ):
         result_path = execute("run", config_path, tmp_path / "gpu-run")
@@ -211,7 +223,15 @@ def test_real_gpu_routes_repository_adapter_and_skips_pruning(config_path, tmp_p
     results = json.loads(result_path.read_text())
     assert results["studies"][0]["contract"]["environment"]["measurement"] == "MEASURED"
     assert any(
-        "Real pruning skipped" in arm["reason"] for arm in results["skipped_arms"]
+        s["contract"]["checkpoint_requests"]
+        for s in results["studies"]
+        if "checkpoint_requests" in s["contract"]
+    )
+    assert any(
+        call.kwargs.get("checkpoint_callback") for call in benchmark.call_args_list
+    )
+    assert all(
+        s["contract"]["pruner_class"] != "ThresholdPruner" for s in results["studies"]
     )
 
 

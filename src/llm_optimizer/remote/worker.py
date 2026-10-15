@@ -61,6 +61,7 @@ def optimizer_command(payload: dict[str, Any], output: Path) -> list[str]:
             "seed": "--optuna-seed",
             "sampler": "--optuna-sampler",
             "pruner": "--optuna-pruner",
+            "min_completed_requests": "--optuna-min-completed-requests",
             "storage": "--optuna-storage",
             "study_name": "--optuna-study-name",
         }
