@@ -1,0 +1,260 @@
+{
+  "study": "B-sglang-c128-e2e-gp-s11-r1-pruner-median",
+  "identity": {
+    "framework": "sglang",
+    "phase": "B",
+    "model": "/home/ubuntu/llm-optimizer-trt/models/qwen3.5-4b",
+    "concurrency": 128
+  },
+  "max_consecutive_rejections": 10,
+  "failures": [
+    {
+      "trial_number": 3,
+      "fingerprint": "7371945e7b47526c51320aea72c8068b5069d97878ac8d5ddfdbc66af6580992",
+      "effective_config": {
+        "attention_backend": "fa3",
+        "chunked_prefill_size": 10496,
+        "cuda_graph_backend_decode": "disabled",
+        "cuda_graph_backend_prefill": "disabled",
+        "disable_overlap_schedule": true,
+        "disable_radix_cache": true,
+        "enable_mixed_chunk": true,
+        "max_prefill_tokens": 16384,
+        "max_running_requests": 104,
+        "mem_fraction_static": 0.8,
+        "schedule_conservativeness": 0.75,
+        "schedule_policy": "shortest-prefill-first"
+      },
+      "reason": "ServerNotReadyError: Server did not become ready in the allotted time.",
+      "blocked": true
+    },
+    {
+      "trial_number": 12,
+      "fingerprint": "bc2b171688f0c768f77484bd763d6dda2cca9df7017a05c87699061cd2d077f2",
+      "effective_config": {
+        "attention_backend": "fa3",
+        "chunked_prefill_size": 23040,
+        "cuda_graph_backend_decode": "tc_piecewise",
+        "cuda_graph_backend_prefill": "disabled",
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "enable_mixed_chunk": false,
+        "max_prefill_tokens": 24576,
+        "max_running_requests": 128,
+        "mem_fraction_static": 0.85,
+        "schedule_conservativeness": 1.0,
+        "schedule_policy": "shortest-prefill-first"
+      },
+      "reason": "ServerNotReadyError: Server did not become ready in the allotted time.",
+      "blocked": true
+    }
+  ],
+  "rejections": [
+    {
+      "trial_number": 13,
+      "fingerprint": "bc2b171688f0c768f77484bd763d6dda2cca9df7017a05c87699061cd2d077f2",
+      "effective_config": {
+        "attention_backend": "fa3",
+        "chunked_prefill_size": 23040,
+        "cuda_graph_backend_decode": "tc_piecewise",
+        "cuda_graph_backend_prefill": "disabled",
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "enable_mixed_chunk": false,
+        "max_prefill_tokens": 24576,
+        "max_running_requests": 128,
+        "mem_fraction_static": 0.85,
+        "schedule_conservativeness": 1.0,
+        "schedule_policy": "shortest-prefill-first"
+      },
+      "reason": "Previously failed configuration",
+      "server_launched": false
+    },
+    {
+      "trial_number": 14,
+      "fingerprint": "bc2b171688f0c768f77484bd763d6dda2cca9df7017a05c87699061cd2d077f2",
+      "effective_config": {
+        "attention_backend": "fa3",
+        "chunked_prefill_size": 23040,
+        "cuda_graph_backend_decode": "tc_piecewise",
+        "cuda_graph_backend_prefill": "disabled",
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "enable_mixed_chunk": false,
+        "max_prefill_tokens": 24576,
+        "max_running_requests": 128,
+        "mem_fraction_static": 0.85,
+        "schedule_conservativeness": 1.0,
+        "schedule_policy": "shortest-prefill-first"
+      },
+      "reason": "Previously failed configuration",
+      "server_launched": false
+    },
+    {
+      "trial_number": 15,
+      "fingerprint": "bc2b171688f0c768f77484bd763d6dda2cca9df7017a05c87699061cd2d077f2",
+      "effective_config": {
+        "attention_backend": "fa3",
+        "chunked_prefill_size": 23040,
+        "cuda_graph_backend_decode": "tc_piecewise",
+        "cuda_graph_backend_prefill": "disabled",
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "enable_mixed_chunk": false,
+        "max_prefill_tokens": 24576,
+        "max_running_requests": 128,
+        "mem_fraction_static": 0.85,
+        "schedule_conservativeness": 1.0,
+        "schedule_policy": "shortest-prefill-first"
+      },
+      "reason": "Previously failed configuration",
+      "server_launched": false
+    },
+    {
+      "trial_number": 16,
+      "fingerprint": "bc2b171688f0c768f77484bd763d6dda2cca9df7017a05c87699061cd2d077f2",
+      "effective_config": {
+        "attention_backend": "fa3",
+        "chunked_prefill_size": 23040,
+        "cuda_graph_backend_decode": "tc_piecewise",
+        "cuda_graph_backend_prefill": "disabled",
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "enable_mixed_chunk": false,
+        "max_prefill_tokens": 24576,
+        "max_running_requests": 128,
+        "mem_fraction_static": 0.85,
+        "schedule_conservativeness": 1.0,
+        "schedule_policy": "shortest-prefill-first"
+      },
+      "reason": "Previously failed configuration",
+      "server_launched": false
+    },
+    {
+      "trial_number": 17,
+      "fingerprint": "bc2b171688f0c768f77484bd763d6dda2cca9df7017a05c87699061cd2d077f2",
+      "effective_config": {
+        "attention_backend": "fa3",
+        "chunked_prefill_size": 23040,
+        "cuda_graph_backend_decode": "tc_piecewise",
+        "cuda_graph_backend_prefill": "disabled",
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "enable_mixed_chunk": false,
+        "max_prefill_tokens": 24576,
+        "max_running_requests": 128,
+        "mem_fraction_static": 0.85,
+        "schedule_conservativeness": 1.0,
+        "schedule_policy": "shortest-prefill-first"
+      },
+      "reason": "Previously failed configuration",
+      "server_launched": false
+    },
+    {
+      "trial_number": 18,
+      "fingerprint": "bc2b171688f0c768f77484bd763d6dda2cca9df7017a05c87699061cd2d077f2",
+      "effective_config": {
+        "attention_backend": "fa3",
+        "chunked_prefill_size": 23040,
+        "cuda_graph_backend_decode": "tc_piecewise",
+        "cuda_graph_backend_prefill": "disabled",
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "enable_mixed_chunk": false,
+        "max_prefill_tokens": 24576,
+        "max_running_requests": 128,
+        "mem_fraction_static": 0.85,
+        "schedule_conservativeness": 1.0,
+        "schedule_policy": "shortest-prefill-first"
+      },
+      "reason": "Previously failed configuration",
+      "server_launched": false
+    },
+    {
+      "trial_number": 19,
+      "fingerprint": "bc2b171688f0c768f77484bd763d6dda2cca9df7017a05c87699061cd2d077f2",
+      "effective_config": {
+        "attention_backend": "fa3",
+        "chunked_prefill_size": 23040,
+        "cuda_graph_backend_decode": "tc_piecewise",
+        "cuda_graph_backend_prefill": "disabled",
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "enable_mixed_chunk": false,
+        "max_prefill_tokens": 24576,
+        "max_running_requests": 128,
+        "mem_fraction_static": 0.85,
+        "schedule_conservativeness": 1.0,
+        "schedule_policy": "shortest-prefill-first"
+      },
+      "reason": "Previously failed configuration",
+      "server_launched": false
+    },
+    {
+      "trial_number": 20,
+      "fingerprint": "bc2b171688f0c768f77484bd763d6dda2cca9df7017a05c87699061cd2d077f2",
+      "effective_config": {
+        "attention_backend": "fa3",
+        "chunked_prefill_size": 23040,
+        "cuda_graph_backend_decode": "tc_piecewise",
+        "cuda_graph_backend_prefill": "disabled",
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "enable_mixed_chunk": false,
+        "max_prefill_tokens": 24576,
+        "max_running_requests": 128,
+        "mem_fraction_static": 0.85,
+        "schedule_conservativeness": 1.0,
+        "schedule_policy": "shortest-prefill-first"
+      },
+      "reason": "Previously failed configuration",
+      "server_launched": false
+    },
+    {
+      "trial_number": 21,
+      "fingerprint": "bc2b171688f0c768f77484bd763d6dda2cca9df7017a05c87699061cd2d077f2",
+      "effective_config": {
+        "attention_backend": "fa3",
+        "chunked_prefill_size": 23040,
+        "cuda_graph_backend_decode": "tc_piecewise",
+        "cuda_graph_backend_prefill": "disabled",
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "enable_mixed_chunk": false,
+        "max_prefill_tokens": 24576,
+        "max_running_requests": 128,
+        "mem_fraction_static": 0.85,
+        "schedule_conservativeness": 1.0,
+        "schedule_policy": "shortest-prefill-first"
+      },
+      "reason": "Previously failed configuration",
+      "server_launched": false
+    },
+    {
+      "trial_number": 22,
+      "fingerprint": "bc2b171688f0c768f77484bd763d6dda2cca9df7017a05c87699061cd2d077f2",
+      "effective_config": {
+        "attention_backend": "fa3",
+        "chunked_prefill_size": 23040,
+        "cuda_graph_backend_decode": "tc_piecewise",
+        "cuda_graph_backend_prefill": "disabled",
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "enable_mixed_chunk": false,
+        "max_prefill_tokens": 24576,
+        "max_running_requests": 128,
+        "mem_fraction_static": 0.85,
+        "schedule_conservativeness": 1.0,
+        "schedule_policy": "shortest-prefill-first"
+      },
+      "reason": "Previously failed configuration",
+      "server_launched": false
+    }
+  ],
+  "stops": [
+    {
+      "trial_number": 22,
+      "reason": "GP stopped after 10 consecutive blocked proposals; no fallback sampler used. See /home/ubuntu/llm-optimizer-trt/experiment_results/optuna-phase-b-v1-pruning/gp-failures-b13a3b9f95e5b197.json"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "study": "B-sglang-c128-throughput-gp-s11-r4-pruner-median",
+  "identity": {
+    "framework": "sglang",
+    "phase": "B",
+    "model": "/home/ubuntu/llm-optimizer-trt/models/qwen3.5-4b",
+    "concurrency": 128
+  },
+  "max_consecutive_rejections": 10,
+  "failures": [
+    {
+      "trial_number": 3,
+      "fingerprint": "7371945e7b47526c51320aea72c8068b5069d97878ac8d5ddfdbc66af6580992",
+      "effective_config": {
+        "attention_backend": "fa3",
+        "chunked_prefill_size": 10496,
+        "cuda_graph_backend_decode": "disabled",
+        "cuda_graph_backend_prefill": "disabled",
+        "disable_overlap_schedule": true,
+        "disable_radix_cache": true,
+        "enable_mixed_chunk": true,
+        "max_prefill_tokens": 16384,
+        "max_running_requests": 104,
+        "mem_fraction_static": 0.8,
+        "schedule_conservativeness": 0.75,
+        "schedule_policy": "shortest-prefill-first"
+      },
+      "reason": "ServerNotReadyError: Server did not become ready in the allotted time.",
+      "blocked": true
+    },
+    {
+      "trial_number": 19,
+      "fingerprint": "6777fe2ba2cd247987d04ed6325abede3ff812bdac0b7ae6f64a68b1e69c6853",
+      "effective_config": {
+        "attention_backend": "flashinfer",
+        "chunked_prefill_size": 17920,
+        "cuda_graph_backend_decode": "tc_piecewise",
+        "cuda_graph_backend_prefill": "disabled",
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": true,
+        "enable_mixed_chunk": false,
+        "max_prefill_tokens": 32768,
+        "max_running_requests": 128,
+        "mem_fraction_static": 0.85,
+        "schedule_conservativeness": 0.5,
+        "schedule_policy": "shortest-prefill-first"
+      },
+      "reason": "ServerNotReadyError: Server did not become ready in the allotted time.",
+      "blocked": true
+    }
+  ],
+  "rejections": [],
+  "stops": [],
+  "consecutive_recovery_trials": 0
+}

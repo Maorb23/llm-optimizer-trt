@@ -1,0 +1,14 @@
+{
+  "study": "B-trtllm-c128-e2e-gp-s11-r5-pruner-median",
+  "identity": {
+    "framework": "trtllm",
+    "phase": "B",
+    "model": "/workspace/llm-optimizer/models/qwen3.5-4b",
+    "concurrency": 128
+  },
+  "max_consecutive_rejections": 10,
+  "failures": [],
+  "rejections": [],
+  "stops": [],
+  "consecutive_recovery_trials": 0
+}

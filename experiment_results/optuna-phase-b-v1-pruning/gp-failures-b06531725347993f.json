@@ -1,0 +1,38 @@
+{
+  "study": "B-sglang-c128-throughput-gp-s11-r1-pruner-median",
+  "identity": {
+    "framework": "sglang",
+    "phase": "B",
+    "model": "/home/ubuntu/llm-optimizer-trt/models/qwen3.5-4b",
+    "concurrency": 128
+  },
+  "max_consecutive_rejections": 10,
+  "failures": [
+    {
+      "trial_number": 0,
+      "fingerprint": "628aeb12efb6cfe54547a3c76638b996bd05fca5971e9ea6626ca581e517be37",
+      "effective_config": {
+        "attention_backend": "flashinfer",
+        "chunked_prefill_size": 16896,
+        "cuda_graph_backend_decode": "disabled",
+        "cuda_graph_backend_prefill": "disabled",
+        "disable_overlap_schedule": false,
+        "disable_radix_cache": false,
+        "enable_mixed_chunk": false,
+        "max_prefill_tokens": 8192,
+        "max_running_requests": 72,
+        "mem_fraction_static": 0.8,
+        "schedule_conservativeness": 1.25,
+        "schedule_policy": "shortest-prefill-first"
+      },
+      "reason": "KeyboardInterrupt: ",
+      "blocked": false
+    }
+  ],
+  "rejections": [],
+  "stops": [
+    {
+      "reason": "KeyboardInterrupt: "
+    }
+  ]
+}
