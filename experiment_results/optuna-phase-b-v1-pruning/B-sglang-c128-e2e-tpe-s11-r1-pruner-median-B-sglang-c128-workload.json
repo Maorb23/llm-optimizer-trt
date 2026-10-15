@@ -5018,10 +5018,10 @@
     "disable_ignore_eos": null,
     "extra_request_body": null,
     "framework": null,
-    "model_revision": "REPLACE_WITH_PHASE_B_MODEL_COMMIT",
-    "tokenizer_revision": "REPLACE_WITH_PHASE_B_MODEL_COMMIT"
+    "model_revision": "PLACEHOLDER_MODEL_REVISION",
+    "tokenizer_revision": "PLACEHOLDER_MODEL_REVISION"
   },
   "model": "/home/ubuntu/llm-optimizer-trt/models/qwen3.5-4b",
   "tokenizer": "/home/ubuntu/llm-optimizer-trt/models/qwen3.5-4b",
-  "sha256": "9de269f8342ce0044dbdbdc736cc3d247de9eaa0cfe201191897e0388a44fda0"
+  "sha256": "ee32e7464ede2cdc4671fbfdc58c40ba6a0f6a9fed75a2f275f15910aa1977a5"
 }

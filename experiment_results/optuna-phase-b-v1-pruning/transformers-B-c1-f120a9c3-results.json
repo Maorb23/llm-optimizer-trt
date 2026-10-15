@@ -1,0 +1,229 @@
+{
+  "framework": "transformers",
+  "phase": "B",
+  "model": "/home/ubuntu/llm-optimizer-trt/models/qwen3.5-4b",
+  "target_model": "Qwen/Qwen3.5-4B",
+  "architecture": "Qwen3_5ForConditionalGeneration",
+  "model_config_sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+  "model_revision": null,
+  "transformers_version": "5.12.1",
+  "torch_version": "2.13.0+cu130",
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "dtype": "bfloat16",
+  "max_concurrency": 1,
+  "batch_size": 1,
+  "warmup_requests": 1,
+  "workload": {
+    "dataset_name": "random",
+    "random_input_len": 512,
+    "random_output_len": 128,
+    "random_range_ratio": 1.0,
+    "seed": 2026,
+    "request_rate": "inf",
+    "num_prompts": 32,
+    "max_concurrency": 1
+  },
+  "requests_sha256": "5e914a8ec141d6d49915beaa23aee6dc6f910e62e81cbd5842b72bd01295cd1a",
+  "timing_scope": "in_process_tokenization_h2d_generation_d2h_decode; excludes_http",
+  "total_requests": 32,
+  "completed": 32,
+  "failed_or_uncompleted": 0,
+  "benchmark_valid": true,
+  "failure_reason": null,
+  "mean_e2e_latency_ms": 3958.237648562509,
+  "p95_e2e_latency_ms": 4080.019819000006,
+  "requests": [
+    {
+      "request_index": 0,
+      "e2e_latency_ms": 4058.499225999867,
+      "input_tokens": 505,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 1,
+      "e2e_latency_ms": 4019.28179000015,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 2,
+      "e2e_latency_ms": 4033.3597679998547,
+      "input_tokens": 511,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 3,
+      "e2e_latency_ms": 3953.8443670001016,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 4,
+      "e2e_latency_ms": 3951.7732550000346,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 5,
+      "e2e_latency_ms": 4010.6184410001333,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 6,
+      "e2e_latency_ms": 4106.322766000176,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 7,
+      "e2e_latency_ms": 4142.987069000128,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 8,
+      "e2e_latency_ms": 3928.681081999912,
+      "input_tokens": 511,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 9,
+      "e2e_latency_ms": 3956.1613890000444,
+      "input_tokens": 489,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 10,
+      "e2e_latency_ms": 4007.728677000159,
+      "input_tokens": 511,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 11,
+      "e2e_latency_ms": 3973.4257029999753,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 12,
+      "e2e_latency_ms": 3938.7795180000467,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 13,
+      "e2e_latency_ms": 3891.3022750000437,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 14,
+      "e2e_latency_ms": 3945.863650000092,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 15,
+      "e2e_latency_ms": 3894.175156999836,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 16,
+      "e2e_latency_ms": 3879.938847999938,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 17,
+      "e2e_latency_ms": 3994.5558350000283,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 18,
+      "e2e_latency_ms": 3917.4213300000247,
+      "input_tokens": 511,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 19,
+      "e2e_latency_ms": 3960.5470689998583,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 20,
+      "e2e_latency_ms": 3961.074327999995,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 21,
+      "e2e_latency_ms": 3931.3138609998077,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 22,
+      "e2e_latency_ms": 3989.2854269999134,
+      "input_tokens": 509,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 23,
+      "e2e_latency_ms": 3903.661252999882,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 24,
+      "e2e_latency_ms": 3940.0496380001186,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 25,
+      "e2e_latency_ms": 3901.2874039999588,
+      "input_tokens": 511,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 26,
+      "e2e_latency_ms": 3957.1227059998364,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 27,
+      "e2e_latency_ms": 3895.971769000198,
+      "input_tokens": 511,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 28,
+      "e2e_latency_ms": 3886.523012000225,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 29,
+      "e2e_latency_ms": 3895.2464770000006,
+      "input_tokens": 511,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 30,
+      "e2e_latency_ms": 3926.080989999946,
+      "input_tokens": 512,
+      "output_tokens": 128
+    },
+    {
+      "request_index": 31,
+      "e2e_latency_ms": 3910.720674000004,
+      "input_tokens": 512,
+      "output_tokens": 128
+    }
+  ]
+}

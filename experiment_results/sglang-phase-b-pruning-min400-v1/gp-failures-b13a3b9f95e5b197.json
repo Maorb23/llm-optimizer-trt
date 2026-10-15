@@ -1,0 +1,14 @@
+{
+  "study": "B-sglang-c128-e2e-gp-s11-r1-pruner-median",
+  "identity": {
+    "framework": "sglang",
+    "phase": "B",
+    "model": "/home/ubuntu/llm-optimizer-trt/models/qwen3.5-4b",
+    "concurrency": 128
+  },
+  "max_consecutive_rejections": 10,
+  "failures": [],
+  "rejections": [],
+  "stops": [],
+  "consecutive_recovery_trials": 0
+}
