@@ -51,17 +51,21 @@ new studies do not automatically import another study's failures.
 ## Optional draft-model decoding
 
 The pruning notebook now has an optional **Hugging Face target and DFlash setup**
-cell immediately after its adapter/preflight definitions. Set
+cell immediately after its adapter/preflight definitions. It automatically uses
+the engine selected in `REAL_FRAMEWORKS`, including vLLM; it does not require
+switching to SGLang. Set
 `HF_MODEL_SETUP_ENABLED=True` to download/cache the selected models; set
 `ENABLE_DFLASH=False` for target-only serving. A target revision of `None` resolves
 the Hub's main branch to a concrete commit before download. The draft defaults to
 the pinned Qwen3.5-4B DFlash revision. Paths and resolved revisions are displayed
-and saved to `hf-sglang-models.json` in the experiment directory.
+and saved to `hf-<framework>-models.json` in the experiment directory.
 
 The notebook passes the profile's fixed server settings through `benchmark_for()`
 for both search and independent validation. Its contracts and GP fingerprints
-include the draft settings/revision. DFlash setup narrows mixed-chunk and overlap
-choices and checks the installed SGLang CLI before downloading. It never installs
+include the draft settings/revision. SGLang DFlash setup narrows mixed-chunk and overlap
+choices and checks the installed SGLang CLI before downloading. vLLM instead receives
+its native `speculative_config` JSON and keeps its existing search choices, using
+`VLLM_NUM_SPECULATIVE_TOKENS` independently from SGLang's block size. The setup never installs
 packages or claims to have verified GPU model compatibility. Native/quality
 verification declarations remain unchanged. Use a fresh experiment when changing
 models or enabling a draft; first smoke-test the actual SGLang/H100 combination.

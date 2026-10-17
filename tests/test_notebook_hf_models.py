@@ -210,7 +210,7 @@ def test_runtime_without_dflash_fails_before_download_or_profile_changes(
         "run",
         lambda *a, **k: SimpleNamespace(returncode=0, stdout="old help", stderr=""),
     )
-    with pytest.raises(RuntimeError, match="required DFlash flags"):
+    with pytest.raises(RuntimeError, match="required .*flags"):
         namespace["configure_hf_sglang_models"](
             "Qwen/Qwen3.5-4B",
             enable_dflash=True,
@@ -242,3 +242,102 @@ def test_failed_draft_download_does_not_change_active_models(setup, monkeypatch)
         )
     assert namespace["REAL_PREFLIGHT"] == before
     assert namespace["MODEL_SNAPSHOTS"]["B"] == "original-target"
+
+
+@pytest.mark.parametrize("enable_dflash", [False, True])
+def test_vllm_is_auto_selected_and_uses_native_speculative_json(
+    setup, monkeypatch, enable_dflash
+):
+    namespace, calls, notebook = setup
+    namespace["RUN_REAL_GPU"] = True
+    namespace["REAL_FRAMEWORKS"] = ("vllm",)
+    profile = {
+        "native_config_verified": True,
+        "quality_verified": True,
+        "fixed_server": {"tensor_parallel_size": 1},
+        "expanded_choices": {
+            "attention_backend": ["auto", "FLASH_ATTN"],
+            "async_scheduling": [False, True],
+        },
+    }
+    namespace["REAL_PREFLIGHT"][("B", "vllm")] = copy.deepcopy(profile)
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda command, **kwargs: (
+            calls["cli"].append(command)
+            or SimpleNamespace(
+                returncode=0, stdout="--speculative-config JSON", stderr=""
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        importlib.metadata, "version", lambda package: f"test-{package}"
+    )
+    result = namespace["configure_hf_models"](
+        "Qwen/Qwen3.5-4B",
+        enable_dflash=enable_dflash,
+        draft_model_id="z-lab/Qwen3.5-4B-DFlash",
+        draft_revision=DRAFT_SHA,
+        num_speculative_tokens=15,
+    )
+    configured = namespace["REAL_PREFLIGHT"][("B", "vllm")]
+    assert result["framework"] == "vllm"
+    assert configured["framework_version"] == "test-vllm"
+    assert configured["expanded_choices"] == profile["expanded_choices"]
+    assert namespace["REAL_FRAMEWORKS"] == ("vllm",)
+    assert (namespace["RUN_DIR"] / "hf-vllm-models.json").is_file()
+    if not enable_dflash:
+        assert configured["fixed_server"] == {"tensor_parallel_size": 1}
+        assert calls["cli"] == []
+        assert len(calls["downloads"]) == 1
+        return
+    assert calls["cli"][0][:3] == [
+        sys.executable,
+        "-m",
+        "vllm.entrypoints.openai.api_server",
+    ]
+    assert configured["fixed_server"]["speculative_config"] == {
+        "method": "dflash",
+        "model": result["draft_path"],
+        "num_speculative_tokens": 15,
+    }
+    assert "speculative_algorithm" not in configured["fixed_server"]
+    assert "speculative_draft_model_path" not in configured["fixed_server"]
+    for cell in notebook["cells"]:
+        if cell["cell_type"] != "code":
+            continue
+        for node in ast.parse("".join(cell["source"])).body:
+            if (
+                isinstance(node, ast.FunctionDef)
+                and node.name == "serialize_engine_config"
+            ):
+                exec(
+                    compile(
+                        ast.Module(body=[node], type_ignores=[]), "serialize", "exec"
+                    ),
+                    namespace,
+                )
+    native = namespace["serialize_engine_config"](
+        "vllm",
+        1,
+        configured["fixed_server"],
+    )
+    from llm_optimizer.args import Arg, ArgScope
+    from llm_optimizer.cli import construct_benchmark_settings
+    from llm_optimizer.predefined import SERVER_CONFIGS
+
+    args = [
+        Arg[SERVER_CONFIGS["vllm"][key].arg_type](
+            scope=ArgScope.SERVER,
+            name=key,
+            value=value,
+        )
+        for key, value in native.items()
+    ]
+    command = construct_benchmark_settings(args, "vllm")["server_cmd_args"]
+    flag = next(arg for arg in command if arg.startswith("--speculative-config="))
+    assert (
+        json.loads(flag.split("=", 1)[1])
+        == configured["fixed_server"]["speculative_config"]
+    )
