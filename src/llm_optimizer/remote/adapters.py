@@ -87,6 +87,11 @@ class NebiusAdapter:
             command += ["--parent-id", self.project_id]
         if request["preemptible"]:
             command.append("--preemptible")
+            policy_id = os.getenv("NEBIUS_SPOT_PRICING_POLICY_ID", "").strip()
+            if policy_id:
+                command += ["--spot-pricing-policy-id", policy_id]
+            else:
+                command.append("--follows-spot-price")
         if debug_ssh_key:
             command += ["--ssh-key", debug_ssh_key]
         # The scheduler option is not needed by workers. Existing images were

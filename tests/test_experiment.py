@@ -1,5 +1,6 @@
 """CLI artifacts and parity with the unchanged reference notebook."""
 
+import ast
 import copy
 import json
 from pathlib import Path
@@ -116,6 +117,23 @@ def test_notebook_search_validation_and_export_parity(
     lab["SPACES"] = extracted.SPACES
     lab["PHASE_REQUESTS"] = extracted.PHASE_REQUESTS
     lab["VALIDATION_REQUESTS"] = extracted.VALIDATION_REQUESTS
+    if framework == "sglang":
+        # The active pruning notebook restores separate cache/policy parameters;
+        # the older reference notebook intentionally retains its helper encoding.
+        notebook = json.loads(
+            (Path(__file__).resolve().parents[1]
+             / "docs/optuna_inference_optimization_lab_prune.ipynb").read_text()
+        )
+        for cell in notebook["cells"]:
+            if cell["cell_type"] != "code":
+                continue
+            definitions = [
+                node for node in ast.parse("".join(cell["source"])).body
+                if isinstance(node, ast.FunctionDef)
+                and node.name in {"expanded_config", "sampling_menu"}
+            ]
+            exec(compile(ast.Module(body=definitions, type_ignores=[]),
+                         "pruning-notebook-search", "exec"), lab)
     kwargs = {
         "concurrency": concurrency,
         "phase": phase,

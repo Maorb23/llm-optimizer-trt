@@ -891,20 +891,10 @@ class Lab:
             if mode != "NONE":
                 config["compilation_config"]["cudagraph_capture_sizes"] = graph_sizes()
         elif framework == "sglang":
-            from llm_optimizer.experiment.sglang_space import (
-                CACHE_POLICY_PARAMETER,
-                resolve_cache_policy,
-                sampling_choices,
-            )
-
-            domain = sampling_choices(choices)[CACHE_POLICY_PARAMETER]
-            config.update(
-                resolve_cache_policy(
-                    trial.suggest_categorical(CACHE_POLICY_PARAMETER, domain)
-                )
-            )
             for key in [
                 "attention_backend",
+                "disable_radix_cache",
+                "schedule_policy",
                 "enable_mixed_chunk",
                 "disable_overlap_schedule",
                 "cuda_graph_backend_decode",
@@ -1063,12 +1053,7 @@ class Lab:
                 "trtllm": "kv_cache_free_gpu_memory_fraction",
             }[framework]
             menu[memory] = self.SPACES[128][framework][memory]
-        selected = self.expanded_choices(framework, choices)
-        if framework == "sglang":
-            from llm_optimizer.experiment.sglang_space import sampling_choices
-
-            selected = sampling_choices(selected)
-        menu.update(selected)
+        menu.update(self.expanded_choices(framework, choices))
         menu["graph_capture_profile"] = ["powers", "dense"]
         if framework == "sglang":
             menu.update(

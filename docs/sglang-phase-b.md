@@ -1,22 +1,15 @@
 # Phase B SGLang search on H100
 
-Expanded SGLang studies sample one `cache_policy` categorical with the fixed domain:
+The extracted experiment runner and `docs/optuna_inference_optimization_lab_prune.ipynb`
+use the original separate Optuna categoricals: `disable_radix_cache` and
+`schedule_policy`. Their choices are passed through unchanged, so all six cache/
+scheduler combinations are available, including cache-off with
+`shortest-prefill-first`. Unsupported combinations may fail at server startup.
 
-| Optuna value | disable_radix_cache | schedule_policy |
-| --- | --- | --- |
-| cache_on__fcfs | false | fcfs |
-| cache_on__lpm | false | lpm |
-| cache_on__shortest-prefill-first | false | shortest-prefill-first |
-| cache_off__fcfs | true | fcfs |
-| cache_off__lpm | true | lpm |
-
-The invalid cache-off/shortest-prefill-first pair has no categorical value.
-Native preflight settings still specify `disable_radix_cache` and `schedule_policy`
-subsets. Their valid combinations determine the categorical domain once per study;
-choices never depend on another sampled parameter. An invalid-only preflight subset
-is rejected before trials start. This encoding supports grouped multivariate TPE,
-GP, and the existing lazy Cartesian grid. Resolved configs retain the two native
-settings and never pass `cache_policy` to SGLang.
+`sglang_space.py` is retained but unused by those execution paths. The older
+`docs/optuna_inference_optimization_lab.ipynb` and
+`optuna_inference_optimization_lab_updated.ipynb` still explicitly use its five-value
+`cache_policy` encoding.
 
 Expanded prefill graph choices are `disabled` and `breakable`. Decode choices remain
 `disabled`, `full`, and `tc_piecewise`. `breakable` is passed as
@@ -43,11 +36,10 @@ Infrastructure failures marked `gp_non_config_failure` are not blocked.
 ## Resume and migration
 
 Study names, storage locations, metrics, W&B integration, and benchmark execution
-semantics are unchanged. The expanded study contract records the native choice
-subsets and the new resolved sampling menu. Resuming with the same new contract is
-supported. The old two-parameter SGLang search space is incompatible with the new
-categorical and must not be appended to an existing study. Contract validation
-rejects that resume, even if a verified profile excludes `breakable`.
+semantics are unchanged. Contracts record native choices and the sampling menu.
+Compatible separate-parameter studies can resume. Studies using the combined
+`cache_policy` parameter have a different contract and require a fresh study when
+switching back to separate parameters; contract validation rejects mixing them.
 
 Start a fresh SGLang Phase B study using the existing run-label mechanism, or a
 fresh experiment output directory; keep old SQLite databases and artifacts for
@@ -58,11 +50,26 @@ new studies do not automatically import another study's failures.
 
 ## Optional draft-model decoding
 
-This change leaves speculative decoding disabled and adds no draft checkpoint.
-The native SGLang registry already exposes `speculative_algorithm`,
+The pruning notebook now has an optional **Hugging Face target and DFlash setup**
+cell immediately after its adapter/preflight definitions. Set
+`HF_MODEL_SETUP_ENABLED=True` to download/cache the selected models; set
+`ENABLE_DFLASH=False` for target-only serving. A target revision of `None` resolves
+the Hub's main branch to a concrete commit before download. The draft defaults to
+the pinned Qwen3.5-4B DFlash revision. Paths and resolved revisions are displayed
+and saved to `hf-sglang-models.json` in the experiment directory.
+
+The notebook passes the profile's fixed server settings through `benchmark_for()`
+for both search and independent validation. Its contracts and GP fingerprints
+include the draft settings/revision. DFlash setup narrows mixed-chunk and overlap
+choices and checks the installed SGLang CLI before downloading. It never installs
+packages or claims to have verified GPU model compatibility. Native/quality
+verification declarations remain unchanged. Use a fresh experiment when changing
+models or enabling a draft; first smoke-test the actual SGLang/H100 combination.
+
+The native SGLang registry exposes `speculative_algorithm`,
 `speculative_draft_model_path`, `speculative_num_steps`, `speculative_eagle_topk`,
-and `speculative_num_draft_tokens`. The experiment configuration currently has no
-separate typed speculative layer. Supporting one requires these scoped changes:
+and `speculative_num_draft_tokens`. The separate experiment CLI configuration still
+has no typed speculative layer. Extending that CLI requires these scoped changes:
 
 1. Add an optional `speculative_decoding` object to experiment defaults and config
    validation, separate from expanded attention/cache choices. Require an explicit
@@ -78,15 +85,19 @@ separate typed speculative layer. Supporting one requires these scoped changes:
    missing local draft paths, and resume identity, then run an H100 compatibility
    smoke test with the actual draft checkpoint.
 
-This is documented rather than enabled implicitly: a compatible draft checkpoint
-and pinned SGLang build have not been provided or verified here.
+The CLI extension remains documented rather than implicitly enabled.
 
 ## Changed notebook cells
 
 In each of `docs/optuna_inference_optimization_lab.ipynb`,
 `docs/optuna_inference_optimization_lab_prune.ipynb`, and
-`optuna_inference_optimization_lab_updated.ipynb`, only code cells at zero-based
-indices **6** (`optuna-objectives-006`) and **10** (`optuna-objectives-010`) change.
-Cell 6 updates expanded choices and native resolution; cell 10 updates the sampler
+`optuna_inference_optimization_lab_updated.ipynb`, search-space code is in cells at
+zero-based indices **6** (`optuna-objectives-006`) and **10** (`optuna-objectives-010`).
+Cell 6 defines expanded choices and parameter sampling; cell 10 defines the sampler
 menu used for contracts and Cartesian traversal. Existing saved outputs are retained
 as historical output and must not be read as results of the updated source.
+
+The pruning notebook additionally wires `fixed_server` in its adapter cell
+`optuna-objectives-012` and adds `hf-sglang-model-setup-notes` and
+`hf-sglang-model-setup`. Those stable cell IDs identify the optional setup even
+when inserting cells changes the displayed numeric indices.

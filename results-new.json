@@ -1,0 +1,214 @@
+{
+  "run_id": "e9f25fe69b9244ea9bf58b47089ba92b",
+  "state": "running",
+  "created_at": "2026-10-16T18:25:13.397620+00:00",
+  "jobs": [
+    {
+      "run_id": "e9f25fe69b9244ea9bf58b47089ba92b",
+      "framework": "vllm",
+      "state": "running",
+      "nebius_id": "aijob-e00zsgeshg803cbkt8",
+      "error": null,
+      "progress": null,
+      "updated_at": "2026-10-16T18:29:39.861813+00:00"
+    }
+  ],
+  "manifests": {
+    "vllm": {
+      "schema_version": 1,
+      "run_id": "e9f25fe69b9244ea9bf58b47089ba92b",
+      "framework": "vllm",
+      "model": "Qwen/Qwen3-4B",
+      "revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+      "speculative_heads": null,
+      "gpu_type": "gpu-h100-sxm",
+      "gpu_count": 1,
+      "preset": "1gpu-16vcpu-200gb",
+      "image": "docker.io/maorb23/llm-optimizer-vllm:pruning-20261015T120303Z",
+      "workload": [
+        "dataset_name=random;random_input_len=128;random_output_len=32;random_range_ratio=1.0;num_prompts=1024;max_concurrency=128;seed=1;output_details=true"
+      ],
+      "semantic_context": null,
+      "objectives": "output_throughput",
+      "constraints": null,
+      "optimization": {
+        "strategy": "optuna",
+        "optuna": {
+          "trials": 30,
+          "objective": "output_throughput",
+          "sampler": "TPESampler",
+          "sampler_kwargs": {
+            "multivariate": true,
+            "group": true
+          },
+          "pruner": "NopPruner",
+          "seed": 7
+        },
+        "server_args": [
+          "async_scheduling*no_async_scheduling:(bool,bool)=[[False,True],[True,False]]",
+          "performance_mode=['balanced','interactivity','throughput']",
+          "attention_backend=['auto','FLASH_ATTN','FLASHINFER']",
+          "kv_cache_dtype=['auto','fp8']",
+          "enable_prefix_caching*no_enable_prefix_caching:(bool,bool)=[[False,True],[True,False]]",
+          "compilation_config=['{\"cudagraph_mode\":\"NONE\"}', '{\"cudagraph_mode\":\"PIECEWISE\"}', '{\"cudagraph_mode\":\"FULL_AND_PIECEWISE\"}']",
+          "max_num_batched_tokens=range(1024,32769,256)",
+          "max_num_seqs=range(8,129,8)"
+        ]
+      },
+      "runtime": {
+        "python": "3.12.3",
+        "llm_optimizer": "0.0.1",
+        "vllm": "0.30.0",
+        "torch": "2.13.0+cu130",
+        "transformers": "5.17.0",
+        "optuna": "4.9.0",
+        "huggingface_hub": "1.32.0",
+        "visible_gpus": [
+          "NVIDIA H100 80GB HBM3"
+        ]
+      },
+      "status": "completed",
+      "artifacts": {
+        "progress.json": "s3://hf-model-watch/llm-optimizer/e9f25fe69b9244ea9bf58b47089ba92b/vllm/progress.json",
+        "checkpoint.zip": "s3://hf-model-watch/llm-optimizer/e9f25fe69b9244ea9bf58b47089ba92b/vllm/checkpoint.zip",
+        "results.workload.json": "s3://hf-model-watch/llm-optimizer/e9f25fe69b9244ea9bf58b47089ba92b/vllm/results.workload.json",
+        "execution.log": "s3://hf-model-watch/llm-optimizer/e9f25fe69b9244ea9bf58b47089ba92b/vllm/execution.log",
+        "results.json": "s3://hf-model-watch/llm-optimizer/e9f25fe69b9244ea9bf58b47089ba92b/vllm/results.json",
+        "deployment.json": "s3://hf-model-watch/llm-optimizer/e9f25fe69b9244ea9bf58b47089ba92b/vllm/deployment.json"
+      },
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "llm_optimizer.cli",
+        "--model",
+        "Qwen/Qwen3-4B",
+        "--framework",
+        "vllm",
+        "--gpus",
+        "1",
+        "--output-json",
+        "/tmp/optimizer-e9f25fe69b9244ea9bf58b47089ba92b-vllm-s7zhjiyl/results.json",
+        "--search-strategy",
+        "optuna",
+        "--server-args",
+        "async_scheduling*no_async_scheduling:(bool,bool)=[[False,True],[True,False]]",
+        "--server-args",
+        "performance_mode=['balanced','interactivity','throughput']",
+        "--server-args",
+        "attention_backend=['auto','FLASH_ATTN','FLASHINFER']",
+        "--server-args",
+        "kv_cache_dtype=['auto','fp8']",
+        "--server-args",
+        "enable_prefix_caching*no_enable_prefix_caching:(bool,bool)=[[False,True],[True,False]]",
+        "--server-args",
+        "compilation_config=['{\"cudagraph_mode\":\"NONE\"}', '{\"cudagraph_mode\":\"PIECEWISE\"}', '{\"cudagraph_mode\":\"FULL_AND_PIECEWISE\"}']",
+        "--server-args",
+        "max_num_batched_tokens=range(1024,32769,256)",
+        "--server-args",
+        "max_num_seqs=range(8,129,8)",
+        "--server-args",
+        "revision=1cfa9a7208912126459214e8b04321603b3df60c",
+        "--client-args",
+        "dataset_name=random;random_input_len=128;random_output_len=32;random_range_ratio=1.0;num_prompts=1024;max_concurrency=128;seed=1;output_details=true",
+        "--optuna-trials",
+        "30",
+        "--optuna-objective",
+        "output_throughput",
+        "--optuna-seed",
+        "7",
+        "--optuna-sampler",
+        "TPESampler",
+        "--optuna-pruner",
+        "NopPruner",
+        "--optuna-sampler-kwargs",
+        "{\"multivariate\": true, \"group\": true}"
+      ],
+      "resolved_revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+      "test_results": [],
+      "study_summary": {
+        "objectives": [
+          "output_throughput"
+        ],
+        "directions": [
+          "maximize"
+        ],
+        "completed_trials": 0,
+        "trial_states": {
+          "0": "FAIL",
+          "1": "FAIL",
+          "2": "FAIL",
+          "3": "FAIL",
+          "4": "FAIL",
+          "5": "FAIL",
+          "6": "FAIL",
+          "7": "FAIL",
+          "8": "FAIL",
+          "9": "FAIL",
+          "10": "FAIL",
+          "11": "FAIL",
+          "12": "FAIL",
+          "13": "FAIL",
+          "14": "FAIL",
+          "15": "FAIL",
+          "16": "FAIL",
+          "17": "FAIL",
+          "18": "FAIL",
+          "19": "FAIL",
+          "20": "FAIL",
+          "21": "FAIL",
+          "22": "FAIL",
+          "23": "FAIL",
+          "24": "FAIL",
+          "25": "FAIL",
+          "26": "FAIL",
+          "27": "FAIL",
+          "28": "FAIL",
+          "29": "FAIL"
+        },
+        "trial_state_counts": {
+          "RUNNING": 0,
+          "COMPLETE": 0,
+          "PRUNED": 0,
+          "FAIL": 30,
+          "WAITING": 0
+        },
+        "gpu_seconds": 305.4877337400005,
+        "validation_status": "not_independently_validated",
+        "pareto_front": [],
+        "best_per_objective": {},
+        "importance_per_objective": {
+          "output_throughput": {
+            "status": "unavailable",
+            "values": {},
+            "reason": "Tried to import 'sklearn' but failed. Please make sure that the package is installed correctly to use this feature. Actual error: No module named 'sklearn'."
+          }
+        }
+      },
+      "best_configurations": {
+        "best_input_throughput": null,
+        "best_output_throughput": null,
+        "best_input_throughput_constrained": null,
+        "best_output_throughput_constrained": null
+      },
+      "total_tests": 0,
+      "workload_sha256": "9395b489619b3d46471862b86ebdf1aa92abfd29c3783146c3b02a440d4c9f5d",
+      "sha256": {
+        "progress.json": "2c751e5eceac44d8e2f6047fb8e3929a99eddcfa477b92cb82b1fa05faf8e2d7",
+        "checkpoint.zip": "f8c34c67e238e8c83abc0a45438a95471d8a791ebe13b0f411415df97cfab78c",
+        "results.workload.json": "a9b0c4ceee2668845bd3489a41aed71f3852272b8bac43866ac119e8ec36a80a",
+        "execution.log": "6f8836222fd679dcc4e68b6ccfd6c51192667bbd3c64856a5336b54940571dbf",
+        "results.json": "a346e44fadef0215df7cbf89fcdc0cfdb6930f8290d7a8baf939424d3ab89a5c",
+        "deployment.json": "b2f8cc75c714683b3f07e1381a176ec4e65cd09f36e7b2c29dd194e9e6fab8cc"
+      }
+    }
+  },
+  "comparable": true,
+  "aggregate": {
+    "vllm": {
+      "best_input_throughput": null,
+      "best_output_throughput": null,
+      "best_input_throughput_constrained": null,
+      "best_output_throughput_constrained": null
+    }
+  }
+}

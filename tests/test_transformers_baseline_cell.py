@@ -1,5 +1,6 @@
 """Exercise the optional final notebook cell without loading a model or GPU."""
 
+import ast
 import hashlib
 import json
 import random
@@ -19,7 +20,16 @@ def baseline_cell():
     )
     notebook = json.loads(path.read_text())
     assert notebook["cells"][-1]["id"] == "transformers-c1-baseline"
-    return "".join(notebook["cells"][-1]["source"])
+    tree = ast.parse("".join(notebook["cells"][-1]["source"]))
+    # Users may enable this optional cell in their saved notebook. Unit tests
+    # exercise the function explicitly with mocks rather than its live-run toggle.
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "RUN_TRANSFORMERS_BASELINE"
+            for target in node.targets
+        ):
+            node.value = ast.Constant(value=False)
+    return ast.unparse(ast.fix_missing_locations(tree))
 
 
 @pytest.mark.parametrize("fail", [False, True])

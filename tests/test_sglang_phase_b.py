@@ -31,28 +31,27 @@ def lab(tmp_path):
 
 
 @pytest.mark.parametrize("concurrency", [1, 128])
-@pytest.mark.parametrize("policy", CACHE_POLICIES)
-def test_every_cache_policy_resolves_to_valid_native_config(lab, concurrency, policy):
+@pytest.mark.parametrize("disabled", [False, True])
+@pytest.mark.parametrize("policy", ["fcfs", "lpm", "shortest-prefill-first"])
+def test_separate_parameters_preserve_all_six_combinations(
+    lab, concurrency, disabled, policy
+):
     menu = lab.sampling_menu("sglang", concurrency, "expanded")
-    assert tuple(menu[CACHE_POLICY_PARAMETER]) == CACHE_POLICIES
-    assert "disable_radix_cache" not in menu
-    assert "schedule_policy" not in menu
+    assert CACHE_POLICY_PARAMETER not in menu
+    assert menu["disable_radix_cache"] == [False, True]
+    assert menu["schedule_policy"] == ["fcfs", "lpm", "shortest-prefill-first"]
     params = {key: values[0] for key, values in menu.items()}
-    params[CACHE_POLICY_PARAMETER] = policy
+    params.update(disable_radix_cache=disabled, schedule_policy=policy)
     trial = optuna.trial.FixedTrial(params)
     config = lab.suggest_config(trial, "sglang", concurrency, "expanded")
-    assert not (
-        config["disable_radix_cache"]
-        and config["schedule_policy"] == "shortest-prefill-first"
-    )
-    assert config["disable_radix_cache"] == policy.startswith("cache_off")
-    assert config["schedule_policy"] == policy.split("__", 1)[1]
+    assert config["disable_radix_cache"] == disabled
+    assert trial.params["disable_radix_cache"] == disabled
+    assert config["schedule_policy"] == trial.params["schedule_policy"] == policy
     assert CACHE_POLICY_PARAMETER not in config
-    assert "disable_radix_cache" not in trial.params
-    assert "schedule_policy" not in trial.params
+    assert CACHE_POLICY_PARAMETER not in trial.params
 
 
-def test_preflight_subsets_are_fixed_and_invalid_only_subset_is_rejected(lab):
+def test_retained_helper_can_still_reject_invalid_pairs_when_explicitly_used(lab):
     choices = copy.deepcopy(lab.EXPANDED_CHOICES["sglang"])
     choices["disable_radix_cache"] = [True]
     assert sampling_choices(choices)[CACHE_POLICY_PARAMETER] == [
@@ -61,13 +60,13 @@ def test_preflight_subsets_are_fixed_and_invalid_only_subset_is_rejected(lab):
     ]
     choices["schedule_policy"] = ["shortest-prefill-first"]
     with pytest.raises(ValueError, match="no valid cache/policy pair"):
-        lab.sampling_menu("sglang", 128, "expanded", choices)
+        sampling_choices(choices)
     with pytest.raises(ValueError):
         resolve_cache_policy("cache_off__shortest-prefill-first")
 
 
 @pytest.mark.parametrize("sampler_name", ["tpe_multivariate", "gp"])
-def test_real_sampler_uses_fixed_categorical_and_resolved_configs(lab, sampler_name):
+def test_real_sampler_uses_original_separate_parameters(lab, sampler_name):
     if sampler_name == "gp":
         pytest.importorskip("torch")
     # Reach model-based sampling within a short CPU test, not just startup proposals.
@@ -82,20 +81,18 @@ def test_real_sampler_uses_fixed_categorical_and_resolved_configs(lab, sampler_n
     def objective(trial):
         config = lab.suggest_config(trial, "sglang", 128, "expanded")
         trial.set_user_attr("config", config)
-        assert not (
-            config["disable_radix_cache"]
-            and config["schedule_policy"] == "shortest-prefill-first"
-        )
         return config["max_running_requests"] + config["schedule_conservativeness"]
 
     study.optimize(objective, n_trials=5)
     assert all(t.state == optuna.trial.TrialState.COMPLETE for t in study.trials)
     assert all(
-        tuple(t.distributions[CACHE_POLICY_PARAMETER].choices) == CACHE_POLICIES
+        tuple(t.distributions["disable_radix_cache"].choices) == (False, True)
+        and tuple(t.distributions["schedule_policy"].choices)
+        == ("fcfs", "lpm", "shortest-prefill-first")
         for t in study.trials
     )
     assert all(
-        "disable_radix_cache" not in t.params and "schedule_policy" not in t.params
+        CACHE_POLICY_PARAMETER not in t.params
         for t in study.trials
     )
 
@@ -141,7 +138,7 @@ def test_contract_rejects_old_search_space_and_preserves_same_space_resume(lab):
         trials=1,
     )
     contract = study.user_attrs["contract"]
-    assert contract["sampling_menu"][CACHE_POLICY_PARAMETER] == list(CACHE_POLICIES)
+    assert CACHE_POLICY_PARAMETER not in contract["sampling_menu"]
     assert contract["expanded_choices"]["cuda_graph_backend_prefill"] == [
         "disabled",
         "breakable",
@@ -158,11 +155,7 @@ def test_contract_rejects_old_search_space_and_preserves_same_space_resume(lab):
     )
     assert len(resumed.trials) == len(study.trials)
     old = copy.deepcopy(contract)
-    old["sampling_menu"].pop(CACHE_POLICY_PARAMETER)
-    old["sampling_menu"].update(
-        disable_radix_cache=[False, True],
-        schedule_policy=["fcfs", "lpm", "shortest-prefill-first"],
-    )
+    old["sampling_menu"] = sampling_choices(old["sampling_menu"])
     study.set_user_attr("contract", old)
     with pytest.raises(ValueError, match="different experimental settings"):
         lab.run_study(
@@ -257,7 +250,7 @@ def test_gp_rejections_do_not_launch_or_consume_phase_b_budget(lab, monkeypatch)
         "optuna_inference_optimization_lab_updated.ipynb",
     ],
 )
-def test_notebook_copies_use_same_fixed_space_and_breakable(notebook_lab, notebook):
+def test_notebook_search_representation_and_breakable(notebook_lab, notebook):
     path = Path(__file__).resolve().parents[1] / notebook
     cells = json.loads(path.read_text())["cells"]
     namespace = notebook_lab.copy()
@@ -288,10 +281,22 @@ def test_notebook_copies_use_same_fixed_space_and_breakable(notebook_lab, notebo
     menu = namespace["sampling_menu"]("sglang", 128, "expanded")
     assert menu["cuda_graph_backend_prefill"] == ["disabled", "breakable"]
     assert menu["cuda_graph_backend_decode"] == ["disabled", "full", "tc_piecewise"]
-    assert menu[CACHE_POLICY_PARAMETER] == list(CACHE_POLICIES)
+    separate = notebook.endswith("_prune.ipynb")
+    if separate:
+        assert CACHE_POLICY_PARAMETER not in menu
+        assert menu["disable_radix_cache"] == [False, True]
+        assert menu["schedule_policy"] == ["fcfs", "lpm", "shortest-prefill-first"]
+        assert "sglang_space" not in "".join(
+            "".join(cell["source"]) for cell in cells
+        )
+    else:
+        assert menu[CACHE_POLICY_PARAMETER] == list(CACHE_POLICIES)
     for policy in CACHE_POLICIES:
         params = {key: values[0] for key, values in menu.items()}
-        params[CACHE_POLICY_PARAMETER] = policy
+        if separate:
+            params.update(resolve_cache_policy(policy))
+        else:
+            params[CACHE_POLICY_PARAMETER] = policy
         params["cuda_graph_backend_prefill"] = "breakable"
         config = namespace["suggest_config"](
             optuna.trial.FixedTrial(params), "sglang", 128, "expanded"
