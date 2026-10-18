@@ -19,6 +19,8 @@ PARAMETER_MAPPING = {
 
 
 SERVER_CONFIGS: ConfigsDict = {
+    "cuda_graph_backend_decode": ArgConfig[str](name="cuda_graph_backend_decode"),
+    "cuda_graph_backend_prefill": ArgConfig[str](name="cuda_graph_backend_prefill"),
     # --- Model and tokenizer ---
     "model_path": ArgConfig[str](name="model_path"),
     "tokenizer_path": ArgConfig[str](name="tokenizer_path"),

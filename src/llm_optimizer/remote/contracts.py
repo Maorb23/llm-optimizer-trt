@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
@@ -21,6 +22,7 @@ class OptimizationRequest:
     preset: str = "1gpu-16vcpu-96gb"
     client_args: list[str] = field(default_factory=list)
     server_args: dict[str, list[str]] = field(default_factory=dict)
+    server_config_files: dict[str, dict[str, str]] = field(default_factory=dict)
     search_strategy: str = "grid"
     constraints: str | None = None
     optuna: dict[str, Any] = field(default_factory=dict)
@@ -29,6 +31,8 @@ class OptimizationRequest:
     timeout_minutes: int = 180
     dry_run: bool = True
     preemptible: bool = False
+    spot_pricing_policy_id: str | None = None
+    follows_spot_price: bool | None = None
     semantic_context: dict[str, Any] | None = None
 
     @classmethod
@@ -68,6 +72,31 @@ class OptimizationRequest:
             raise ValueError("gpu_count must be positive")
         if not isinstance(request.preemptible, bool):
             raise ValueError("preemptible must be a boolean")
+        policy = request.spot_pricing_policy_id
+        if request.preemptible and not any(
+            key in data for key in ("spot_pricing_policy_id", "follows_spot_price")
+        ):
+            policy = os.getenv("NEBIUS_SPOT_PRICING_POLICY_ID", "").strip() or None
+            request.spot_pricing_policy_id = policy
+        if policy is not None and (not isinstance(policy, str) or not policy.strip()):
+            raise ValueError("spot_pricing_policy_id must be a nonempty string")
+        if isinstance(policy, str):
+            request.spot_pricing_policy_id = policy.strip()
+        if request.follows_spot_price is None:
+            request.follows_spot_price = request.preemptible and policy is None
+        if not isinstance(request.follows_spot_price, bool):
+            raise ValueError("follows_spot_price must be a boolean")
+        if policy and request.follows_spot_price:
+            raise ValueError(
+                "Choose spot_pricing_policy_id or follows_spot_price, not both"
+            )
+        if not request.preemptible and (policy or request.follows_spot_price):
+            raise ValueError("Spot pricing requires preemptible execution")
+        if request.preemptible and not policy and not request.follows_spot_price:
+            raise ValueError(
+                "Preemptible execution requires a spot pricing policy "
+                "or follows_spot_price"
+            )
         if not isinstance(request.preset, str) or not request.preset.startswith(
             f"{request.gpu_count}gpu-"
         ):
@@ -95,6 +124,22 @@ class OptimizationRequest:
         ):
             raise ValueError(
                 "server_args must map selected frameworks to lists of strings"
+            )
+        if not isinstance(request.server_config_files, dict) or any(
+            framework not in request.frameworks
+            or not isinstance(files, dict)
+            or any(
+                not isinstance(name, str)
+                or not name or name in {".", ".."}
+                or "/" in name or "\\" in name
+                or not isinstance(content, str)
+                for name, content in files.items()
+            )
+            for framework, files in request.server_config_files.items()
+        ):
+            raise ValueError(
+                "server_config_files must map selected frameworks "
+                "to safe filenames and text"
             )
         if request.speculative_heads and any(
             not any("speculative" in arg for arg in request.server_args.get(name, []))

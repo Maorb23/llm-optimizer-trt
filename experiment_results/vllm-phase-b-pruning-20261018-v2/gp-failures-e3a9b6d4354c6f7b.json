@@ -1,0 +1,14 @@
+{
+  "study": "B-vllm-c128-e2e-gp-s11-r2-pruner-median",
+  "identity": {
+    "framework": "vllm",
+    "phase": "B",
+    "model": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-8B/snapshots/b968826d9c46dd6066d109eabc6255188de91218",
+    "concurrency": 128
+  },
+  "max_consecutive_rejections": 10,
+  "failures": [],
+  "rejections": [],
+  "stops": [],
+  "consecutive_recovery_trials": 0
+}

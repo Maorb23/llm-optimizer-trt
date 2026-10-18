@@ -7,6 +7,7 @@ import json
 import os
 import re
 import subprocess
+import zlib
 from pathlib import Path
 from typing import Any
 
@@ -54,7 +55,8 @@ class NebiusAdapter:
         container_command = "bash" if debug_ssh_key else "python3"
         container_args = (
             "-lc 'python3 -m llm_optimizer.remote.worker || "
-            "(status=$?; echo Worker exited with status $status; sleep 3600; exit $status)'"
+            "(status=$?; echo Worker exited with status $status; "
+            "sleep 3600; exit $status)'"
             if debug_ssh_key
             else "-m llm_optimizer.remote.worker"
         )
@@ -87,7 +89,7 @@ class NebiusAdapter:
             command += ["--parent-id", self.project_id]
         if request["preemptible"]:
             command.append("--preemptible")
-            policy_id = os.getenv("NEBIUS_SPOT_PRICING_POLICY_ID", "").strip()
+            policy_id = request["spot_pricing_policy_id"]
             if policy_id:
                 command += ["--spot-pricing-policy-id", policy_id]
             else:
@@ -99,11 +101,20 @@ class NebiusAdapter:
         worker_payload = {
             **payload,
             "request": {
-                key: value for key, value in request.items() if key != "preemptible"
+                key: value
+                for key, value in request.items()
+                if key not in {
+                    "preemptible", "spot_pricing_policy_id", "follows_spot_price"
+                }
             },
         }
-        encoded = base64.b64encode(json.dumps(worker_payload).encode()).decode()
-        command += ["--env", f"LLM_OPTIMIZER_PAYLOAD_B64={encoded}"]
+        raw_payload = json.dumps(worker_payload).encode()
+        if len(raw_payload) > 48000:
+            encoded = base64.b64encode(zlib.compress(raw_payload)).decode()
+            command += ["--env", f"LLM_OPTIMIZER_PAYLOAD_ZLIB_B64={encoded}"]
+        else:
+            encoded = base64.b64encode(raw_payload).decode()
+            command += ["--env", f"LLM_OPTIMIZER_PAYLOAD_B64={encoded}"]
         for key in (
             "AWS_ACCESS_KEY_ID",
             "AWS_SECRET_ACCESS_KEY",

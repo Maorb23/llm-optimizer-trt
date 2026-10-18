@@ -1,10 +1,15 @@
 {
   "framework": "vllm",
-  "target_model_id": "Qwen/Qwen3-4B",
-  "target_revision": "1cfa9a7208912126459214e8b04321603b3df60c",
-  "target_path": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
-  "draft_model_id": null,
-  "draft_revision": null,
-  "draft_path": null,
-  "speculative_decoding": null
+  "target_model_id": "Qwen/Qwen3-8B",
+  "target_revision": "b968826d9c46dd6066d109eabc6255188de91218",
+  "target_path": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-8B/snapshots/b968826d9c46dd6066d109eabc6255188de91218",
+  "draft_model_id": "deepseek-ai/dspark_qwen3_8b_block7",
+  "draft_revision": "03326e5043815da1f81b109078b2889737c26017",
+  "draft_path": "/home/ubuntu/.cache/huggingface/hub/models--deepseek-ai--dspark_qwen3_8b_block7/snapshots/03326e5043815da1f81b109078b2889737c26017",
+  "speculative_decoding": {
+    "algorithm": "DFLASH",
+    "draft_model_id": "deepseek-ai/dspark_qwen3_8b_block7",
+    "draft_revision": "03326e5043815da1f81b109078b2889737c26017",
+    "num_speculative_tokens": 7
+  }
 }

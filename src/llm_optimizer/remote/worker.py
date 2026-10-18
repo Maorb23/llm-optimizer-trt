@@ -2,23 +2,59 @@
 
 from __future__ import annotations
 
+import ast
 import base64
 import hashlib
 import importlib.metadata
 import json
 import os
+import shlex
 import sqlite3
 import subprocess
 import sys
 import tempfile
 import time
 import zipfile
+import zlib
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit
 
 from .adapters import S3Artifacts
 from .contracts import OptimizationRequest
+
+
+def _materialized_server_args(request, framework, output):
+    from llm_optimizer.search_profiles import CONFIG_PREFIX
+
+    files = request.server_config_files.get(framework, {})
+    paths = {}
+    if files:
+        folder = output.parent / (framework + "-server-configs")
+        folder.mkdir(parents=True, exist_ok=True)
+        for name, content in files.items():
+            path = folder / name
+            path.write_text(content)
+            paths[CONFIG_PREFIX + name] = str(path.resolve())
+
+    def resolve(value):
+        if isinstance(value, str) and value.startswith(CONFIG_PREFIX):
+            if value not in paths:
+                raise ValueError("Missing server config file: " + value)
+            return shlex.quote(paths[value])
+        if isinstance(value, list):
+            return [resolve(v) for v in value]
+        if isinstance(value, tuple):
+            return tuple(resolve(v) for v in value)
+        return value
+
+    result = []
+    for arg in request.server_args.get(framework, []):
+        if CONFIG_PREFIX in arg:
+            key, _, raw = arg.partition("=")
+            arg = key + "=" + repr(resolve(ast.literal_eval(raw)))
+        result.append(arg)
+    return result
 
 
 def optimizer_command(payload: dict[str, Any], output: Path) -> list[str]:
@@ -44,7 +80,7 @@ def optimizer_command(payload: dict[str, Any], output: Path) -> list[str]:
     ]
     if request.constraints:
         args += ["--constraints", request.constraints]
-    for value in request.server_args.get(framework, []):
+    for value in _materialized_server_args(request, framework, output):
         args += ["--server-args", value]
     if request.revision:
         revision_arg = (
@@ -387,7 +423,12 @@ def run_worker(
     return manifest
 
 
+def _payload_from_environment():
+    compressed = os.environ.get("LLM_OPTIMIZER_PAYLOAD_ZLIB_B64")
+    raw = base64.b64decode(compressed or os.environ["LLM_OPTIMIZER_PAYLOAD_B64"])
+    return json.loads(zlib.decompress(raw) if compressed else raw)
+
+
 if __name__ == "__main__":
-    payload = json.loads(base64.b64decode(os.environ["LLM_OPTIMIZER_PAYLOAD_B64"]))
-    result = run_worker(payload)
+    result = run_worker(_payload_from_environment())
     sys.exit(0 if result["status"] == "completed" else 1)

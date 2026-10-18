@@ -1,0 +1,7 @@
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+WORKDIR /opt/llm-optimizer
+COPY pyproject.toml README.md ./
+COPY src ./src
+RUN python3 -m pip install --no-cache-dir --no-deps --force-reinstall .
+ENTRYPOINT []

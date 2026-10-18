@@ -18,8 +18,11 @@ from pathlib import Path
 import numpy as np
 import optuna
 from optuna.trial import TrialState
+
 from scipy.stats import spearmanr
 from scipy.stats import t as student_t
+
+from llm_optimizer.search_profiles import EXPANDED_CHOICES
 
 
 def display(value):
@@ -58,32 +61,7 @@ FLOAT_PARAMS = {
     "mem_fraction_static",
     "kv_cache_free_gpu_memory_fraction",
 }
-EXPANDED_CHOICES = {
-    "vllm": {
-        "async_scheduling": [False, True],
-        "performance_mode": ["balanced", "interactivity", "throughput"],
-        "attention_backend": ["auto", "FLASH_ATTN", "FLASHINFER"],
-        "kv_cache_dtype": ["auto", "fp8"],
-        "enable_prefix_caching": [False, True],
-        "graph_mode": ["NONE", "PIECEWISE", "FULL_AND_PIECEWISE"],
-    },
-    "sglang": {
-        "attention_backend": ["triton", "fa3", "flashinfer"],
-        "disable_radix_cache": [False, True],
-        "schedule_policy": ["fcfs", "lpm", "shortest-prefill-first"],
-        "enable_mixed_chunk": [False, True],
-        "disable_overlap_schedule": [False, True],
-        "cuda_graph_backend_decode": ["disabled", "full", "tc_piecewise"],
-        "cuda_graph_backend_prefill": ["disabled", "breakable"],
-    },
-    "trtllm": {
-        "attn_backend": ["TRTLLM"],
-        "enable_chunked_prefill": [False, True],
-        "enable_block_reuse": [False, True],
-        "capacity_scheduler_policy": ["GUARANTEED_NO_EVICT", "MAX_UTILIZATION"],
-        "graph_enabled": [False, True],
-    },
-}
+
 
 
 class BenchmarkFailure(RuntimeError):
