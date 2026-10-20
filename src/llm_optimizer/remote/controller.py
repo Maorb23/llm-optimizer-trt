@@ -7,13 +7,16 @@ import logging
 import os
 import re
 import sqlite3
+import threading
 import uuid
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from .adapters import NebiusAdapter, NebiusCommandError, S3Artifacts
 from .contracts import OptimizationRequest
+from .service import controller_lease
 
 TERMINAL = {"completed", "failed", "cancelled", "dry_run"}
 logger = logging.getLogger(__name__)
@@ -39,6 +42,8 @@ class Controller:
         self.nebius = nebius or NebiusAdapter()
         self.s3_factory = s3_factory
         self.concurrency = concurrency
+        self._thread_lock = threading.RLock()
+        self._owns_lease = False
         with self._db() as db:
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS runs (
@@ -91,8 +96,13 @@ class Controller:
         if not line or any(
             marker in line.lower()
             for marker in (
-                "aws_", "hf_token", "wandb_api_key", "--env", "password",
-                "secret", "://",
+                "aws_",
+                "hf_token",
+                "wandb_api_key",
+                "--env",
+                "password",
+                "secret",
+                "://",
             )
         ):
             return None
@@ -168,6 +178,12 @@ class Controller:
                             "idempotency key belongs to a different request"
                         )
                     return self.status(previous["id"])
+            active = db.execute(
+                "SELECT run_id FROM jobs WHERE state NOT IN "
+                "('completed','failed','cancelled','dry_run') LIMIT 1"
+            ).fetchone()
+            if active:
+                raise ValueError(f"Optimizer study {active['run_id']} is still active; no new study submitted")
             db.execute(
                 "INSERT INTO runs VALUES (?, ?, ?, ?, 0)",
                 (run_id, idempotency_key, json.dumps(request.to_dict()), _now()),
@@ -232,8 +248,25 @@ class Controller:
             "jobs": jobs,
         }
 
+    @contextmanager
+    def exclusive(self):
+        with self._thread_lock:
+            if self._owns_lease:
+                yield
+            else:
+                with controller_lease(self.database):
+                    self._owns_lease = True
+                    try:
+                        yield
+                    finally:
+                        self._owns_lease = False
+
     def tick(self) -> None:
-        """Submit and poll jobs. Only one controller may tick a DB."""
+        """Submit and poll jobs under the same lease used by serve."""
+        with self.exclusive():
+            self._tick()
+
+    def _tick(self) -> None:
         with self._db() as db:
             uncertain = db.execute(
                 "SELECT run_id, framework, state FROM jobs WHERE state IN "

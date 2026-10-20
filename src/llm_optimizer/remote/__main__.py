@@ -7,11 +7,11 @@ import json
 import logging
 import os
 import sys
-import time
 from pathlib import Path
 
 from .adapters import NebiusAdapter
 from .controller import Controller
+from .service import run_forever
 
 
 def main() -> None:
@@ -54,9 +54,7 @@ def main() -> None:
         result = {"status": "ok"}
     else:
         logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-        while True:
-            controller.tick()
-            time.sleep(args.interval)
+        run_forever(controller, args.interval)
     json.dump(result, sys.stdout, indent=2)
     sys.stdout.write("\n")
 
