@@ -69,6 +69,22 @@ def construct_result_config(
         )
         result_config["engine_args"] = engine_args
         result_config["runtime_args"] = runtime_args
+        # Retain the effective YAML contents in results, not just a temporary path.
+        native = predefined.trtllm.load_native_config(result_config["server_args"])
+        if native is not None:
+            result_config["native_config"] = native
+            if native.get("speculative_config"):
+                speculative = native["speculative_config"]
+                result_config["speculative_decoding"] = speculative
+                draft_path = pathlib.Path(
+                    speculative.get("speculative_model")
+                    or speculative.get("speculative_model_dir")
+                    or ""
+                )
+                revision = draft_path.name
+                if draft_path.parent.name == "snapshots" and len(revision) == 40:
+                    if all(char in "0123456789abcdefABCDEF" for char in revision):
+                        result_config["draft_revision"] = revision
     return result_config
 
 
@@ -660,9 +676,8 @@ def _run_optuna_search(
             optuna.trial.TrialState.PRUNED,
         ):
             config_id = frozen.user_attrs.get("config_id")
-            if config_id:
-                allocation_started = None
-        evaluated_ids.add(config_id)
+            if config_id and not frozen.user_attrs.get("gp_rejected"):
+                evaluated_ids.add(config_id)
 
     gp_policy = None
     consecutive_gp_rejections = 0
@@ -673,6 +688,7 @@ def _run_optuna_search(
             study,
             jsonl_path.parent,
             {"framework": framework, "model": model, "signature": signature},
+            scope=json.loads(canonical_payload),
         )
         study.set_user_attr("gp_failure_log", str(gp_policy.path))
 
@@ -709,22 +725,36 @@ def _run_optuna_search(
                 "__client_args": settings["client_args"],
             }
             trial.set_user_attr("config", effective)
-            # Import legacy failed trials whose native config was not persisted.
+            # Import legacy failed/pruned trials without persisted native config.
             for previous in study.get_trials(deepcopy=False):
                 if (
-                    previous.state == optuna.trial.TrialState.FAIL
+                    previous.state in (
+                        optuna.trial.TrialState.FAIL,
+                        optuna.trial.TrialState.PRUNED,
+                    )
                     and previous.user_attrs.get("config_id") == config_id
                     and not previous.user_attrs.get("gp_rejected")
-                    and not previous.user_attrs.get("gp_non_config_failure")
+                    and (
+                        previous.state == optuna.trial.TrialState.PRUNED
+                        or not previous.user_attrs.get("gp_non_config_failure")
+                    )
                 ):
                     canonical, fingerprint = gp_policy.fingerprint(effective)
                     if fingerprint not in gp_policy.blocked:
-                        gp_policy.failure(
+                        recorder = (
+                            gp_policy.pruned
+                            if previous.state == optuna.trial.TrialState.PRUNED
+                            else gp_policy.failure
+                        )
+                        recorder(
                             previous.number,
                             canonical,
                             fingerprint,
                             previous.user_attrs.get(
-                                "failure_reason", "Previously failed trial"
+                                "failure_reason",
+                                "Previously pruned configuration"
+                                if previous.state == optuna.trial.TrialState.PRUNED
+                                else "Previously failed trial",
                             ),
                         )
             try:
@@ -807,6 +837,12 @@ def _run_optuna_search(
             tell_trial(trial, benchmark_value)
         except optuna.TrialPruned:
             tell_trial(trial, state=optuna.trial.TrialState.PRUNED)
+            if gp_policy is not None:
+                gp_policy.pruned(
+                    trial.number,
+                    trial.user_attrs["effective_config"],
+                    trial.user_attrs["effective_config_fingerprint"],
+                )
         except KeyboardInterrupt:
             trial.set_user_attr("gp_non_config_failure", True)
             trial.set_user_attr("slo_feasible", False)

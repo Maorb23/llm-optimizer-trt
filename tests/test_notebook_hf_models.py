@@ -341,3 +341,196 @@ def test_vllm_is_auto_selected_and_uses_native_speculative_json(
         json.loads(flag.split("=", 1)[1])
         == configured["fixed_server"]["speculative_config"]
     )
+
+
+@pytest.fixture
+def trt_setup(setup, monkeypatch):
+    namespace, calls, notebook = setup
+    namespace["RUN_REAL_GPU"] = True
+    monkeypatch.setattr(
+        sys.modules["torch"], "Tensor", type("Tensor", (), {}), raising=False
+    )
+    namespace["REAL_FRAMEWORKS"] = ("trtllm",)
+    namespace["REAL_PREFLIGHT"][("B", "trtllm")] = {
+        "fixed_server": {"tp_size": 1},
+        "expanded_choices": {"graph_enabled": [False, True]},
+        "native_config_verified": True,
+        "quality_verified": True,
+    }
+    monkeypatch.setattr(importlib.metadata, "version", lambda package: "1.3.0rc26")
+
+    class NativeSchema:
+        def __init__(self, **kwargs):
+            calls.setdefault("schemas", []).append(kwargs)
+
+    schemas = SimpleNamespace(
+        **dict.fromkeys(
+            ("Eagle3DecodingConfig", "DFlashDecodingConfig", "DSparkDecodingConfig"),
+            NativeSchema,
+        )
+    )
+    monkeypatch.setitem(sys.modules, "tensorrt_llm", SimpleNamespace())
+    monkeypatch.setitem(
+        sys.modules, "tensorrt_llm.llmapi", SimpleNamespace(llm_args=schemas)
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "tensorrt_llm._torch.models.modeling_utils",
+        SimpleNamespace(get_model_architecture=lambda config: (object, None)),
+    )
+    original = huggingface_hub.snapshot_download
+
+    def download(**kwargs):
+        path = original(**kwargs)
+        config = {
+            "architectures": ["LlamaForCausalLM"],
+            "model_type": "llama",
+            "hidden_size": 4096,
+            "vocab_size": 128256,
+            "num_hidden_layers": 32,
+        }
+        if kwargs["revision"] == DRAFT_SHA:
+            config.update(namespace.get("draft_config", {}))
+        (Path(path) / "config.json").write_text(json.dumps(config))
+        return path
+
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", download)
+    return namespace, calls, notebook
+
+
+@pytest.mark.parametrize("algorithm", ["Eagle3", "DFlash", "DSpark"])
+def test_trt_pinned_setup_native_yaml_and_disable(trt_setup, algorithm):
+    import yaml
+
+    from llm_optimizer.experiment.lab import Lab
+
+    namespace, calls, _ = trt_setup
+    if algorithm in {"DFlash", "DSpark"}:
+        namespace["draft_config"] = {
+            "dflash_config": {"target_layer_ids": [1, 15, 30], "mask_token_id": 0}
+        }
+    if algorithm == "DSpark":
+        namespace["draft_config"]["dflash_config"].update(markov_rank=32, block_size=3)
+    result = namespace["configure_hf_models"](
+        "target",
+        target_revision=TARGET_SHA,
+        speculative_algorithm=algorithm,
+        draft_model_id="draft",
+        draft_revision=DRAFT_SHA,
+    )
+    profile = namespace["REAL_PREFLIGHT"][("B", "trtllm")]
+    assert [d["revision"] for d in calls["downloads"]] == [TARGET_SHA, DRAFT_SHA]
+    assert profile["draft_revision"] == DRAFT_SHA
+    assert profile["expanded_choices"] == {"graph_enabled": [False, True]}
+    spec = profile["fixed_server"]["speculative_config"]
+    assert spec == {
+        "decoding_type": algorithm,
+        "max_draft_len": 3,
+        "speculative_model": result["draft_path"],
+    }
+    assert yaml.safe_load(Path(result["native_config_path"]).read_text()) == {
+        "speculative_config": spec
+    }
+    lab = Lab.__new__(Lab)
+    lab.RUN_DIR = namespace["RUN_DIR"]
+    config = {
+        **profile["fixed_server"],
+        "cuda_graph_config": None,
+        "scheduler_config": {"capacity_scheduler_policy": "GUARANTEED_NO_EVICT"},
+        "kv_cache_config": {"free_gpu_memory_fraction": 0.75},
+    }
+    native = lab.serialize_engine_config("trtllm", 1, config)
+    content = yaml.safe_load(Path(native["config"]).read_text())
+    assert content == {k: v for k, v in config.items() if k != "tp_size"}
+    assert config["speculative_config"] == spec
+    namespace["configure_hf_models"]("target", target_revision=TARGET_SHA)
+    disabled = namespace["REAL_PREFLIGHT"][("B", "trtllm")]
+    assert disabled["fixed_server"] == {"tp_size": 1}
+    assert "draft_revision" not in disabled
+    assert "speculative_decoding" not in disabled
+
+
+@pytest.mark.parametrize(
+    "algorithm,config,error",
+    [
+        ("DFlash", {"dflash_config": {"markov_rank": 32}}, "DSpark heads"),
+        ("DSpark", {}, "declaring DSpark heads"),
+        ("Eagle3", {"hidden_size": 1}, "hidden_size"),
+        ("Eagle3", {"architectures": ["GPT2LMHeadModel"]}, "draft architectures"),
+        ("Eagle3", {"architectures": ["EagleForCausalLM"]}, "v1/v2"),
+        (
+            "DSpark",
+            {
+                "dflash_config": {
+                    "markov_rank": 32,
+                    "block_size": 7,
+                    "target_layer_ids": [1],
+                    "mask_token_id": 0,
+                }
+            },
+            "block_size",
+        ),
+    ],
+)
+def test_trt_incompatible_draft_is_atomic(trt_setup, algorithm, config, error):
+    namespace, _, _ = trt_setup
+    namespace["draft_config"] = config
+    before = copy.deepcopy(namespace["REAL_PREFLIGHT"])
+    with pytest.raises(ValueError, match=error):
+        namespace["configure_hf_models"](
+            "target",
+            target_revision=TARGET_SHA,
+            speculative_algorithm=algorithm,
+            draft_model_id="draft",
+            draft_revision=DRAFT_SHA,
+        )
+    assert namespace["REAL_PREFLIGHT"] == before
+    assert namespace["MODEL_SNAPSHOTS"]["B"] == "original-target"
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"enable_dflash": True},
+        {"speculative_algorithm": "Eagle"},
+        {"speculative_algorithm": "Eagle3", "max_draft_len": 0},
+        {"speculative_algorithm": "Eagle3", "max_draft_len": True},
+    ],
+)
+def test_trt_invalid_request_fails_before_download(trt_setup, kwargs):
+    namespace, calls, _ = trt_setup
+    with pytest.raises(ValueError):
+        namespace["configure_hf_models"]("target", draft_model_id="draft", **kwargs)
+    assert calls["downloads"] == []
+
+
+def test_trt_python_helper_and_notebook_share_implementation(trt_setup):
+    from llm_optimizer.experiment.lab import Lab
+
+    namespace, _, _ = trt_setup
+    lab = Lab.__new__(Lab)
+    lab.__dict__.update(namespace)
+    result = lab.configure_hf_models(
+        "target",
+        target_revision=TARGET_SHA,
+        speculative_algorithm="Eagle3",
+        draft_model_id="draft",
+        draft_revision=DRAFT_SHA,
+    )
+    assert result["draft_revision"] == DRAFT_SHA
+    assert (
+        lab.REAL_PREFLIGHT[("B", "trtllm")]["speculative_decoding"]["algorithm"]
+        == "Eagle3"
+    )
+
+
+def test_trt_wrong_runtime_fails_before_download(trt_setup, monkeypatch):
+    namespace, calls, _ = trt_setup
+    monkeypatch.setattr(importlib.metadata, "version", lambda package: "1.2.0")
+    with pytest.raises(ValueError, match="1.3.0rc26"):
+        namespace["configure_hf_models"](
+            "target",
+            speculative_algorithm="Eagle3",
+            draft_model_id="draft",
+        )
+    assert calls["downloads"] == []

@@ -18,7 +18,6 @@ from pathlib import Path
 import numpy as np
 import optuna
 from optuna.trial import TrialState
-
 from scipy.stats import spearmanr
 from scipy.stats import t as student_t
 
@@ -61,7 +60,6 @@ FLOAT_PARAMS = {
     "mem_fraction_static",
     "kv_cache_free_gpu_memory_fraction",
 }
-
 
 
 class BenchmarkFailure(RuntimeError):
@@ -244,7 +242,6 @@ class NotebookWandbLogger:
             return
         try:
             import wandb
-
             from llm_optimizer.wandb_tracking import WandbTracker
 
             run = wandb.init(
@@ -668,6 +665,13 @@ class Lab:
         self.TOKEN_BUDGETS_128 = TOKEN_BUDGETS_128
         self.CartesianPoints = CartesianPoints
 
+    def configure_hf_models(self, target_model_id, target_revision=None, **kwargs):
+        from llm_optimizer.experiment.hf_models import configure_hf_models
+
+        self.__dict__.setdefault("HF_BASE_PROFILES", {})
+        context = {**self.__dict__, "expanded_choices": self.expanded_choices}
+        return configure_hf_models(context, target_model_id, target_revision, **kwargs)
+
     def regime_key(self, concurrency):
         if (
             not isinstance(concurrency, int)
@@ -931,8 +935,14 @@ class Lab:
     def config_fingerprint(self, framework, concurrency, config, phase="A"):
         if phase not in self.PHASE_MODELS:
             raise ValueError("Unknown experiment phase")
-        payload = json.dumps(
-            [self.PHASE_MODELS[phase], framework, concurrency, config], sort_keys=True
+        from llm_optimizer.experiment.hf_models import fingerprint_payload
+
+        payload = fingerprint_payload(
+            self.PHASE_MODELS[phase],
+            framework,
+            concurrency,
+            config,
+            getattr(self, "REAL_PREFLIGHT", {}).get((phase, framework), {}),
         )
         return hashlib.sha256(payload.encode()).hexdigest()[:16]
 
@@ -1312,6 +1322,11 @@ class Lab:
                     "phase": phase,
                     "model": getattr(benchmark, "model", self.PHASE_MODELS[phase]),
                     "concurrency": concurrency,
+                    **{
+                        key: benchmark.environment[key]
+                        for key in ("draft_revision", "speculative_decoding")
+                        if key in getattr(benchmark, "environment", {})
+                    },
                 },
                 fixed_server=getattr(benchmark, "fixed_server", {}),
             )
@@ -1331,6 +1346,7 @@ class Lab:
             trial.set_user_attr("gpu_seconds", 0.0)
             if gp_policy is not None:
                 gp_policy.check(trial, config)
+                trial.set_user_attr("benchmark_executed", True)
             started = time.perf_counter()
             try:
                 if use_checkpoints and isinstance(benchmark, RepositoryBenchmark):
@@ -1591,33 +1607,11 @@ class Lab:
     def serialize_engine_config(self, framework, concurrency, config):
         import json
 
-        import yaml
-
         native = dict(config)
         if framework == "trtllm":
-            if "config" in native:
-                raise ValueError(
-                    "Merge a fixed TRT YAML explicitly; do not override it silently."
-                )
-            nested = {
-                key: native.pop(key)
-                for key in [
-                    "kv_cache_config",
-                    "cuda_graph_config",
-                    "scheduler_config",
-                    "attn_backend",
-                    "enable_chunked_prefill",
-                ]
-                if key in native
-            }
-            if nested:
-                path = self.RUN_DIR / (
-                    "trt-config-"
-                    + self.config_fingerprint(framework, concurrency, config)
-                    + ".yaml"
-                )
-                path.write_text(yaml.safe_dump(nested, sort_keys=True))
-                native["config"] = str(path)
+            from llm_optimizer.predefined.trtllm import serialize_config
+
+            native = serialize_config(native, self.RUN_DIR)
         for key, value in list(native.items()):
             if framework == "vllm" and key in {
                 "async_scheduling",
@@ -2138,6 +2132,8 @@ class Lab:
                         "cuda_version",
                         "driver_version",
                         "model_revision",
+                        "draft_revision",
+                        "speculative_decoding",
                         "model",
                         "gpu_type",
                         "gpu_count",
@@ -2329,6 +2325,8 @@ class Lab:
                 "cuda_version",
                 "driver_version",
                 "model_revision",
+                "draft_revision",
+                "speculative_decoding",
                 "model",
                 "gpu_type",
                 "gpu_count",
