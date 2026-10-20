@@ -1,0 +1,39 @@
+{
+  "study": "B-trtllm-c128-throughput-gp-s11-r1-pruner-median",
+  "identity": {
+    "framework": "trtllm",
+    "phase": "B",
+    "model": "/root/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+    "concurrency": 128
+  },
+  "max_consecutive_rejections": 10,
+  "failures": [
+    {
+      "trial_number": 3,
+      "fingerprint": "1e9d1c1e5c608c38538a988a5901430c0c78bc4abe9f710f836099f644609a26",
+      "effective_config": {
+        "attn_backend": "TRTLLM",
+        "cuda_graph_config": null,
+        "enable_chunked_prefill": true,
+        "kv_cache_config": {
+          "enable_block_reuse": true,
+          "free_gpu_memory_fraction": 0.75
+        },
+        "max_batch_size": 104,
+        "max_num_tokens": 2816,
+        "scheduler_config": {
+          "capacity_scheduler_policy": "MAX_UTILIZATION"
+        }
+      },
+      "reason": "KeyboardInterrupt: ",
+      "blocked": false
+    }
+  ],
+  "rejections": [],
+  "stops": [
+    {
+      "reason": "KeyboardInterrupt: "
+    }
+  ],
+  "consecutive_recovery_trials": 0
+}
