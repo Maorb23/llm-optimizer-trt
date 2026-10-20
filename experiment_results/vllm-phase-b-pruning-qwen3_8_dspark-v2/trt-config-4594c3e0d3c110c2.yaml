@@ -1,0 +1,8 @@
+attn_backend: TRTLLM
+cuda_graph_config: null
+enable_chunked_prefill: false
+kv_cache_config:
+  enable_block_reuse: true
+  free_gpu_memory_fraction: 0.85
+scheduler_config:
+  capacity_scheduler_policy: MAX_UTILIZATION
