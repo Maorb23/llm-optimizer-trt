@@ -1,0 +1,21 @@
+{
+  "framework": "trtllm",
+  "target_model_id": "Qwen/Qwen3-4B",
+  "target_revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+  "target_path": "/root/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+  "draft_model_id": "deepseek-ai/dspark_qwen3_4b_block7",
+  "draft_revision": "3457dff1417cb84927f6098a5fcb7cee85c934b7",
+  "draft_path": "/root/.cache/huggingface/hub/models--deepseek-ai--dspark_qwen3_4b_block7/snapshots/3457dff1417cb84927f6098a5fcb7cee85c934b7",
+  "speculative_decoding": {
+    "algorithm": "DSpark",
+    "native_config": {
+      "decoding_type": "DSpark",
+      "max_draft_len": 7,
+      "speculative_model": "/root/.cache/huggingface/hub/models--deepseek-ai--dspark_qwen3_4b_block7/snapshots/3457dff1417cb84927f6098a5fcb7cee85c934b7"
+    },
+    "draft_model_id": "deepseek-ai/dspark_qwen3_4b_block7",
+    "draft_revision": "3457dff1417cb84927f6098a5fcb7cee85c934b7",
+    "max_draft_len": 7
+  },
+  "native_config_path": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-qwen3_4_dspark-v2/trt-config-ce3faf4d11aa9f21.yaml"
+}

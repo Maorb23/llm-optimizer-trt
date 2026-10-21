@@ -1,0 +1,12 @@
+attn_backend: TRTLLM
+cuda_graph_config: null
+enable_chunked_prefill: true
+kv_cache_config:
+  enable_block_reuse: true
+  free_gpu_memory_fraction: 0.75
+scheduler_config:
+  capacity_scheduler_policy: MAX_UTILIZATION
+speculative_config:
+  decoding_type: DSpark
+  max_draft_len: 7
+  speculative_model: /root/.cache/huggingface/hub/models--deepseek-ai--dspark_qwen3_4b_block7/snapshots/3457dff1417cb84927f6098a5fcb7cee85c934b7
