@@ -2,6 +2,7 @@ import os
 import shlex
 import socket
 import subprocess
+import sys
 import threading
 import time
 import typing as t
@@ -13,8 +14,63 @@ import requests
 from llm_optimizer.exceptions import ServerCleanupError, ServerNotReadyError
 from llm_optimizer.logging import get_logger
 from llm_optimizer.predefined.trtllm import required_gpu_count
+from llm_optimizer.trial_telemetry import current_telemetry
 
 logger = get_logger("server_utils")
+
+
+class _ServerLog:
+    """Drain output continuously, preserving logs even when console output is muted."""
+
+    def __init__(self, path, mute):
+        self.stream = path.open("a")
+        self.mute = mute
+        self.thread = None
+        self.error = None
+
+    def attach(self, process):
+        def drain():
+            try:
+                for line in process.stdout:
+                    if self.error is None:
+                        try:
+                            self.stream.write(line)
+                            self.stream.flush()
+                        except (OSError, ValueError) as exc:
+                            # Keep draining even when the log destination fails.
+                            self.error = str(exc)
+                    if not self.mute:
+                        try:
+                            sys.stdout.write(line)
+                            sys.stdout.flush()
+                        except (OSError, ValueError, UnicodeError):
+                            # A closed console must not stop draining the engine.
+                            self.mute = True
+            except (OSError, ValueError) as exc:
+                self.error = str(exc)
+            finally:
+                process.stdout.close()
+                self.stream.close()
+
+        self.thread = threading.Thread(target=drain, daemon=True)
+        self.thread.start()
+
+    def close(self):
+        if self.thread is None:
+            self.stream.close()
+        else:
+            self.thread.join(timeout=5)
+            if self.thread.is_alive():
+                self.error = "Server output pipe still open after cleanup"
+
+
+def _close_server_log(process):
+    capture = getattr(process, "_server_log", None)
+    if isinstance(capture, _ServerLog):
+        capture.close()
+        telemetry = current_telemetry()
+        if capture.error and telemetry is not None:
+            telemetry.data["log_capture_error"] = capture.error
 
 
 class _TRTLifecycle:
@@ -198,23 +254,33 @@ def start_server(
     cmd = shlex.split(server_cmd)
     logger.info(f"Starting server with command: {server_cmd}")
     server_process = None
+    telemetry = current_telemetry()
+    capture = None
     envs = os.environ.copy()
     envs.update(server_envs)
     is_trt = os.path.basename(cmd[0]) == "trtllm-serve"
-    if is_trt:
-        address = urlparse(ready_url)
-        _assert_port_available(address.port, address.hostname)
-
     try:
-        stdout_pipe = subprocess.DEVNULL if mute else None
+        capture = _ServerLog(telemetry.log_path, mute) if telemetry else None
+        if is_trt:
+            address = urlparse(ready_url)
+            _assert_port_available(address.port, address.hostname)
+        stdout_pipe = (
+            subprocess.PIPE if capture else subprocess.DEVNULL if mute else None
+        )
+        if telemetry:
+            telemetry.start("launch_to_ready")
         server_process = psutil.Popen(
             cmd,
             text=True,
+            errors="replace",
             stdout=stdout_pipe,
             stderr=subprocess.STDOUT,
             env=envs,
             **({"start_new_session": True} if is_trt else {}),
         )
+        if capture:
+            server_process._server_log = capture
+            capture.attach(server_process)
         if is_trt:
             server_process._trt_lifecycle = _TRTLifecycle(
                 server_process, ready_url, isolated=True
@@ -226,10 +292,31 @@ def start_server(
                 "Server did not become ready in the allotted time."
             )
 
+        if telemetry:
+            telemetry.stop("launch_to_ready")
+            telemetry.data["readiness_reached"] = True
+
         return server_process
-    except BaseException:
+    except BaseException as exc:
+        if telemetry:
+            telemetry.data["startup_error"] = f"{type(exc).__name__}: {exc}"
+            telemetry.data["readiness_reached"] = False
+            telemetry.stop("launch_to_ready", complete=False)
         if server_process:
-            terminate_process_top_down(server_process)
+            if telemetry:
+                telemetry.start("cleanup")
+            try:
+                terminate_process_top_down(server_process)
+            except BaseException as cleanup_error:
+                if telemetry:
+                    telemetry.data["cleanup_error"] = str(cleanup_error)
+                raise
+            finally:
+                _close_server_log(server_process)
+                if telemetry:
+                    telemetry.stop("cleanup")
+        elif capture:
+            capture.close()
         raise
 
 

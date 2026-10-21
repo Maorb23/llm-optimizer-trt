@@ -34,6 +34,55 @@ benchmarks. Validation and report require a previously initialized run directory
 
 ## Configuration
 
+### Execution timing and logs
+
+Real benchmark attempts now save `server.log` and `execution.json` under
+`<result-stem>-attempts/<attempt-id>/`, beside their result file. Calls without
+an output file use `benchmark-attempts/`. Logs are retained even when server
+console output is muted, and on startup failure, pruning, benchmark failure,
+cleanup failure or interruption. An attempt killed before finalization remains
+`running`; this means unfinished/unknown, not a successful measurement.
+
+Successful result rows include optional `metadata.execution`. Exceptional
+attempts use sidecars rather than incomplete candidate rows. Historical results
+without execution metadata remain supported. The shared lab also includes
+execution metadata in measured `Measurement` records and attaches it to
+exceptions. Optuna trial attributes link to this evidence where available.
+
+`timings_s` separates `launch_to_ready`, `client_preparation`, `warmup`,
+`benchmark` (request execution and cancellation/drain), `cleanup`, and `rest`.
+`runner_wall` covers the runner before intertrial rest; `orchestration` is its
+remaining wall time outside the instrumented phases. The lab additionally
+records `allocation_wall` and its GPU-seconds proxy, including its rest. Lab
+workload preparation before `measure()` is reported separately as
+`workload_preparation_seconds`; it is one preparation per adapter instance,
+not a new preparation on every trial (deduplicate by `workload_preparation_id`).
+Existing wall/GPU proxies retain their
+definitions. The historical benchmark metric window is unchanged and reported
+as `metric_benchmark_duration_s`; it can include post-request hooks beyond the
+new request-execution timing.
+
+Missing timings are unknown, not zero. `phase_status` and `incomplete_phases`
+identify partial intervals. Explicit durations found in engine logs appear in
+`startup_observations` with source lines and parser identity. Parsing is best
+effort; repeated ranks and overlapping loading/compilation/autotuning/capture
+observations are not additive wall phases. Never derive their proportions from
+total trial duration. Full logs remain the evidence when an engine's wording
+does not match the parser.
+
+Intertrial rest is finalized in the sidecar after the successful metric row is
+written, so read the linked `attempt_artifact` for final rest/allocation timing.
+Readiness polling, engine ownership, warmup, precision, graph capture,
+autotuning and rest policy have not changed. No persistent-cache, loader or
+server-reuse optimization is enabled by this instrumentation.
+
+`docs/optuna_inference_optimization_lab_v2.ipynb` uses a thin subclass of the
+shared `experiment.lab.RepositoryBenchmark`, preserving the notebook's own
+workload and native configuration serialization. Its source-patching diagnostic
+cells have been retired. The original pruning notebook remains unchanged.
+
+### Experiment controls
+
 `docs/optuna_experiment.json` contains the reference models, workload, search
 budgets, and SLOs. Its execution defaults are simulation and disabled W&B so the
 example can run on a CPU. Set these controls before launching a new directory:

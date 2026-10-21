@@ -1382,6 +1382,7 @@ async def benchmark(
     warmup_requests: int = 1,
     args_dict: dict[str, t.Any] = None,
 ):
+    telemetry = (args_dict or {}).get("_telemetry")
     if backend in ASYNC_REQUEST_FUNCS:
         request_func = ASYNC_REQUEST_FUNCS[backend]
     else:
@@ -1450,6 +1451,8 @@ async def benchmark(
         return output
 
     # Warmup
+    if telemetry:
+        telemetry.start("warmup")
     print(f"Starting warmup with {warmup_requests} sequences...")
 
     # Use the first request for all warmup iterations
@@ -1507,6 +1510,9 @@ async def benchmark(
             f"Warmup completed with {warmup_requests} sequences. Starting main benchmark run..."
         )
 
+    if telemetry:
+        telemetry.stop("warmup")
+
     # Flush cache
     if ("sglang" in backend and _get_bool_env_var("SGLANG_IS_IN_CI")) or flush_cache:
         requests.post(base_url + "/flush_cache", headers=get_auth_headers())
@@ -1526,6 +1532,8 @@ async def benchmark(
 
     # Run all requests
     benchmark_start_time = time.perf_counter()
+    if telemetry:
+        telemetry.start("benchmark")
     tasks: list[asyncio.Task] = []
     async def submit_requests():
         async for request in get_request(input_requests, request_rate):
@@ -1569,6 +1577,7 @@ async def benchmark(
                 )
             )
     producer = asyncio.create_task(submit_requests())
+    measurement_completed = False
     try:
         # A pruning decision interrupts submission even with a finite request rate.
         await asyncio.wait(
@@ -1578,6 +1587,7 @@ async def benchmark(
             raise checkpoint_failure.result()
         await producer
         outputs: list[RequestFuncOutput] = await asyncio.gather(*tasks)
+        measurement_completed = True
     finally:
         # Includes queued requests waiting for the semaphore. Await cancellation
         # before the managed server is terminated by run_single_configuration.
@@ -1587,6 +1597,8 @@ async def benchmark(
             if not task.done():
                 task.cancel()
         await asyncio.gather(producer, *tasks, return_exceptions=True)
+        if telemetry:
+            telemetry.stop("benchmark", complete=measurement_completed)
         if pbar is not None:
             pbar.close()
         if profile:
@@ -1608,6 +1620,9 @@ async def benchmark(
 
     # Compute metrics and print results
     benchmark_duration = time.perf_counter() - benchmark_start_time
+    if telemetry:
+        # Retain the historical metric window (including post-request hooks).
+        telemetry.data["metric_benchmark_duration_s"] = benchmark_duration
     metrics, output_lens = calculate_metrics(
         input_requests=input_requests,
         outputs=outputs,
@@ -1761,6 +1776,9 @@ def check_chat_template(model_path):
 
 
 def run_benchmark(args_dict: dict[str, t.Any]):
+    telemetry = args_dict.get("_telemetry")
+    if telemetry:
+        telemetry.start("client_preparation")
     # Set default value for max_concurrency if not present
     max_concurrency = args_dict.get("max_concurrency")
 
@@ -1884,6 +1902,9 @@ def run_benchmark(args_dict: dict[str, t.Any]):
         input_requests = get_dataset(args_dict, tokenizer)
 
     flush_cache = args_dict.get("flush_cache", False)
+
+    if telemetry:
+        telemetry.stop("client_preparation")
 
     return asyncio.run(
         benchmark(

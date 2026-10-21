@@ -8,12 +8,14 @@ import platform
 import random
 import shlex
 import time
+import uuid
 import warnings
 from collections import Counter
 from contextlib import closing
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import optuna
@@ -22,6 +24,7 @@ from scipy.stats import spearmanr
 from scipy.stats import t as student_t
 
 from llm_optimizer.search_profiles import EXPANDED_CHOICES
+from llm_optimizer.trial_telemetry import TrialTelemetry
 
 
 def display(value):
@@ -77,6 +80,7 @@ class Measurement:
     gpu_seconds: float
     source: str
     p95_e2e_latency_ms: float
+    execution: Optional[dict] = None
 
     @property
     def failure_rate(self):
@@ -388,6 +392,7 @@ class RepositoryBenchmark:
         *,
         _context,
     ):
+        preparation_started = time.perf_counter()
         self._context = _context
         from llm_optimizer.bench_client import prepare_workload_manifest
         from llm_optimizer.predefined import get_framework_spec
@@ -471,6 +476,9 @@ class RepositoryBenchmark:
             / f"{run_label}-{phase}-{framework}-c{concurrency}-measured.jsonl"
         )
 
+        self.workload_preparation_seconds = time.perf_counter() - preparation_started
+        self.workload_preparation_id = uuid.uuid4().hex
+
     def measure(
         self,
         framework,
@@ -491,9 +499,22 @@ class RepositoryBenchmark:
         if framework != self.framework or concurrency != self.concurrency:
             raise ValueError("Benchmark framework/concurrency differs from the study.")
 
+        attempts = []
+
         def execute():
             started = time.perf_counter()
             accounting = {}
+            telemetry = TrialTelemetry(
+                self.output_path.parent / (self.output_path.stem + "-attempts"),
+                framework=framework,
+                model=self.model,
+                environment=self.environment,
+                sampled_config=config,
+                workload_preparation_seconds=self.workload_preparation_seconds,
+                workload_preparation_id=self.workload_preparation_id,
+            )
+            attempts.append(telemetry)
+            error = None
             try:
                 merged = {**self.fixed_server, **config}
                 if framework == "sglang":
@@ -584,6 +605,7 @@ class RepositoryBenchmark:
 
                 result, _ = run_single_configuration(
                     settings,
+                    telemetry=telemetry,
                     framework=framework,
                     model=self.model,
                     server_cmd=command,
@@ -615,7 +637,8 @@ class RepositoryBenchmark:
                 if total != expected or values.get("benchmark_valid") is False:
                     raise BenchmarkFailure("Invalid or changed benchmark workload.")
                 if self.rest_seconds:
-                    time.sleep(self.rest_seconds)
+                    with telemetry.rest():
+                        time.sleep(self.rest_seconds)
                 wall = time.perf_counter() - started
                 return self._context.validate_measurement(
                     Measurement(
@@ -628,9 +651,16 @@ class RepositoryBenchmark:
                         wall * self.gpu_count,
                         "MEASURED_ALLOCATION_WALL_PROXY",
                         float(values["p95_e2e_latency_ms"]),
+                        execution=telemetry.data,
                     )
                 )
-            except Exception as exc:
+            except BaseException as exc:
+                error = exc
+                exc.execution = telemetry.data
+                if not isinstance(exc, Exception):
+                    exc.gpu_seconds = (time.perf_counter() - started) * self.gpu_count
+                    exc.request_accounting = accounting
+                    raise
                 from llm_optimizer.exceptions import ServerCleanupError
 
                 if isinstance(exc, (ServerCleanupError, optuna.TrialPruned)):
@@ -638,14 +668,39 @@ class RepositoryBenchmark:
                     exc.request_accounting = accounting
                     raise
                 failure = BenchmarkFailure(f"{type(exc).__name__}: {exc}")
+                failure.execution = telemetry.data
                 failure.request_accounting = getattr(
                     exc, "request_accounting", accounting
                 )
                 failure.gpu_seconds = (time.perf_counter() - started) * self.gpu_count
                 raise failure from exc
+            finally:
+                telemetry.data["request_accounting"] = accounting or telemetry.data.get(
+                    "request_accounting", {}
+                )
+                telemetry.finish(error)
+                telemetry.data["timings_s"]["allocation_wall"] = (
+                    time.perf_counter() - started
+                )
+                telemetry.data["gpu_seconds"] = (
+                    telemetry.data["timings_s"]["allocation_wall"] * self.gpu_count
+                )
+                telemetry.save()
 
-        with ThreadPoolExecutor(max_workers=1) as pool:
-            return pool.submit(execute).result()
+        try:
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                return pool.submit(execute).result()
+        except BaseException as exc:
+            # A keyboard interrupt in the caller is not delivered to the worker.
+            # Preserve the existing executor shutdown/wait behavior, then mark
+            # the attempt interrupted after its server has been cleaned up.
+            if attempts and not getattr(exc, "execution", None):
+                telemetry = attempts[0]
+                telemetry.finish(exc)
+                exc.execution = telemetry.data
+                exc.gpu_seconds = telemetry.data.get("gpu_seconds", 0)
+                exc.request_accounting = telemetry.data.get("request_accounting", {})
+            raise
 
 
 class Lab:
@@ -1014,7 +1069,14 @@ class Lab:
         return frozen_trial.user_attrs.get("constraint_values", [float("inf")])
 
     def record_measurement(self, trial, m, concurrency):
-        trial.set_user_attr("measurement", vars(m))
+        trial.set_user_attr(
+            "measurement",
+            {
+                key: value
+                for key, value in vars(m).items()
+                if key != "execution" or value is not None
+            },
+        )
         trial.set_user_attr(
             "constraint_values",
             [
@@ -1412,6 +1474,8 @@ class Lab:
                 scores = tuple(getattr(m, metric) for metric in metrics)
                 return scores if len(scores) > 1 else scores[0]
             except optuna.TrialPruned as exc:
+                if getattr(exc, "execution", None):
+                    trial.set_user_attr("execution", exc.execution)
                 trial.set_user_attr(
                     "gpu_seconds",
                     max(
@@ -1420,6 +1484,8 @@ class Lab:
                 )
                 raise
             except BenchmarkFailure as exc:
+                if getattr(exc, "execution", None):
+                    trial.set_user_attr("execution", exc.execution)
                 trial.set_user_attr("failure_reason", str(exc))
                 trial.set_user_attr(
                     "request_accounting", getattr(exc, "request_accounting", {})

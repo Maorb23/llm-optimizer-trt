@@ -27,10 +27,12 @@ from llm_optimizer.performance import (
 from llm_optimizer.predefined.gpus import list_available_gpus_with_lowercase
 from llm_optimizer.result_utils import normalize_config
 from llm_optimizer.server_utils import (
+    _close_server_log,
     get_server_env,
     start_server,
     terminate_process_top_down,
 )
+from llm_optimizer.trial_telemetry import TrialTelemetry
 from llm_optimizer.utils import InfinityToNullEncoder
 
 setup_logging()
@@ -286,6 +288,7 @@ def run_single_configuration(
     workload_metadata: t.Optional[dict[str, t.Any]] = None,
     checkpoint_requests: t.Optional[list[int]] = None,
     checkpoint_callback: t.Optional[t.Callable] = None,
+    telemetry: t.Optional[TrialTelemetry] = None,
 ) -> tuple[dict[str, t.Any], t.Optional[t.Union[float, list[float]]]]:
     """Run and persist one configuration, always cleaning up its server."""
     bench_client = importlib.import_module("llm_optimizer.bench_client")
@@ -295,13 +298,41 @@ def run_single_configuration(
     server_params = benchmark_settings["server_args"]
     full_server_cmd = f"{server_cmd} {' '.join(benchmark_settings['server_cmd_args'])}"
     server_process = None
+    output_path = output_jsonl_path or output_file_path
+    telemetry = telemetry or TrialTelemetry(
+        pathlib.Path(output_path).parent
+        / (pathlib.Path(output_path).stem + "-attempts")
+        if output_path
+        else pathlib.Path("benchmark-attempts"),
+        framework=framework,
+        model=model,
+        trial_number=trial_number,
+        study_signature=study_signature,
+        command=full_server_cmd,
+        environment=workload_metadata or {},
+    )
+    telemetry.data.update(
+        framework=framework,
+        model=model,
+        trial_number=trial_number,
+        study_signature=study_signature,
+        command=full_server_cmd,
+    )
+    error = None
+    result = None
     try:
+        telemetry.data["config"] = construct_result_config(
+            benchmark_settings, framework
+        )
         server_env = (
             get_server_env(framework, gpus, server_params) if managed_server else {}
         )
-        server_process = start_server(
-            full_server_cmd, server_env, ready_url, mute_server
-        )
+        telemetry.data["server_environment"] = server_env
+        telemetry.save()
+        with telemetry.activate():
+            server_process = start_server(
+                full_server_cmd, server_env, ready_url, mute_server
+            )
         backend = (
             predefined.get_framework_spec(framework).benchmark_backend
             if framework
@@ -320,13 +351,29 @@ def run_single_configuration(
         benchmark_args.update(client_params)
         if workload_manifest is not None:
             benchmark_args["_request_manifest"] = workload_manifest
+
+        def report_checkpoint(values):
+            telemetry.data["request_accounting"] = {
+                key: values[key]
+                for key in ("completed", "total_requests", "failed")
+                if key in values
+            }
+            if checkpoint_callback is not None:
+                checkpoint_callback(values)
+
         if checkpoint_callback is not None:
             benchmark_args["_checkpoint_requests"] = checkpoint_requests
-            benchmark_args["_checkpoint_callback"] = checkpoint_callback
+            benchmark_args["_checkpoint_callback"] = report_checkpoint
+        benchmark_args["_telemetry"] = telemetry
         benchmark_result = bench_client.run_benchmark(benchmark_args)
         if not isinstance(benchmark_result, dict):
             raise RuntimeError("Benchmark did not return a result")
 
+        telemetry.data["request_accounting"] = {
+            key: benchmark_result[key]
+            for key in ("completed", "total_requests", "failed")
+            if key in benchmark_result
+        }
         feasible = satisfies_constraints(benchmark_result, parsed_constraints or [])
         input_len, output_len = extract_token_lengths(client_params)
         result: dict[str, t.Any] = {
@@ -341,6 +388,7 @@ def run_single_configuration(
                 "input_tokens": input_len,
                 "output_tokens": output_len,
                 **(workload_metadata or {}),
+                "execution": telemetry.data,
             },
         }
         if trial_number is not None:
@@ -361,6 +409,31 @@ def run_single_configuration(
             result.setdefault("optimization", {})["failure_reason"] = objective_error
         if trial_number is not None:
             result["optimization"]["objective_value"] = objective_value
+        if objective_error and objective is not None:
+            raise ValueError(objective_error)
+    except BaseException as exc:
+        error = exc
+        raise
+    finally:
+        try:
+            if server_process:
+                with telemetry.activate(), telemetry.phase("cleanup"):
+                    try:
+                        terminate_process_top_down(server_process)
+                    finally:
+                        _close_server_log(server_process)
+        except BaseException as cleanup_error:
+            telemetry.data["cleanup_error"] = str(cleanup_error)
+            if error is not None:
+                telemetry.data["original_error"] = f"{type(error).__name__}: {error}"
+            error = cleanup_error
+            raise
+        finally:
+            telemetry.finish(error)
+            if error is not None:
+                error.execution = telemetry.data
+    # Successful metric rows include cleanup; exceptional attempts live in sidecars.
+    try:
         if output_jsonl_path:
             with output_jsonl_path.open("a") as stream:
                 stream.write(json.dumps(result, cls=InfinityToNullEncoder) + "\n")
@@ -369,12 +442,11 @@ def run_single_configuration(
             with output_file_path.open("w") as stream:
                 json.dump(result, stream, indent=2, cls=InfinityToNullEncoder)
             logger.info(f"Benchmark results saved to {output_file_path}")
-        if objective_error and objective is not None:
-            raise ValueError(objective_error)
-        return result, objective_value
-    finally:
-        if server_process:
-            terminate_process_top_down(server_process)
+    except BaseException as exc:
+        telemetry.finish(exc)
+        exc.execution = telemetry.data
+        raise
+    return result, objective_value
 
 
 def _trial_summary(trial: t.Any) -> dict[str, t.Any]:
@@ -728,7 +800,8 @@ def _run_optuna_search(
             # Import legacy failed/pruned trials without persisted native config.
             for previous in study.get_trials(deepcopy=False):
                 if (
-                    previous.state in (
+                    previous.state
+                    in (
                         optuna.trial.TrialState.FAIL,
                         optuna.trial.TrialState.PRUNED,
                     )
@@ -805,9 +878,11 @@ def _run_optuna_search(
                 trial.set_user_attr("pruned_at_fraction", done / schedule[-1])
                 raise optuna.TrialPruned()
 
+        telemetry = TrialTelemetry(jsonl_path.parent / (jsonl_path.stem + "-attempts"))
         try:
             result, benchmark_value = run_single_configuration(
                 settings,
+                telemetry=telemetry,
                 framework=framework,
                 model=model,
                 server_cmd=server_cmd,
@@ -834,8 +909,10 @@ def _run_optuna_search(
             trial.set_user_attr("constraint_values", violations)
             trial.set_user_attr("slo_feasible", feasible)
             assert benchmark_value is not None
+            trial.set_user_attr("execution", telemetry.data)
             tell_trial(trial, benchmark_value)
         except optuna.TrialPruned:
+            trial.set_user_attr("execution", telemetry.data)
             tell_trial(trial, state=optuna.trial.TrialState.PRUNED)
             if gp_policy is not None:
                 gp_policy.pruned(
@@ -844,6 +921,7 @@ def _run_optuna_search(
                     trial.user_attrs["effective_config_fingerprint"],
                 )
         except KeyboardInterrupt:
+            trial.set_user_attr("execution", telemetry.data)
             trial.set_user_attr("gp_non_config_failure", True)
             trial.set_user_attr("slo_feasible", False)
             tell_trial(trial, state=optuna.trial.TrialState.FAIL)
@@ -859,6 +937,7 @@ def _run_optuna_search(
                 gp_policy.save()
             raise
         except Exception as exc:
+            trial.set_user_attr("execution", telemetry.data)
             from llm_optimizer.exceptions import ServerCleanupError
 
             logger.error(f"Optuna trial {trial.number} failed for {config_id}: {exc}")
@@ -901,7 +980,8 @@ def _run_optuna_search(
             and rest
         ):
             logger.info(f"Resting for {rest} seconds before the next run.")
-            time.sleep(rest)
+            with telemetry.rest():
+                time.sleep(rest)
 
     frozen_trials = study.get_trials(deepcopy=False)
     state_counts: dict[str, int] = {}
@@ -1522,9 +1602,17 @@ def benchmark(
             print(benchmark_settings)
             continue
 
+        artifact_output = output_jsonl_path or output_file_path
+        telemetry = TrialTelemetry(
+            pathlib.Path(artifact_output).parent
+            / (pathlib.Path(artifact_output).stem + "-attempts")
+            if artifact_output
+            else pathlib.Path("benchmark-attempts")
+        )
         try:
             run_single_configuration(
                 benchmark_settings,
+                telemetry=telemetry,
                 framework=framework,
                 model=model,
                 server_cmd=server_cmd,
@@ -1547,7 +1635,8 @@ def benchmark(
         finally:
             if idx < total_configs - 1:
                 logger.info(f"Resting for {rest} seconds before the next run.")
-                time.sleep(rest)
+                with telemetry.rest():
+                    time.sleep(rest)
 
     if output_jsonl_path and output_jsonl_path.exists():
         all_results = []
