@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "attempt_id": "f1bd46cecbb74bae925656b45566c506",
+  "started_at": "2026-10-22T15:16:55.515520+00:00",
+  "status": "failed",
+  "timings_s": {
+    "launch_to_ready": 40.01204352900004,
+    "cleanup": 0.003822386000138067,
+    "runner_wall": 40.020716110999956,
+    "orchestration": 0.0048501959997793165,
+    "allocation_wall": 40.02293742000006
+  },
+  "phase_status": {
+    "launch_to_ready": "partial",
+    "cleanup": "complete"
+  },
+  "startup_observations": [],
+  "server_log": "/home/ubuntu/llm-optimizer-trt/experiment_results/sglang-phase-b-pruning-gemma4-12b/B-sglang-c128-e2e-tpe-s11-r1-pruner-median-B-sglang-c128-measured-attempts/f1bd46cecbb74bae925656b45566c506/server.log",
+  "attempt_artifact": "/home/ubuntu/llm-optimizer-trt/experiment_results/sglang-phase-b-pruning-gemma4-12b/B-sglang-c128-e2e-tpe-s11-r1-pruner-median-B-sglang-c128-measured-attempts/f1bd46cecbb74bae925656b45566c506/execution.json",
+  "framework": "sglang",
+  "model": "/home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+  "environment": {
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "framework_version": "0.5.22",
+    "cuda_version": "13.0",
+    "driver_version": "580.173.02",
+    "model_revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "native_config_verified": true,
+    "quality_verified": true,
+    "expanded_choices": {
+      "attention_backend": [
+        "triton"
+      ],
+      "disable_radix_cache": [
+        false,
+        true
+      ],
+      "schedule_policy": [
+        "fcfs",
+        "lpm"
+      ],
+      "enable_mixed_chunk": [
+        false
+      ],
+      "disable_overlap_schedule": [
+        true
+      ],
+      "cuda_graph_backend_decode": [
+        "disabled",
+        "full"
+      ],
+      "cuda_graph_backend_prefill": [
+        "disabled",
+        "breakable"
+      ]
+    },
+    "excluded_choices": {
+      "attention_backend": {
+        "triton": "PLACEHOLDER",
+        "flashinfer": "PLACEHOLDER"
+      },
+      "enable_mixed_chunk": {
+        "True": "PLACEHOLDER"
+      },
+      "disable_overlap_schedule": {
+        "False": "PLACEHOLDER"
+      }
+    },
+    "hf_target_model_id": "google/gemma-4-12B-it",
+    "fixed_server": {},
+    "measurement": "MEASURED",
+    "python": "3.12.3",
+    "optuna": "4.9.0",
+    "gpu_count": 1,
+    "model": "/home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "phase": "B",
+    "target_model": "Qwen/Qwen3.5-4B",
+    "concurrency": 128,
+    "workload_sha256": "2c70a7e6f93d1d8bde8a6d485f9c7faa2d56cad156d1b16f355d95d5a91b6f37",
+    "dataset": {
+      "dataset_name": "random",
+      "dataset_path": null,
+      "num_prompts": 1000
+    },
+    "seed": 2026,
+    "tokenizer": "/home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "tokenizer_revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "framework": null,
+    "python_version": "3.12.3",
+    "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+    "cuda_visible_devices": null,
+    "package_versions": {
+      "llm-optimizer": "0.0.1",
+      "numpy": "2.3.5",
+      "aiohttp": "3.14.5",
+      "transformers": "5.19.0",
+      "optuna": "4.9.0",
+      "sglang": "0.5.22"
+    },
+    "requests_sha256": "15a336dd8cf8894b5ed83af87f06c2a7f8936de91a18ee36319db23a0cc598e5"
+  },
+  "sampled_config": {
+    "max_running_requests": 72,
+    "chunked_prefill_size": 16896,
+    "mem_fraction_static": 0.8,
+    "cuda_graph_backend_decode": "full",
+    "cuda_graph_backend_prefill": "breakable",
+    "schedule_conservativeness": 1.5,
+    "attention_backend": "triton",
+    "disable_radix_cache": false,
+    "schedule_policy": "lpm",
+    "enable_mixed_chunk": false,
+    "disable_overlap_schedule": true,
+    "max_prefill_tokens": 32768
+  },
+  "workload_preparation_seconds": 8.020196139000063,
+  "workload_preparation_id": "10da4cf56455430a84ed8dc4d2914d2a",
+  "trial_number": null,
+  "study_signature": null,
+  "command": "python3 -m sglang.launch_server --model-path /home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7 --host 127.0.0.1 --port 30000 --max-running-requests=72 --chunked-prefill-size=16896 --mem-fraction-static=0.8 --cuda-graph-backend-decode=full --cuda-graph-backend-prefill=breakable --schedule-conservativeness=1.5 --attention-backend=triton --schedule-policy=lpm --disable-overlap-schedule --max-prefill-tokens=32768",
+  "config": {
+    "framework": "sglang",
+    "client_args": {
+      "dataset_name": "random",
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "random_range_ratio": 1.0,
+      "seed": 2026,
+      "request_rate": null,
+      "num_prompts": 1000,
+      "max_concurrency": 128
+    },
+    "server_args": {
+      "max_running_requests": 72,
+      "chunked_prefill_size": 16896,
+      "mem_fraction_static": 0.8,
+      "cuda_graph_backend_decode": "full",
+      "cuda_graph_backend_prefill": "breakable",
+      "schedule_conservativeness": 1.5,
+      "attention_backend": "triton",
+      "schedule_policy": "lpm",
+      "disable_overlap_schedule": true,
+      "max_prefill_tokens": 32768
+    },
+    "server_cmd_args": [
+      "--max-running-requests=72",
+      "--chunked-prefill-size=16896",
+      "--mem-fraction-static=0.8",
+      "--cuda-graph-backend-decode=full",
+      "--cuda-graph-backend-prefill=breakable",
+      "--schedule-conservativeness=1.5",
+      "--attention-backend=triton",
+      "--schedule-policy=lpm",
+      "--disable-overlap-schedule",
+      "--max-prefill-tokens=32768"
+    ],
+    "normalized_config": {
+      "max_concurrent_sequences": 72,
+      "kv_cache_memory_fraction": 0.8,
+      "max_concurrency": 128,
+      "request_rate": null,
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "num_prompts": 1000,
+      "input_length": 512,
+      "output_length": 128
+    }
+  },
+  "server_environment": {
+    "CUDA_VISIBLE_DEVICES": "0"
+  },
+  "startup_error": "ServerNotReadyError: Server did not become ready in the allotted time.",
+  "readiness_reached": false,
+  "incomplete_phases": [
+    "launch_to_ready"
+  ],
+  "error": "ServerNotReadyError: Server did not become ready in the allotted time.",
+  "finished_at": "2026-10-22T15:17:35.537181+00:00",
+  "request_accounting": {},
+  "gpu_seconds": 40.02293742000006
+}
