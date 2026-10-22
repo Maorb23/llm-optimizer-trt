@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "attempt_id": "ebd5685f6d25432485446449b1071f2f",
+  "started_at": "2026-10-22T09:33:44.479544+00:00",
+  "status": "complete",
+  "timings_s": {
+    "launch_to_ready": 31.013113581000653,
+    "client_preparation": 1.1533011619994795,
+    "warmup": 0.18613630099935108,
+    "benchmark": 33.699572644,
+    "cleanup": 6.10863040500044,
+    "runner_wall": 73.43041846699998,
+    "orchestration": 1.2696643740000582,
+    "rest": 10.000112706000436,
+    "allocation_wall": 83.43466330100091
+  },
+  "phase_status": {
+    "launch_to_ready": "complete",
+    "client_preparation": "complete",
+    "warmup": "complete",
+    "benchmark": "complete",
+    "cleanup": "complete",
+    "rest": "complete"
+  },
+  "startup_observations": [],
+  "server_log": "/home/ubuntu/llm-optimizer-trt/experiment_results/sglang-phase-b-pruning-qwen3_4/B-sglang-c128-e2e-tpe-s11-r2-pruner-median-B-sglang-c128-measured-attempts/ebd5685f6d25432485446449b1071f2f/server.log",
+  "attempt_artifact": "/home/ubuntu/llm-optimizer-trt/experiment_results/sglang-phase-b-pruning-qwen3_4/B-sglang-c128-e2e-tpe-s11-r2-pruner-median-B-sglang-c128-measured-attempts/ebd5685f6d25432485446449b1071f2f/execution.json",
+  "framework": "sglang",
+  "model": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+  "environment": {
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "framework_version": "0.5.22",
+    "cuda_version": "13.0",
+    "driver_version": "580.173.02",
+    "model_revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+    "native_config_verified": true,
+    "quality_verified": true,
+    "expanded_choices": {
+      "attention_backend": [
+        "fa3"
+      ],
+      "disable_radix_cache": [
+        false,
+        true
+      ],
+      "schedule_policy": [
+        "fcfs",
+        "lpm"
+      ],
+      "enable_mixed_chunk": [
+        false
+      ],
+      "disable_overlap_schedule": [
+        true
+      ],
+      "cuda_graph_backend_decode": [
+        "disabled",
+        "full"
+      ],
+      "cuda_graph_backend_prefill": [
+        "disabled",
+        "breakable"
+      ]
+    },
+    "excluded_choices": {
+      "attention_backend": {
+        "triton": "PLACEHOLDER",
+        "flashinfer": "PLACEHOLDER"
+      },
+      "enable_mixed_chunk": {
+        "True": "PLACEHOLDER"
+      },
+      "disable_overlap_schedule": {
+        "False": "PLACEHOLDER"
+      }
+    },
+    "hf_target_model_id": "Qwen/Qwen3-4B",
+    "fixed_server": {},
+    "measurement": "MEASURED",
+    "python": "3.12.3",
+    "optuna": "4.9.0",
+    "gpu_count": 1,
+    "model": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+    "phase": "B",
+    "target_model": "Qwen/Qwen3.5-4B",
+    "concurrency": 128,
+    "workload_sha256": "edbf12be24d29beec126d2df1655ccda10fc7f26d418419bfaf6b32cc65229eb",
+    "dataset": {
+      "dataset_name": "random",
+      "dataset_path": null,
+      "num_prompts": 1000
+    },
+    "seed": 2026,
+    "tokenizer": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+    "tokenizer_revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+    "framework": null,
+    "python_version": "3.12.3",
+    "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+    "cuda_visible_devices": null,
+    "package_versions": {
+      "llm-optimizer": "0.0.1",
+      "numpy": "2.3.5",
+      "aiohttp": "3.14.5",
+      "transformers": "5.19.0",
+      "optuna": "4.9.0",
+      "sglang": "0.5.22"
+    },
+    "requests_sha256": "07fb36e97cb3ae9406318ea960564dd9f4347a322ff2fab8b00a3387d8608067"
+  },
+  "sampled_config": {
+    "max_running_requests": 32,
+    "chunked_prefill_size": 27904,
+    "mem_fraction_static": 0.75,
+    "cuda_graph_backend_decode": "full",
+    "cuda_graph_backend_prefill": "disabled",
+    "schedule_conservativeness": 0.75,
+    "attention_backend": "fa3",
+    "disable_radix_cache": false,
+    "schedule_policy": "fcfs",
+    "enable_mixed_chunk": false,
+    "disable_overlap_schedule": true,
+    "max_prefill_tokens": 24576
+  },
+  "workload_preparation_seconds": 6.54358613399927,
+  "workload_preparation_id": "a0bb825ce7a74e4d8ee08c7b5f059aff",
+  "trial_number": null,
+  "study_signature": null,
+  "command": "python3 -m sglang.launch_server --model-path /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c --host 127.0.0.1 --port 30000 --max-running-requests=32 --chunked-prefill-size=27904 --mem-fraction-static=0.75 --cuda-graph-backend-decode=full --cuda-graph-backend-prefill=disabled --schedule-conservativeness=0.75 --attention-backend=fa3 --schedule-policy=fcfs --disable-overlap-schedule --max-prefill-tokens=24576",
+  "config": {
+    "framework": "sglang",
+    "client_args": {
+      "dataset_name": "random",
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "random_range_ratio": 1.0,
+      "seed": 2026,
+      "request_rate": null,
+      "num_prompts": 1000,
+      "max_concurrency": 128
+    },
+    "server_args": {
+      "max_running_requests": 32,
+      "chunked_prefill_size": 27904,
+      "mem_fraction_static": 0.75,
+      "cuda_graph_backend_decode": "full",
+      "cuda_graph_backend_prefill": "disabled",
+      "schedule_conservativeness": 0.75,
+      "attention_backend": "fa3",
+      "schedule_policy": "fcfs",
+      "disable_overlap_schedule": true,
+      "max_prefill_tokens": 24576
+    },
+    "server_cmd_args": [
+      "--max-running-requests=32",
+      "--chunked-prefill-size=27904",
+      "--mem-fraction-static=0.75",
+      "--cuda-graph-backend-decode=full",
+      "--cuda-graph-backend-prefill=disabled",
+      "--schedule-conservativeness=0.75",
+      "--attention-backend=fa3",
+      "--schedule-policy=fcfs",
+      "--disable-overlap-schedule",
+      "--max-prefill-tokens=24576"
+    ],
+    "normalized_config": {
+      "max_concurrent_sequences": 32,
+      "kv_cache_memory_fraction": 0.75,
+      "max_concurrency": 128,
+      "request_rate": null,
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "num_prompts": 1000,
+      "input_length": 512,
+      "output_length": 128
+    }
+  },
+  "server_environment": {
+    "CUDA_VISIBLE_DEVICES": "0"
+  },
+  "readiness_reached": true,
+  "request_accounting": {
+    "completed": 1000,
+    "total_requests": 1000,
+    "failed": 0
+  },
+  "metric_benchmark_duration_s": 33.700130166000235,
+  "incomplete_phases": [],
+  "finished_at": "2026-10-22T09:35:07.912806+00:00",
+  "rest_status": "complete",
+  "gpu_seconds": 83.43466330100091
+}

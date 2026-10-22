@@ -1,0 +1,221 @@
+{
+  "schema_version": 1,
+  "attempt_id": "97dd04b9c4ed43cb9c311c5dda45e298",
+  "started_at": "2026-10-22T06:28:59.304718+00:00",
+  "status": "complete",
+  "timings_s": {
+    "launch_to_ready": 41.01371757299967,
+    "client_preparation": 0.8517526829991766,
+    "warmup": 0.059097149999615795,
+    "benchmark": 13.820145654999578,
+    "cleanup": 5.860713074999694,
+    "runner_wall": 62.83341120299974,
+    "orchestration": 1.2279850670020096,
+    "rest": 10.00009063700054,
+    "allocation_wall": 72.83810546299992
+  },
+  "phase_status": {
+    "launch_to_ready": "complete",
+    "client_preparation": "complete",
+    "warmup": "complete",
+    "benchmark": "complete",
+    "cleanup": "complete",
+    "rest": "complete"
+  },
+  "startup_observations": [],
+  "server_log": "/home/ubuntu/llm-optimizer-trt/experiment_results/sglang-phase-b-pruning-qwen3_4_dspark/B-sglang-c128-throughput-tpe-s11-r1-pruner-median-B-sglang-c128-measured-attempts/97dd04b9c4ed43cb9c311c5dda45e298/server.log",
+  "attempt_artifact": "/home/ubuntu/llm-optimizer-trt/experiment_results/sglang-phase-b-pruning-qwen3_4_dspark/B-sglang-c128-throughput-tpe-s11-r1-pruner-median-B-sglang-c128-measured-attempts/97dd04b9c4ed43cb9c311c5dda45e298/execution.json",
+  "framework": "sglang",
+  "model": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+  "environment": {
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "framework_version": "0.5.22",
+    "cuda_version": "13.0",
+    "driver_version": "580.173.02",
+    "model_revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+    "native_config_verified": true,
+    "quality_verified": true,
+    "expanded_choices": {
+      "attention_backend": [
+        "fa3"
+      ],
+      "disable_radix_cache": [
+        false,
+        true
+      ],
+      "schedule_policy": [
+        "fcfs",
+        "lpm",
+        "shortest-prefill-first"
+      ],
+      "enable_mixed_chunk": [
+        false
+      ],
+      "disable_overlap_schedule": [
+        true
+      ],
+      "cuda_graph_backend_decode": [
+        "disabled",
+        "full",
+        "tc_piecewise"
+      ],
+      "cuda_graph_backend_prefill": [
+        "disabled",
+        "breakable"
+      ]
+    },
+    "excluded_choices": {
+      "attention_backend": {
+        "triton": "PLACEHOLDER",
+        "flashinfer": "PLACEHOLDER"
+      },
+      "enable_mixed_chunk": {
+        "True": "PLACEHOLDER"
+      },
+      "disable_overlap_schedule": {
+        "False": "PLACEHOLDER"
+      }
+    },
+    "hf_target_model_id": "Qwen/Qwen3-4B",
+    "fixed_server": {
+      "speculative_algorithm": "DSPARK",
+      "speculative_draft_model_path": "/home/ubuntu/.cache/huggingface/hub/models--deepseek-ai--dspark_qwen3_4b_block7/snapshots/3457dff1417cb84927f6098a5fcb7cee85c934b7",
+      "speculative_num_steps": 1,
+      "speculative_eagle_topk": 1,
+      "speculative_num_draft_tokens": 8
+    },
+    "draft_model_id": "deepseek-ai/dspark_qwen3_4b_block7",
+    "draft_revision": "3457dff1417cb84927f6098a5fcb7cee85c934b7",
+    "speculative_decoding": {
+      "algorithm": "DSPARK",
+      "block_size": 7,
+      "num_speculative_tokens": 7,
+      "verify_window": 8,
+      "draft_model_id": "deepseek-ai/dspark_qwen3_4b_block7",
+      "draft_revision": "3457dff1417cb84927f6098a5fcb7cee85c934b7"
+    },
+    "measurement": "MEASURED",
+    "python": "3.12.3",
+    "optuna": "4.9.0",
+    "gpu_count": 1,
+    "model": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+    "phase": "B",
+    "target_model": "Qwen/Qwen3.5-4B",
+    "concurrency": 128,
+    "workload_sha256": "edbf12be24d29beec126d2df1655ccda10fc7f26d418419bfaf6b32cc65229eb",
+    "dataset": {
+      "dataset_name": "random",
+      "dataset_path": null,
+      "num_prompts": 1000
+    },
+    "seed": 2026,
+    "tokenizer": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+    "tokenizer_revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+    "framework": null,
+    "python_version": "3.12.3",
+    "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+    "cuda_visible_devices": null,
+    "package_versions": {
+      "llm-optimizer": "0.0.1",
+      "numpy": "2.3.5",
+      "aiohttp": "3.14.5",
+      "transformers": "5.19.0",
+      "optuna": "4.9.0",
+      "sglang": "0.5.22"
+    },
+    "requests_sha256": "07fb36e97cb3ae9406318ea960564dd9f4347a322ff2fab8b00a3387d8608067"
+  },
+  "sampled_config": {
+    "max_running_requests": 80,
+    "chunked_prefill_size": 2560,
+    "mem_fraction_static": 0.75,
+    "cuda_graph_backend_decode": "full",
+    "cuda_graph_backend_prefill": "breakable",
+    "schedule_conservativeness": 0.5,
+    "attention_backend": "fa3",
+    "disable_radix_cache": true,
+    "schedule_policy": "fcfs",
+    "enable_mixed_chunk": false,
+    "disable_overlap_schedule": true,
+    "max_prefill_tokens": 16384
+  },
+  "workload_preparation_seconds": 6.126563888000419,
+  "workload_preparation_id": "5b4a7f57963240be84083ddc46cc5238",
+  "trial_number": null,
+  "study_signature": null,
+  "command": "python3 -m sglang.launch_server --model-path /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c --host 127.0.0.1 --port 30000 --speculative-algorithm=DSPARK --speculative-draft-model-path=/home/ubuntu/.cache/huggingface/hub/models--deepseek-ai--dspark_qwen3_4b_block7/snapshots/3457dff1417cb84927f6098a5fcb7cee85c934b7 --speculative-num-steps=1 --speculative-eagle-topk=1 --speculative-num-draft-tokens=8 --max-running-requests=80 --chunked-prefill-size=2560 --mem-fraction-static=0.75 --cuda-graph-backend-decode=full --cuda-graph-backend-prefill=breakable --schedule-conservativeness=0.5 --attention-backend=fa3 --disable-radix-cache --schedule-policy=fcfs --disable-overlap-schedule --max-prefill-tokens=16384",
+  "config": {
+    "framework": "sglang",
+    "client_args": {
+      "dataset_name": "random",
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "random_range_ratio": 1.0,
+      "seed": 2026,
+      "request_rate": null,
+      "num_prompts": 1000,
+      "max_concurrency": 128
+    },
+    "server_args": {
+      "speculative_algorithm": "DSPARK",
+      "speculative_draft_model_path": "/home/ubuntu/.cache/huggingface/hub/models--deepseek-ai--dspark_qwen3_4b_block7/snapshots/3457dff1417cb84927f6098a5fcb7cee85c934b7",
+      "speculative_num_steps": 1,
+      "speculative_eagle_topk": 1,
+      "speculative_num_draft_tokens": 8,
+      "max_running_requests": 80,
+      "chunked_prefill_size": 2560,
+      "mem_fraction_static": 0.75,
+      "cuda_graph_backend_decode": "full",
+      "cuda_graph_backend_prefill": "breakable",
+      "schedule_conservativeness": 0.5,
+      "attention_backend": "fa3",
+      "disable_radix_cache": true,
+      "schedule_policy": "fcfs",
+      "disable_overlap_schedule": true,
+      "max_prefill_tokens": 16384
+    },
+    "server_cmd_args": [
+      "--speculative-algorithm=DSPARK",
+      "--speculative-draft-model-path=/home/ubuntu/.cache/huggingface/hub/models--deepseek-ai--dspark_qwen3_4b_block7/snapshots/3457dff1417cb84927f6098a5fcb7cee85c934b7",
+      "--speculative-num-steps=1",
+      "--speculative-eagle-topk=1",
+      "--speculative-num-draft-tokens=8",
+      "--max-running-requests=80",
+      "--chunked-prefill-size=2560",
+      "--mem-fraction-static=0.75",
+      "--cuda-graph-backend-decode=full",
+      "--cuda-graph-backend-prefill=breakable",
+      "--schedule-conservativeness=0.5",
+      "--attention-backend=fa3",
+      "--disable-radix-cache",
+      "--schedule-policy=fcfs",
+      "--disable-overlap-schedule",
+      "--max-prefill-tokens=16384"
+    ],
+    "normalized_config": {
+      "max_concurrent_sequences": 80,
+      "kv_cache_memory_fraction": 0.75,
+      "max_concurrency": 128,
+      "request_rate": null,
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "num_prompts": 1000,
+      "input_length": 512,
+      "output_length": 128
+    }
+  },
+  "server_environment": {
+    "CUDA_VISIBLE_DEVICES": "0"
+  },
+  "readiness_reached": true,
+  "request_accounting": {
+    "completed": 1000,
+    "total_requests": 1000,
+    "failed": 0
+  },
+  "metric_benchmark_duration_s": 13.820740930000284,
+  "incomplete_phases": [],
+  "finished_at": "2026-10-22T06:30:12.141285+00:00",
+  "rest_status": "complete",
+  "gpu_seconds": 72.83810546299992
+}

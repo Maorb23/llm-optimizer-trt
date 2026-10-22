@@ -1,0 +1,523 @@
+{
+  "study": "B-sglang-c128-e2e-gp-s11-r2-pruner-nop",
+  "identity": {
+    "concurrency": 128,
+    "framework": "sglang",
+    "model": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+    "phase": "B"
+  },
+  "scope": {
+    "experiment": {
+      "checkpoint_requests": [
+        400,
+        500,
+        1000
+      ],
+      "concurrency": 128,
+      "constrained": false,
+      "directions": [
+        "MINIMIZE"
+      ],
+      "e2e_limit_ms": 6000.0,
+      "environment": {
+        "concurrency": 128,
+        "cuda_version": "13.0",
+        "cuda_visible_devices": null,
+        "dataset": {
+          "dataset_name": "random",
+          "dataset_path": null,
+          "num_prompts": 1000
+        },
+        "driver_version": "580.173.02",
+        "excluded_choices": {
+          "attention_backend": {
+            "flashinfer": "PLACEHOLDER",
+            "triton": "PLACEHOLDER"
+          },
+          "disable_overlap_schedule": {
+            "False": "PLACEHOLDER"
+          },
+          "enable_mixed_chunk": {
+            "True": "PLACEHOLDER"
+          }
+        },
+        "expanded_choices": {
+          "attention_backend": [
+            "fa3"
+          ],
+          "cuda_graph_backend_decode": [
+            "disabled",
+            "full"
+          ],
+          "cuda_graph_backend_prefill": [
+            "disabled",
+            "breakable"
+          ],
+          "disable_overlap_schedule": [
+            true
+          ],
+          "disable_radix_cache": [
+            false,
+            true
+          ],
+          "enable_mixed_chunk": [
+            false
+          ],
+          "schedule_policy": [
+            "fcfs",
+            "lpm"
+          ]
+        },
+        "fixed_server": {},
+        "framework": null,
+        "framework_version": "0.5.22",
+        "gpu_count": 1,
+        "gpu_type": "NVIDIA H100 80GB HBM3",
+        "hf_target_model_id": "Qwen/Qwen3-4B",
+        "measurement": "MEASURED",
+        "model": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+        "model_revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+        "native_config_verified": true,
+        "optuna": "4.9.0",
+        "package_versions": {
+          "aiohttp": "3.14.5",
+          "llm-optimizer": "0.0.1",
+          "numpy": "2.3.5",
+          "optuna": "4.9.0",
+          "sglang": "0.5.22",
+          "transformers": "5.19.0"
+        },
+        "phase": "B",
+        "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+        "python": "3.12.3",
+        "python_version": "3.12.3",
+        "quality_verified": true,
+        "requests_sha256": "07fb36e97cb3ae9406318ea960564dd9f4347a322ff2fab8b00a3387d8608067",
+        "seed": 2026,
+        "target_model": "Qwen/Qwen3.5-4B",
+        "tokenizer": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+        "tokenizer_revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+        "workload_sha256": "edbf12be24d29beec126d2df1655ccda10fc7f26d418419bfaf6b32cc65229eb"
+      },
+      "expanded_choices": {
+        "attention_backend": [
+          "fa3"
+        ],
+        "cuda_graph_backend_decode": [
+          "disabled",
+          "full"
+        ],
+        "cuda_graph_backend_prefill": [
+          "disabled",
+          "breakable"
+        ],
+        "disable_overlap_schedule": [
+          true
+        ],
+        "disable_radix_cache": [
+          false,
+          true
+        ],
+        "enable_mixed_chunk": [
+          false
+        ],
+        "schedule_policy": [
+          "fcfs",
+          "lpm"
+        ]
+      },
+      "framework": "sglang",
+      "grid_declared_points": null,
+      "metrics": [
+        "p95_e2e_latency_ms"
+      ],
+      "phase": "B",
+      "phase_a_space": {
+        "chunked_prefill_size": [
+          1024,
+          1280,
+          1536,
+          1792,
+          2048,
+          2304,
+          2560,
+          2816,
+          3072,
+          3328,
+          3584,
+          3840,
+          4096,
+          4352,
+          4608,
+          4864,
+          5120,
+          5376,
+          5632,
+          5888,
+          6144,
+          6400,
+          6656,
+          6912,
+          7168,
+          7424,
+          7680,
+          7936,
+          8192,
+          8448,
+          8704,
+          8960,
+          9216,
+          9472,
+          9728,
+          9984,
+          10240,
+          10496,
+          10752,
+          11008,
+          11264,
+          11520,
+          11776,
+          12032,
+          12288,
+          12544,
+          12800,
+          13056,
+          13312,
+          13568,
+          13824,
+          14080,
+          14336,
+          14592,
+          14848,
+          15104,
+          15360,
+          15616,
+          15872,
+          16128,
+          16384,
+          16640,
+          16896,
+          17152,
+          17408,
+          17664,
+          17920,
+          18176,
+          18432,
+          18688,
+          18944,
+          19200,
+          19456,
+          19712,
+          19968,
+          20224,
+          20480,
+          20736,
+          20992,
+          21248,
+          21504,
+          21760,
+          22016,
+          22272,
+          22528,
+          22784,
+          23040,
+          23296,
+          23552,
+          23808,
+          24064,
+          24320,
+          24576,
+          24832,
+          25088,
+          25344,
+          25600,
+          25856,
+          26112,
+          26368,
+          26624,
+          26880,
+          27136,
+          27392,
+          27648,
+          27904,
+          28160,
+          28416,
+          28672,
+          28928,
+          29184,
+          29440,
+          29696,
+          29952,
+          30208,
+          30464,
+          30720,
+          30976,
+          31232,
+          31488,
+          31744,
+          32000,
+          32256,
+          32512,
+          32768
+        ],
+        "max_running_requests": [
+          8,
+          16,
+          24,
+          32,
+          40,
+          48,
+          56,
+          64,
+          72,
+          80,
+          88,
+          96,
+          104,
+          112,
+          120,
+          128
+        ],
+        "mem_fraction_static": [
+          0.7,
+          0.75,
+          0.8,
+          0.85
+        ]
+      },
+      "pruner_class": "NopPruner",
+      "pruner_settings": {},
+      "pruning_resource": "completed_requests",
+      "sampler": "gp",
+      "sampler_class": "GPSampler",
+      "sampler_semantics": "GP intersection plus independent conditional",
+      "sampler_settings": {
+        "group": false,
+        "multivariate": false,
+        "n_startup_trials": 10,
+        "seed": 11
+      },
+      "sampling_menu": {
+        "attention_backend": [
+          "fa3"
+        ],
+        "chunked_prefill_size": [
+          1024,
+          1280,
+          1536,
+          1792,
+          2048,
+          2304,
+          2560,
+          2816,
+          3072,
+          3328,
+          3584,
+          3840,
+          4096,
+          4352,
+          4608,
+          4864,
+          5120,
+          5376,
+          5632,
+          5888,
+          6144,
+          6400,
+          6656,
+          6912,
+          7168,
+          7424,
+          7680,
+          7936,
+          8192,
+          8448,
+          8704,
+          8960,
+          9216,
+          9472,
+          9728,
+          9984,
+          10240,
+          10496,
+          10752,
+          11008,
+          11264,
+          11520,
+          11776,
+          12032,
+          12288,
+          12544,
+          12800,
+          13056,
+          13312,
+          13568,
+          13824,
+          14080,
+          14336,
+          14592,
+          14848,
+          15104,
+          15360,
+          15616,
+          15872,
+          16128,
+          16384,
+          16640,
+          16896,
+          17152,
+          17408,
+          17664,
+          17920,
+          18176,
+          18432,
+          18688,
+          18944,
+          19200,
+          19456,
+          19712,
+          19968,
+          20224,
+          20480,
+          20736,
+          20992,
+          21248,
+          21504,
+          21760,
+          22016,
+          22272,
+          22528,
+          22784,
+          23040,
+          23296,
+          23552,
+          23808,
+          24064,
+          24320,
+          24576,
+          24832,
+          25088,
+          25344,
+          25600,
+          25856,
+          26112,
+          26368,
+          26624,
+          26880,
+          27136,
+          27392,
+          27648,
+          27904,
+          28160,
+          28416,
+          28672,
+          28928,
+          29184,
+          29440,
+          29696,
+          29952,
+          30208,
+          30464,
+          30720,
+          30976,
+          31232,
+          31488,
+          31744,
+          32000,
+          32256,
+          32512,
+          32768
+        ],
+        "cuda_graph_backend_decode": [
+          "disabled",
+          "full"
+        ],
+        "cuda_graph_backend_prefill": [
+          "disabled",
+          "breakable"
+        ],
+        "disable_overlap_schedule": [
+          true
+        ],
+        "disable_radix_cache": [
+          false,
+          true
+        ],
+        "enable_mixed_chunk": [
+          false
+        ],
+        "graph_capture_profile": [
+          "powers",
+          "dense"
+        ],
+        "graph_padding_off": [
+          0,
+          1
+        ],
+        "max_prefill_tokens": [
+          8192,
+          16384,
+          24576,
+          32768
+        ],
+        "max_running_requests": [
+          8,
+          16,
+          24,
+          32,
+          40,
+          48,
+          56,
+          64,
+          72,
+          80,
+          88,
+          96,
+          104,
+          112,
+          120,
+          128
+        ],
+        "mem_fraction_static": [
+          0.7,
+          0.75,
+          0.8,
+          0.85
+        ],
+        "schedule_conservativeness": [
+          0.5,
+          0.75,
+          1.0,
+          1.25,
+          1.5
+        ],
+        "schedule_policy": [
+          "fcfs",
+          "lpm"
+        ]
+      },
+      "space_kind": "expanded",
+      "target": "e2e",
+      "target_model": "Qwen/Qwen3.5-4B",
+      "ttft_limit_ms": 200.0,
+      "workload": {
+        "dataset_name": "random",
+        "max_concurrency": 128,
+        "num_prompts": 1000,
+        "random_input_len": 512,
+        "random_output_len": 128,
+        "random_range_ratio": 1.0,
+        "request_rate": "inf",
+        "seed": 2026
+      }
+    },
+    "fixed_server": {},
+    "pruner_class": "NopPruner",
+    "pruner_parameters": {}
+  },
+  "pruned": [],
+  "max_consecutive_rejections": 10,
+  "failures": [],
+  "rejections": [],
+  "stops": []
+}
