@@ -1,0 +1,270 @@
+{
+  "schema_version": 1,
+  "attempt_id": "56c6d5daf3e54afcbfd03ed5d864bc0c",
+  "started_at": "2026-10-23T13:52:24.075128+00:00",
+  "status": "failed",
+  "timings_s": {
+    "launch_to_ready": 155.03780075500003,
+    "cleanup": 0.0036822339998252573,
+    "runner_wall": 155.04346886999974,
+    "orchestration": 0.0019858809998822835,
+    "allocation_wall": 155.04579504899993
+  },
+  "phase_status": {
+    "launch_to_ready": "partial",
+    "cleanup": "complete"
+  },
+  "startup_observations": [
+    {
+      "phase": "weight_loading",
+      "seconds": 1.413164,
+      "line_number": 31,
+      "source": "\u001b[0;36m(EngineCore pid=7534)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 13:53:09\u001b[0m \u001b[90m[base_loader.py:82]\u001b[0m Initializing model took 1.413164 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "weight_loading",
+      "seconds": 3.88,
+      "line_number": 41,
+      "source": "\u001b[0;36m(EngineCore pid=7534)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 13:53:13\u001b[0m \u001b[90m[default_loader.py:501]\u001b[0m Loading weights took 3.88 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "weight_loading",
+      "seconds": 0.034629,
+      "line_number": 46,
+      "source": "\u001b[0;36m(EngineCore pid=7534)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 13:53:14\u001b[0m \u001b[90m[base_loader.py:82]\u001b[0m Initializing model took 0.034629 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "weight_loading",
+      "seconds": 1.1,
+      "line_number": 55,
+      "source": "\u001b[0;36m(EngineCore pid=7534)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 13:53:15\u001b[0m \u001b[90m[default_loader.py:501]\u001b[0m Loading weights took 1.10 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "weight_loading",
+      "seconds": 8.727249,
+      "line_number": 57,
+      "source": "\u001b[0;36m(EngineCore pid=7534)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 13:53:16\u001b[0m \u001b[90m[model_runner.py:424]\u001b[0m Model loading took 25.5 GiB memory and 8.727249 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "compilation",
+      "seconds": 36.42,
+      "line_number": 67,
+      "source": "\u001b[0;36m(EngineCore pid=7534)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 13:54:27\u001b[0m \u001b[90m[backends.py:398]\u001b[0m [backbone] Compiling a graph for compile range (1, 10240) takes 36.42 s",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "compilation",
+      "seconds": 51.82,
+      "line_number": 70,
+      "source": "\u001b[0;36m(EngineCore pid=7534)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 13:54:32\u001b[0m \u001b[90m[monitor.py:62]\u001b[0m [backbone] torch.compile took 51.82 s in total",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "compilation",
+      "seconds": 6.85,
+      "line_number": 75,
+      "source": "\u001b[0;36m(EngineCore pid=7534)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 13:54:41\u001b[0m \u001b[90m[backends.py:398]\u001b[0m [dspark_head] Compiling a graph for compile range (1, 10240) takes 6.85 s",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "compilation",
+      "seconds": 9.27,
+      "line_number": 78,
+      "source": "\u001b[0;36m(EngineCore pid=7534)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 13:54:42\u001b[0m \u001b[90m[monitor.py:62]\u001b[0m [dspark_head] torch.compile took 9.27 s in total",
+      "parser": "explicit-log-duration-v1"
+    }
+  ],
+  "server_log": "/home/ubuntu/llm-optimizer-trt/experiment_results/vllm-phase-b-pruning-gemma4-12b-dspark/B-vllm-c128-e2e-tpe-s11-r3-pruner-median-B-vllm-c128-measured-attempts/56c6d5daf3e54afcbfd03ed5d864bc0c/server.log",
+  "attempt_artifact": "/home/ubuntu/llm-optimizer-trt/experiment_results/vllm-phase-b-pruning-gemma4-12b-dspark/B-vllm-c128-e2e-tpe-s11-r3-pruner-median-B-vllm-c128-measured-attempts/56c6d5daf3e54afcbfd03ed5d864bc0c/execution.json",
+  "framework": "vllm",
+  "model": "/home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+  "environment": {
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "framework_version": "0.32.0",
+    "cuda_version": "13.0",
+    "driver_version": "580.173.02",
+    "model_revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "native_config_verified": true,
+    "quality_verified": true,
+    "expanded_choices": {
+      "async_scheduling": [
+        false,
+        true
+      ],
+      "performance_mode": [
+        "balanced",
+        "interactivity",
+        "throughput"
+      ],
+      "attention_backend": [
+        "auto"
+      ],
+      "kv_cache_dtype": [
+        "auto",
+        "fp8"
+      ],
+      "enable_prefix_caching": [
+        false,
+        true
+      ],
+      "graph_mode": [
+        "NONE",
+        "PIECEWISE",
+        "FULL_AND_PIECEWISE"
+      ]
+    },
+    "excluded_choices": {},
+    "draft_model_id": "deepseek-ai/dspark_gemma4_12b_block7",
+    "draft_revision": "2fa72e765eec2965fc4d86a8663ce6769eba6218",
+    "speculative_decoding": {
+      "algorithm": "DFLASH",
+      "draft_model_id": "deepseek-ai/dspark_gemma4_12b_block7",
+      "draft_revision": "2fa72e765eec2965fc4d86a8663ce6769eba6218",
+      "num_speculative_tokens": 7
+    },
+    "hf_target_model_id": "google/gemma-4-12B-it",
+    "fixed_server": {
+      "speculative_config": {
+        "method": "dspark",
+        "model": "/home/ubuntu/.cache/huggingface/hub/models--deepseek-ai--dspark_gemma4_12b_block7/snapshots/2fa72e765eec2965fc4d86a8663ce6769eba6218",
+        "num_speculative_tokens": 7
+      }
+    },
+    "measurement": "MEASURED",
+    "python": "3.12.3",
+    "optuna": "4.9.0",
+    "gpu_count": 1,
+    "model": "/home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "phase": "B",
+    "target_model": "google/gemma-4-12B-it",
+    "concurrency": 128,
+    "workload_sha256": "2c70a7e6f93d1d8bde8a6d485f9c7faa2d56cad156d1b16f355d95d5a91b6f37",
+    "dataset": {
+      "dataset_name": "random",
+      "dataset_path": null,
+      "num_prompts": 1000
+    },
+    "seed": 2026,
+    "tokenizer": "/home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "tokenizer_revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "framework": null,
+    "python_version": "3.12.3",
+    "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+    "cuda_visible_devices": null,
+    "package_versions": {
+      "llm-optimizer": "0.0.1",
+      "numpy": "2.3.5",
+      "aiohttp": "3.14.5",
+      "transformers": "5.19.0",
+      "optuna": "4.9.0",
+      "vllm": "0.32.0"
+    },
+    "requests_sha256": "15a336dd8cf8894b5ed83af87f06c2a7f8936de91a18ee36319db23a0cc598e5"
+  },
+  "sampled_config": {
+    "max_num_seqs": 16,
+    "max_num_batched_tokens": 10240,
+    "gpu_memory_utilization": 0.9,
+    "enable_chunked_prefill": true,
+    "compilation_config": {
+      "cudagraph_mode": "PIECEWISE",
+      "cudagraph_capture_sizes": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ]
+    },
+    "async_scheduling": false,
+    "performance_mode": "interactivity",
+    "attention_backend": "auto",
+    "kv_cache_dtype": "fp8",
+    "enable_prefix_caching": false
+  },
+  "workload_preparation_seconds": 6.963753830000087,
+  "workload_preparation_id": "6ea14f1c59ec48e6a841df196dbf17db",
+  "trial_number": null,
+  "study_signature": null,
+  "command": "vllm serve /home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7 --host 127.0.0.1 --port 8000 '--speculative-config={\"method\": \"dspark\", \"model\": \"/home/ubuntu/.cache/huggingface/hub/models--deepseek-ai--dspark_gemma4_12b_block7/snapshots/2fa72e765eec2965fc4d86a8663ce6769eba6218\", \"num_speculative_tokens\": 7}' --max-num-seqs=16 --max-num-batched-tokens=10240 --gpu-memory-utilization=0.9 --enable-chunked-prefill '--compilation-config={\"cudagraph_capture_sizes\": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], \"cudagraph_mode\": \"PIECEWISE\"}' --performance-mode=interactivity --attention-backend=auto --kv-cache-dtype=fp8 --no-async-scheduling --no-enable-prefix-caching",
+  "config": {
+    "framework": "vllm",
+    "client_args": {
+      "dataset_name": "random",
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "random_range_ratio": 1.0,
+      "seed": 2026,
+      "request_rate": null,
+      "num_prompts": 1000,
+      "max_concurrency": 128
+    },
+    "server_args": {
+      "speculative_config": "{\"method\": \"dspark\", \"model\": \"/home/ubuntu/.cache/huggingface/hub/models--deepseek-ai--dspark_gemma4_12b_block7/snapshots/2fa72e765eec2965fc4d86a8663ce6769eba6218\", \"num_speculative_tokens\": 7}",
+      "max_num_seqs": 16,
+      "max_num_batched_tokens": 10240,
+      "gpu_memory_utilization": 0.9,
+      "enable_chunked_prefill": true,
+      "compilation_config": "{\"cudagraph_capture_sizes\": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], \"cudagraph_mode\": \"PIECEWISE\"}",
+      "performance_mode": "interactivity",
+      "attention_backend": "auto",
+      "kv_cache_dtype": "fp8",
+      "no_async_scheduling": true,
+      "no_enable_prefix_caching": true
+    },
+    "server_cmd_args": [
+      "'--speculative-config={\"method\": \"dspark\", \"model\": \"/home/ubuntu/.cache/huggingface/hub/models--deepseek-ai--dspark_gemma4_12b_block7/snapshots/2fa72e765eec2965fc4d86a8663ce6769eba6218\", \"num_speculative_tokens\": 7}'",
+      "--max-num-seqs=16",
+      "--max-num-batched-tokens=10240",
+      "--gpu-memory-utilization=0.9",
+      "--enable-chunked-prefill",
+      "'--compilation-config={\"cudagraph_capture_sizes\": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], \"cudagraph_mode\": \"PIECEWISE\"}'",
+      "--performance-mode=interactivity",
+      "--attention-backend=auto",
+      "--kv-cache-dtype=fp8",
+      "--no-async-scheduling",
+      "--no-enable-prefix-caching"
+    ],
+    "normalized_config": {
+      "max_batched_tokens": 10240,
+      "max_concurrent_sequences": 16,
+      "kv_cache_memory_fraction": 0.9,
+      "kv_cache_dtype": "fp8",
+      "max_concurrency": 128,
+      "request_rate": null,
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "num_prompts": 1000,
+      "input_length": 512,
+      "output_length": 128
+    }
+  },
+  "server_environment": {
+    "CUDA_VISIBLE_DEVICES": "0"
+  },
+  "startup_error": "ServerNotReadyError: Server did not become ready in the allotted time.",
+  "readiness_reached": false,
+  "incomplete_phases": [
+    "launch_to_ready"
+  ],
+  "error": "ServerNotReadyError: Server did not become ready in the allotted time.",
+  "finished_at": "2026-10-23T13:54:59.119701+00:00",
+  "request_accounting": {},
+  "gpu_seconds": 155.04579504899993
+}

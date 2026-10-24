@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "attempt_id": "d581ae2a23a34a91b7b9860e0f4a33a3",
+  "started_at": "2026-10-24T18:32:35.011207+00:00",
+  "status": "complete",
+  "timings_s": {
+    "launch_to_ready": 170.04387735900036,
+    "client_preparation": 3.804396628000177,
+    "warmup": 0.39174758099943574,
+    "benchmark": 52.805476780999925,
+    "cleanup": 0.6368370149994007,
+    "runner_wall": 228.90212795000025,
+    "orchestration": 1.219792586000949,
+    "rest": 10.000226774000112,
+    "allocation_wall": 238.90692803899947
+  },
+  "phase_status": {
+    "launch_to_ready": "complete",
+    "client_preparation": "complete",
+    "warmup": "complete",
+    "benchmark": "complete",
+    "cleanup": "complete",
+    "rest": "complete"
+  },
+  "startup_observations": [
+    {
+      "phase": "weight_loading",
+      "seconds": 1.362559,
+      "line_number": 22,
+      "source": "\u001b[0;36m(EngineCore pid=22886)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-24 18:33:25\u001b[0m \u001b[90m[base_loader.py:82]\u001b[0m Initializing model took 1.362559 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "weight_loading",
+      "seconds": 3.6,
+      "line_number": 32,
+      "source": "\u001b[0;36m(EngineCore pid=22886)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-24 18:33:28\u001b[0m \u001b[90m[default_loader.py:501]\u001b[0m Loading weights took 3.60 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "weight_loading",
+      "seconds": 6.61266,
+      "line_number": 33,
+      "source": "\u001b[0;36m(EngineCore pid=22886)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-24 18:33:30\u001b[0m \u001b[90m[model_runner.py:424]\u001b[0m Model loading took 22.83 GiB memory and 6.612660 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "compilation",
+      "seconds": 32.5,
+      "line_number": 42,
+      "source": "\u001b[0;36m(EngineCore pid=22886)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-24 18:34:37\u001b[0m \u001b[90m[backends.py:398]\u001b[0m [backbone] Compiling a graph for compile range (1, 22528) takes 32.50 s",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "compilation",
+      "seconds": 48.27,
+      "line_number": 45,
+      "source": "\u001b[0;36m(EngineCore pid=22886)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-24 18:34:43\u001b[0m \u001b[90m[monitor.py:62]\u001b[0m [backbone] torch.compile took 48.27 s in total",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "graph_capture",
+      "seconds": 13.0,
+      "line_number": 62,
+      "source": "\u001b[0;36m(EngineCore pid=22886)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-24 18:35:00\u001b[0m \u001b[90m[model_runner.py:1127]\u001b[0m Graph capturing finished in 13 secs, took 0.11 GiB",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "graph_capture",
+      "seconds": 7.0,
+      "line_number": 92,
+      "source": "\u001b[0;36m(EngineCore pid=22886)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-24 18:35:19\u001b[0m \u001b[90m[model_runner.py:1127]\u001b[0m Graph capturing finished in 7 secs, took 0.07 GiB",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "compilation",
+      "seconds": 109.79,
+      "line_number": 96,
+      "source": "\u001b[0;36m(EngineCore pid=22886)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-24 18:35:20\u001b[0m \u001b[90m[core.py:395]\u001b[0m init engine (profile, create kv cache, warmup model) took 109.79 s (compilation: 48.27 s)",
+      "parser": "explicit-log-duration-v1"
+    }
+  ],
+  "server_log": "/home/ubuntu/llm-optimizer-trt/experiment_results/vllm-phase-b-pruning-gemma4-12b/B-vllm-c128-e2e-tpe_multivariate-s11-r3-pruner-median-B-vllm-c128-measured-attempts/d581ae2a23a34a91b7b9860e0f4a33a3/server.log",
+  "attempt_artifact": "/home/ubuntu/llm-optimizer-trt/experiment_results/vllm-phase-b-pruning-gemma4-12b/B-vllm-c128-e2e-tpe_multivariate-s11-r3-pruner-median-B-vllm-c128-measured-attempts/d581ae2a23a34a91b7b9860e0f4a33a3/execution.json",
+  "framework": "vllm",
+  "model": "/home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+  "environment": {
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "framework_version": "0.32.0",
+    "cuda_version": "13.0",
+    "driver_version": "580.173.02",
+    "model_revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "native_config_verified": true,
+    "quality_verified": true,
+    "expanded_choices": {
+      "async_scheduling": [
+        false,
+        true
+      ],
+      "performance_mode": [
+        "balanced",
+        "interactivity",
+        "throughput"
+      ],
+      "attention_backend": [
+        "auto"
+      ],
+      "kv_cache_dtype": [
+        "auto"
+      ],
+      "enable_prefix_caching": [
+        false,
+        true
+      ],
+      "graph_mode": [
+        "NONE",
+        "PIECEWISE",
+        "FULL_AND_PIECEWISE"
+      ]
+    },
+    "excluded_choices": {},
+    "hf_target_model_id": "google/gemma-4-12B-it",
+    "fixed_server": {},
+    "measurement": "MEASURED",
+    "python": "3.12.3",
+    "optuna": "4.9.0",
+    "gpu_count": 1,
+    "model": "/home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "phase": "B",
+    "target_model": "Qwen/Qwen3.5-4B",
+    "concurrency": 128,
+    "workload_sha256": "2c70a7e6f93d1d8bde8a6d485f9c7faa2d56cad156d1b16f355d95d5a91b6f37",
+    "dataset": {
+      "dataset_name": "random",
+      "dataset_path": null,
+      "num_prompts": 1000
+    },
+    "seed": 2026,
+    "tokenizer": "/home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "tokenizer_revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "framework": null,
+    "python_version": "3.12.3",
+    "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+    "cuda_visible_devices": null,
+    "package_versions": {
+      "llm-optimizer": "0.0.1",
+      "numpy": "2.3.5",
+      "aiohttp": "3.14.5",
+      "transformers": "5.19.0",
+      "optuna": "4.9.0",
+      "vllm": "0.32.0"
+    },
+    "requests_sha256": "15a336dd8cf8894b5ed83af87f06c2a7f8936de91a18ee36319db23a0cc598e5"
+  },
+  "sampled_config": {
+    "max_num_seqs": 56,
+    "max_num_batched_tokens": 22528,
+    "gpu_memory_utilization": 0.85,
+    "enable_chunked_prefill": true,
+    "compilation_config": {
+      "cudagraph_mode": "FULL_AND_PIECEWISE",
+      "cudagraph_capture_sizes": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        56
+      ]
+    },
+    "async_scheduling": true,
+    "performance_mode": "balanced",
+    "attention_backend": "auto",
+    "kv_cache_dtype": "auto",
+    "enable_prefix_caching": true
+  },
+  "workload_preparation_seconds": 7.524963747000584,
+  "workload_preparation_id": "bedac2b1fca646a9a2380232bd8586c0",
+  "trial_number": null,
+  "study_signature": null,
+  "command": "vllm serve /home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7 --host 127.0.0.1 --port 8000 --max-num-seqs=56 --max-num-batched-tokens=22528 --gpu-memory-utilization=0.85 --enable-chunked-prefill '--compilation-config={\"cudagraph_capture_sizes\": [1, 2, 4, 8, 16, 32, 56], \"cudagraph_mode\": \"FULL_AND_PIECEWISE\"}' --performance-mode=balanced --attention-backend=auto --kv-cache-dtype=auto --async-scheduling --enable-prefix-caching",
+  "config": {
+    "framework": "vllm",
+    "client_args": {
+      "dataset_name": "random",
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "random_range_ratio": 1.0,
+      "seed": 2026,
+      "request_rate": null,
+      "num_prompts": 1000,
+      "max_concurrency": 128
+    },
+    "server_args": {
+      "max_num_seqs": 56,
+      "max_num_batched_tokens": 22528,
+      "gpu_memory_utilization": 0.85,
+      "enable_chunked_prefill": true,
+      "compilation_config": "{\"cudagraph_capture_sizes\": [1, 2, 4, 8, 16, 32, 56], \"cudagraph_mode\": \"FULL_AND_PIECEWISE\"}",
+      "performance_mode": "balanced",
+      "attention_backend": "auto",
+      "kv_cache_dtype": "auto",
+      "async_scheduling": true,
+      "enable_prefix_caching": true
+    },
+    "server_cmd_args": [
+      "--max-num-seqs=56",
+      "--max-num-batched-tokens=22528",
+      "--gpu-memory-utilization=0.85",
+      "--enable-chunked-prefill",
+      "'--compilation-config={\"cudagraph_capture_sizes\": [1, 2, 4, 8, 16, 32, 56], \"cudagraph_mode\": \"FULL_AND_PIECEWISE\"}'",
+      "--performance-mode=balanced",
+      "--attention-backend=auto",
+      "--kv-cache-dtype=auto",
+      "--async-scheduling",
+      "--enable-prefix-caching"
+    ],
+    "normalized_config": {
+      "max_batched_tokens": 22528,
+      "max_concurrent_sequences": 56,
+      "kv_cache_memory_fraction": 0.85,
+      "kv_cache_dtype": "auto",
+      "max_concurrency": 128,
+      "request_rate": null,
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "num_prompts": 1000,
+      "input_length": 512,
+      "output_length": 128
+    }
+  },
+  "server_environment": {
+    "CUDA_VISIBLE_DEVICES": "0"
+  },
+  "readiness_reached": true,
+  "request_accounting": {
+    "completed": 1000,
+    "total_requests": 1000,
+    "failed": 0
+  },
+  "metric_benchmark_duration_s": 52.80633908299933,
+  "incomplete_phases": [],
+  "finished_at": "2026-10-24T18:36:33.916633+00:00",
+  "rest_status": "complete",
+  "gpu_seconds": 238.90692803899947
+}

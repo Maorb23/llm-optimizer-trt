@@ -1,0 +1,268 @@
+{
+  "schema_version": 1,
+  "attempt_id": "aa4551916a5743f3883c979b88f4e076",
+  "started_at": "2026-10-23T18:24:54.744173+00:00",
+  "status": "complete",
+  "timings_s": {
+    "launch_to_ready": 175.04590430799726,
+    "client_preparation": 3.78819826399922,
+    "warmup": 8.234938259000046,
+    "benchmark": 45.40407799699824,
+    "cleanup": 0.6831996380024066,
+    "runner_wall": 234.3493149529968,
+    "orchestration": 1.1929964869996184,
+    "rest": 10.00012257400158,
+    "allocation_wall": 244.35408389800068
+  },
+  "phase_status": {
+    "launch_to_ready": "complete",
+    "client_preparation": "complete",
+    "warmup": "complete",
+    "benchmark": "complete",
+    "cleanup": "complete",
+    "rest": "complete"
+  },
+  "startup_observations": [
+    {
+      "phase": "weight_loading",
+      "seconds": 1.286418,
+      "line_number": 24,
+      "source": "\u001b[0;36m(EngineCore pid=52855)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 18:25:39\u001b[0m \u001b[90m[base_loader.py:82]\u001b[0m Initializing model took 1.286418 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "weight_loading",
+      "seconds": 3.68,
+      "line_number": 34,
+      "source": "\u001b[0;36m(EngineCore pid=52855)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 18:25:43\u001b[0m \u001b[90m[default_loader.py:501]\u001b[0m Loading weights took 3.68 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "weight_loading",
+      "seconds": 0.021947,
+      "line_number": 38,
+      "source": "\u001b[0;36m(EngineCore pid=52855)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 18:25:43\u001b[0m \u001b[90m[base_loader.py:82]\u001b[0m Initializing model took 0.021947 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "weight_loading",
+      "seconds": 1.04,
+      "line_number": 47,
+      "source": "\u001b[0;36m(EngineCore pid=52855)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 18:25:44\u001b[0m \u001b[90m[default_loader.py:501]\u001b[0m Loading weights took 1.04 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "weight_loading",
+      "seconds": 8.289459,
+      "line_number": 49,
+      "source": "\u001b[0;36m(EngineCore pid=52855)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 18:25:46\u001b[0m \u001b[90m[model_runner.py:424]\u001b[0m Model loading took 25.5 GiB memory and 8.289459 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "compilation",
+      "seconds": 31.12,
+      "line_number": 58,
+      "source": "\u001b[0;36m(EngineCore pid=52855)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 18:26:51\u001b[0m \u001b[90m[backends.py:398]\u001b[0m [backbone] Compiling a graph for compile range (1, 22016) takes 31.12 s",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "compilation",
+      "seconds": 46.75,
+      "line_number": 61,
+      "source": "\u001b[0;36m(EngineCore pid=52855)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 18:26:57\u001b[0m \u001b[90m[monitor.py:62]\u001b[0m [backbone] torch.compile took 46.75 s in total",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "compilation",
+      "seconds": 5.87,
+      "line_number": 66,
+      "source": "\u001b[0;36m(EngineCore pid=52855)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 18:27:04\u001b[0m \u001b[90m[backends.py:398]\u001b[0m [dspark_head] Compiling a graph for compile range (1, 22016) takes 5.87 s",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "compilation",
+      "seconds": 7.71,
+      "line_number": 69,
+      "source": "\u001b[0;36m(EngineCore pid=52855)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 18:27:05\u001b[0m \u001b[90m[monitor.py:62]\u001b[0m [dspark_head] torch.compile took 7.71 s in total",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "compilation",
+      "seconds": 116.19,
+      "line_number": 95,
+      "source": "\u001b[0;36m(EngineCore pid=52855)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-23 18:27:42\u001b[0m \u001b[90m[core.py:395]\u001b[0m init engine (profile, create kv cache, warmup model) took 116.19 s (compilation: 54.47 s)",
+      "parser": "explicit-log-duration-v1"
+    }
+  ],
+  "server_log": "/home/ubuntu/llm-optimizer-trt/experiment_results/vllm-phase-b-pruning-gemma4-12b-dspark/B-vllm-c128-throughput-tpe_multivariate-s11-r1-pruner-median-B-vllm-c128-measured-attempts/aa4551916a5743f3883c979b88f4e076/server.log",
+  "attempt_artifact": "/home/ubuntu/llm-optimizer-trt/experiment_results/vllm-phase-b-pruning-gemma4-12b-dspark/B-vllm-c128-throughput-tpe_multivariate-s11-r1-pruner-median-B-vllm-c128-measured-attempts/aa4551916a5743f3883c979b88f4e076/execution.json",
+  "framework": "vllm",
+  "model": "/home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+  "environment": {
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "framework_version": "0.32.0",
+    "cuda_version": "13.0",
+    "driver_version": "580.173.02",
+    "model_revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "native_config_verified": true,
+    "quality_verified": true,
+    "expanded_choices": {
+      "async_scheduling": [
+        false,
+        true
+      ],
+      "performance_mode": [
+        "balanced",
+        "interactivity",
+        "throughput"
+      ],
+      "attention_backend": [
+        "auto"
+      ],
+      "kv_cache_dtype": [
+        "auto"
+      ],
+      "enable_prefix_caching": [
+        false,
+        true
+      ],
+      "graph_mode": [
+        "NONE",
+        "PIECEWISE",
+        "FULL_AND_PIECEWISE"
+      ]
+    },
+    "excluded_choices": {},
+    "draft_model_id": "deepseek-ai/dspark_gemma4_12b_block7",
+    "draft_revision": "2fa72e765eec2965fc4d86a8663ce6769eba6218",
+    "speculative_decoding": {
+      "algorithm": "DFLASH",
+      "draft_model_id": "deepseek-ai/dspark_gemma4_12b_block7",
+      "draft_revision": "2fa72e765eec2965fc4d86a8663ce6769eba6218",
+      "num_speculative_tokens": 7
+    },
+    "hf_target_model_id": "google/gemma-4-12B-it",
+    "fixed_server": {
+      "speculative_config": {
+        "method": "dspark",
+        "model": "/home/ubuntu/.cache/huggingface/hub/models--deepseek-ai--dspark_gemma4_12b_block7/snapshots/2fa72e765eec2965fc4d86a8663ce6769eba6218",
+        "num_speculative_tokens": 7
+      }
+    },
+    "measurement": "MEASURED",
+    "python": "3.12.3",
+    "optuna": "4.9.0",
+    "gpu_count": 1,
+    "model": "/home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "phase": "B",
+    "target_model": "google/gemma-4-12B-it",
+    "concurrency": 128,
+    "workload_sha256": "2c70a7e6f93d1d8bde8a6d485f9c7faa2d56cad156d1b16f355d95d5a91b6f37",
+    "dataset": {
+      "dataset_name": "random",
+      "dataset_path": null,
+      "num_prompts": 1000
+    },
+    "seed": 2026,
+    "tokenizer": "/home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "tokenizer_revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "framework": null,
+    "python_version": "3.12.3",
+    "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+    "cuda_visible_devices": null,
+    "package_versions": {
+      "llm-optimizer": "0.0.1",
+      "numpy": "2.3.5",
+      "aiohttp": "3.14.5",
+      "transformers": "5.19.0",
+      "optuna": "4.9.0",
+      "vllm": "0.32.0"
+    },
+    "requests_sha256": "15a336dd8cf8894b5ed83af87f06c2a7f8936de91a18ee36319db23a0cc598e5"
+  },
+  "sampled_config": {
+    "max_num_seqs": 72,
+    "max_num_batched_tokens": 22016,
+    "gpu_memory_utilization": 0.75,
+    "enable_chunked_prefill": true,
+    "compilation_config": {
+      "cudagraph_mode": "NONE"
+    },
+    "async_scheduling": false,
+    "performance_mode": "balanced",
+    "attention_backend": "auto",
+    "kv_cache_dtype": "auto",
+    "enable_prefix_caching": true
+  },
+  "workload_preparation_seconds": 7.387946438000654,
+  "workload_preparation_id": "b819169b34ea4475ac0bf3795c1b24d0",
+  "trial_number": null,
+  "study_signature": null,
+  "command": "vllm serve /home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7 --host 127.0.0.1 --port 8000 '--speculative-config={\"method\": \"dspark\", \"model\": \"/home/ubuntu/.cache/huggingface/hub/models--deepseek-ai--dspark_gemma4_12b_block7/snapshots/2fa72e765eec2965fc4d86a8663ce6769eba6218\", \"num_speculative_tokens\": 7}' --max-num-seqs=72 --max-num-batched-tokens=22016 --gpu-memory-utilization=0.75 --enable-chunked-prefill '--compilation-config={\"cudagraph_mode\": \"NONE\"}' --performance-mode=balanced --attention-backend=auto --kv-cache-dtype=auto --no-async-scheduling --enable-prefix-caching",
+  "config": {
+    "framework": "vllm",
+    "client_args": {
+      "dataset_name": "random",
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "random_range_ratio": 1.0,
+      "seed": 2026,
+      "request_rate": null,
+      "num_prompts": 1000,
+      "max_concurrency": 128
+    },
+    "server_args": {
+      "speculative_config": "{\"method\": \"dspark\", \"model\": \"/home/ubuntu/.cache/huggingface/hub/models--deepseek-ai--dspark_gemma4_12b_block7/snapshots/2fa72e765eec2965fc4d86a8663ce6769eba6218\", \"num_speculative_tokens\": 7}",
+      "max_num_seqs": 72,
+      "max_num_batched_tokens": 22016,
+      "gpu_memory_utilization": 0.75,
+      "enable_chunked_prefill": true,
+      "compilation_config": "{\"cudagraph_mode\": \"NONE\"}",
+      "performance_mode": "balanced",
+      "attention_backend": "auto",
+      "kv_cache_dtype": "auto",
+      "no_async_scheduling": true,
+      "enable_prefix_caching": true
+    },
+    "server_cmd_args": [
+      "'--speculative-config={\"method\": \"dspark\", \"model\": \"/home/ubuntu/.cache/huggingface/hub/models--deepseek-ai--dspark_gemma4_12b_block7/snapshots/2fa72e765eec2965fc4d86a8663ce6769eba6218\", \"num_speculative_tokens\": 7}'",
+      "--max-num-seqs=72",
+      "--max-num-batched-tokens=22016",
+      "--gpu-memory-utilization=0.75",
+      "--enable-chunked-prefill",
+      "'--compilation-config={\"cudagraph_mode\": \"NONE\"}'",
+      "--performance-mode=balanced",
+      "--attention-backend=auto",
+      "--kv-cache-dtype=auto",
+      "--no-async-scheduling",
+      "--enable-prefix-caching"
+    ],
+    "normalized_config": {
+      "max_batched_tokens": 22016,
+      "max_concurrent_sequences": 72,
+      "kv_cache_memory_fraction": 0.75,
+      "kv_cache_dtype": "auto",
+      "max_concurrency": 128,
+      "request_rate": null,
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "num_prompts": 1000,
+      "input_length": 512,
+      "output_length": 128
+    }
+  },
+  "server_environment": {
+    "CUDA_VISIBLE_DEVICES": "0"
+  },
+  "readiness_reached": true,
+  "request_accounting": {
+    "completed": 1000,
+    "total_requests": 1000,
+    "failed": 0
+  },
+  "metric_benchmark_duration_s": 45.404689294999116,
+  "incomplete_phases": [],
+  "finished_at": "2026-10-23T18:28:59.096766+00:00",
+  "rest_status": "complete",
+  "gpu_seconds": 244.35408389800068
+}
