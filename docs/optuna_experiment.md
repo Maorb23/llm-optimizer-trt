@@ -151,6 +151,48 @@ for rebuilding trial reports.
 The existing `llm-optimizer benchmark --search-strategy optuna` interface retains
 its own controls and behavior.
 
+### Draft models
+
+Python experiments share model setup with the v2 notebook through
+`Lab.configure_hf_models()`. With a real GPU lab and a Phase B preflight configured:
+
+```python
+# vLLM: the notebook's legacy toggle selects native DSpark.
+lab.configure_hf_models(
+    "google/gemma-4-12B-it", framework="vllm", enable_dflash=True,
+    draft_model_id="deepseek-ai/dspark_gemma4_12b_block7",
+    num_speculative_tokens=7,
+)
+
+# SGLang: the notebook's DSPARK block-7 example, with an 8-token verify window.
+lab.configure_hf_models(
+    "Qwen/Qwen3-4B", framework="sglang", speculative_algorithm="DSPARK",
+    draft_model_id="deepseek-ai/dspark_qwen3_4b_block7", block_size=7,
+)
+
+# TensorRT-LLM: requires the installed 1.3.0rc26 runtime and a compatible draft.
+lab.configure_hf_models(
+    "meta-llama/Llama-3.1-8B-Instruct", framework="trtllm",
+    speculative_algorithm="Eagle3",
+    draft_model_id="yuhuili/EAGLE3-LLaMA3.1-Instruct-8B", max_draft_len=3,
+)
+```
+
+Run these examples separately for the selected backend. SGLang DFlash remains
+available through `enable_dflash=True` (or `speculative_algorithm="DFLASH"`).
+TensorRT also accepts explicit `DFlash` and `DSpark` algorithms. Setup pins model
+revisions, writes `hf-<framework>-models.json`, and retains existing verification
+declarations; GPU loading, quality, and performance still require validation.
+Call again without draft options to restore target-only Phase B settings.
+
+Both search and validation merge `real_preflight[phase][framework].fixed_server`
+over the backend-wide `fixed_server[framework]` defaults. The CLI accepts the same
+resolved settings in JSON, alongside pinned local `model_snapshots`, target/draft
+revisions, and `speculative_decoding` metadata in `real_preflight`. It does not
+automatically download drafts or invoke the Python model-setup helper. Keep the
+resolved draft configuration in a new run's JSON before initializing that run;
+existing run configurations remain frozen.
+
 ## Historical GPU stability checks
 
 Open [optuna_trial_stability.ipynb](optuna_trial_stability.ipynb) to analyze saved

@@ -25,6 +25,10 @@ llm-optimizer = "llm_optimizer.cli:cli"
 
 
 [project.optional-dependencies]
+dataset = [
+    "datasets>=3",
+    "transformers>=4.45",
+]
 dev = [
     "pytest",
     "ruff",

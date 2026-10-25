@@ -330,6 +330,16 @@ class Controller:
             if not claimed:
                 continue
             try:
+                if request.get("workload_manifest") and not request.get("dry_run"):
+                    import tempfile
+                    from pathlib import Path
+                    from llm_optimizer.hf_workload import validate_manifest
+                    manifest = validate_manifest(request["workload_manifest"])
+                    store = self.s3_factory(request["bucket"], request["prefix"])
+                    with tempfile.TemporaryDirectory() as staging:
+                        path = Path(staging) / (manifest["sha256"] + ".json")
+                        path.write_text(json.dumps(manifest), encoding="utf-8")
+                        store.upload(path, run_id, "workload")
                 job_id = self.nebius.submit(
                     {"run_id": run_id, "framework": framework, "request": request}
                 )

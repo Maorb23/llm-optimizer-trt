@@ -572,3 +572,42 @@ def test_scalar_pruning_request_and_minimum_propagation(tmp_path):
 def test_remote_rejects_unsupported_pruning(changes):
     with pytest.raises(ValueError, match="pruning|Pruning"):
         OptimizationRequest.parse(request(search_strategy="optuna", **changes))
+
+
+def test_checkpoint_uploads_failed_attempt_evidence_without_metric_rows(tmp_path):
+    import json
+    import zipfile
+
+    attempt = tmp_path / "results-attempts" / "attempt1"
+    attempt.mkdir(parents=True)
+    evidence = {
+        "status": "failed",
+        "request_errors": [
+            {
+                "request_index": 99,
+                "category": "interrupted_stream",
+                "error": "missing finish",
+            }
+        ],
+    }
+    (attempt / "execution.json").write_text(
+        json.dumps(
+            {
+                **evidence,
+                "command": "secret command",
+                "server_environment": {"API_KEY": "secret"},
+                "startup_observations": [{"source": "raw log content"}],
+            }
+        )
+    )
+    (attempt / "server.log").write_text("unnecessary raw log")
+
+    class Store:
+        def upload(self, path, run_id, framework):
+            return path.name
+
+    artifacts = _checkpoint(Store(), tmp_path, "run", "vllm")
+    assert artifacts["attempts.zip"] == "attempts.zip"
+    with zipfile.ZipFile(tmp_path / "attempts.zip") as archive:
+        assert archive.namelist() == ["results-attempts/attempt1/execution.json"]
+        assert json.loads(archive.read(archive.namelist()[0])) == evidence

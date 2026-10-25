@@ -1789,7 +1789,10 @@ class Lab:
             environment=environment,
             gpu_count=self.GPU_COUNT,
             rest_seconds=self.REST_SECONDS,
-            fixed_server=self.FIXED_SERVER.get(framework),
+            fixed_server={
+                **self.FIXED_SERVER.get(framework, {}),
+                **environment.get("fixed_server", {}),
+            },
             phase=phase,
             num_prompts=num_prompts,
             workload_seed=workload_seed,

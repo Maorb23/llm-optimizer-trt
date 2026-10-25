@@ -87,7 +87,11 @@ def optimizer_command(payload: dict[str, Any], output: Path) -> list[str]:
             "huggingface_model_revision" if framework == "max" else "revision"
         )
         args += ["--server-args", f"{revision_arg}={request.revision}"]
-    for value in request.client_args:
+    client_args = list(request.client_args)
+    if request.workload_manifest is not None:
+        path = output.parent / "custom-workload.json"
+        client_args.append("workload_path=" + shlex.quote(str(path.resolve())))
+    for value in client_args:
         args += ["--client-args", value]
     if request.search_strategy == "optuna":
         mapping = {
@@ -167,6 +171,36 @@ def _checkpoint(
             if records.exists():
                 archive.write(records, records.name)
         artifacts["checkpoint.zip"] = store.upload(bundle, run_id, framework)
+    # Keep attempt evidence even when objective rejection writes no metric row.
+    attempts = folder / "results-attempts"
+    if attempts.exists():
+        evidence = folder / "attempts.zip"
+        with zipfile.ZipFile(
+            evidence, "w", compression=zipfile.ZIP_DEFLATED
+        ) as archive:
+            for path in attempts.rglob("execution.json"):
+                record = json.loads(path.read_text(encoding="utf-8"))
+                # Sidecars also contain commands, environment and raw log sources.
+                # Export only execution accounting and the bounded diagnostics.
+                public = {
+                    key: record[key]
+                    for key in (
+                        "schema_version",
+                        "attempt_id",
+                        "status",
+                        "framework",
+                        "model",
+                        "trial_number",
+                        "timings_s",
+                        "phase_status",
+                        "incomplete_phases",
+                        "request_accounting",
+                        "request_errors",
+                    )
+                    if key in record
+                }
+                archive.writestr(str(path.relative_to(folder)), json.dumps(public))
+        artifacts["attempts.zip"] = store.upload(evidence, run_id, framework)
     for name in (
         "results.jsonl",
         "results.json",
@@ -199,6 +233,15 @@ def run_worker(
     )
     folder.mkdir(parents=True, exist_ok=True)
     output = folder / "results.json"
+    if request.workload_manifest is not None:
+        from llm_optimizer.hf_workload import validate_manifest
+        expected = validate_manifest(request.workload_manifest)
+        path = folder / "custom-workload.json"
+        if not store.download(path, run_id, "workload", expected["sha256"] + ".json"):
+            raise ValueError("Custom workload missing from storage")
+        actual = validate_manifest(json.loads(path.read_text(encoding="utf-8")))
+        if actual != expected:
+            raise ValueError("Staged custom workload differs from approved workload")
     command = optimizer_command(payload, output)
     worker_env = os.environ.copy()
     worker_env["LLM_OPTIMIZER_RUN_ID"] = run_id
@@ -223,6 +266,7 @@ def run_worker(
         "image": request.images[framework],
         "workload": request.client_args,
         "semantic_context": request.semantic_context,
+        "workload_sha256": (request.workload_manifest or {}).get("sha256"),
         "objectives": optuna.get(
             "objectives", optuna.get("objective", "output_throughput")
         )

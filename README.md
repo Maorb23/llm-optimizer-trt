@@ -211,3 +211,5 @@ with [vLLM](https://github.com/vllm-project/vllm),
 [SGLang](https://github.com/sgl-project/sglang),
 [TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM), and
 [Optuna](https://github.com/optuna/optuna).
+
+Custom HF ShareGPT workloads: see [dataset preparation and worker rollout](docs/hf-datasets.md) and `optimization_hf_dataset.ipynb`. Install optional CPU preparation dependencies with `pip install ".[dataset]"`.

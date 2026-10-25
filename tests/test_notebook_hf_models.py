@@ -93,7 +93,7 @@ def setup(tmp_path, monkeypatch):
 
 def test_setup_disabled_and_simulator_paths_do_not_download(setup):
     namespace, calls, _ = setup
-    assert namespace["HF_MODEL_SETUP_ENABLED"] is False
+    assert namespace["RUN_REAL_GPU"] is False
     assert namespace["MODEL_SNAPSHOTS"]["B"] == "original-target"
     with pytest.raises(ValueError, match="RUN_REAL_GPU"):
         namespace["configure_hf_sglang_models"]("Qwen/Qwen3.5-4B")
@@ -298,10 +298,11 @@ def test_vllm_is_auto_selected_and_uses_native_speculative_json(
         "vllm.entrypoints.openai.api_server",
     ]
     assert configured["fixed_server"]["speculative_config"] == {
-        "method": "dflash",
+        "method": "dspark",
         "model": result["draft_path"],
         "num_speculative_tokens": 15,
     }
+    assert configured["speculative_decoding"]["algorithm"] == "DSPARK"
     assert "speculative_algorithm" not in configured["fixed_server"]
     assert "speculative_draft_model_path" not in configured["fixed_server"]
     for cell in notebook["cells"]:
@@ -534,3 +535,149 @@ def test_trt_wrong_runtime_fails_before_download(trt_setup, monkeypatch):
             draft_model_id="draft",
         )
     assert calls["downloads"] == []
+
+
+@pytest.mark.parametrize("matching_block", [True, False])
+def test_sglang_dspark_matches_v2_notebook(setup, monkeypatch, matching_block):
+    from llm_optimizer.experiment.hf_models import configure_hf_models
+
+    namespace, calls, _ = setup
+    namespace["RUN_REAL_GPU"] = True
+    before = copy.deepcopy(namespace["REAL_PREFLIGHT"])
+    algorithms = []
+    monkeypatch.setitem(
+        sys.modules,
+        "sglang.srt.speculative.spec_info",
+        SimpleNamespace(
+            SpeculativeAlgorithm=SimpleNamespace(from_string=algorithms.append)
+        ),
+    )
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *a, **k: SimpleNamespace(
+            returncode=0,
+            stderr="",
+            stdout="DSPARK --speculative-algorithm --speculative-draft-model-path "
+            "--speculative-num-draft-tokens",
+        ),
+    )
+    original = huggingface_hub.snapshot_download
+
+    def download(**kwargs):
+        path = original(**kwargs)
+        (Path(path) / "config.json").write_text(
+            json.dumps({"block_size": 7 if matching_block else 16})
+        )
+        return path
+
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", download)
+    monkeypatch.setattr(
+        huggingface_hub,
+        "HfApi",
+        lambda: SimpleNamespace(
+            model_info=lambda model_id, **k: SimpleNamespace(
+                sha=DRAFT_SHA if "dspark" in model_id else TARGET_SHA
+            )
+        ),
+    )
+    kwargs = {
+        "framework": "sglang",
+        "speculative_algorithm": "DSPARK",
+        "draft_model_id": "deepseek-ai/dspark_qwen3_4b_block7",
+        "draft_revision": DRAFT_SHA,
+        "block_size": 7,
+    }
+    if not matching_block:
+        with pytest.raises(ValueError, match="block_size"):
+            configure_hf_models(namespace, "Qwen/Qwen3-4B", **kwargs)
+        assert namespace["REAL_PREFLIGHT"] == before
+        return
+    result = configure_hf_models(namespace, "Qwen/Qwen3-4B", **kwargs)
+    profile = namespace["REAL_PREFLIGHT"][("B", "sglang")]
+    assert algorithms == ["DSPARK"]
+    assert profile["fixed_server"] == {
+        "tp_size": 1,
+        "speculative_algorithm": "DSPARK",
+        "speculative_draft_model_path": result["draft_path"],
+        "speculative_num_steps": 1,
+        "speculative_eagle_topk": 1,
+        "speculative_num_draft_tokens": 8,
+    }
+    assert profile["speculative_decoding"] == {
+        "algorithm": "DSPARK",
+        "block_size": 7,
+        "num_speculative_tokens": 7,
+        "verify_window": 8,
+        "draft_model_id": kwargs["draft_model_id"],
+        "draft_revision": DRAFT_SHA,
+    }
+    assert profile["expanded_choices"] == before[("B", "sglang")]["expanded_choices"]
+    assert [call["revision"] for call in calls["downloads"]] == [TARGET_SHA, DRAFT_SHA]
+
+    # Execute only the notebook's isolated DSPARK setup with mocked runtime/hub.
+    # Compare its emitted settings and metadata with the Python helper.
+    reference = {
+        **namespace,
+        "REAL_PREFLIGHT": copy.deepcopy(before),
+        "HF_BASE_PROFILES": {},
+        "MODEL_SNAPSHOTS": {},
+        "PHASE_MODELS": {},
+    }
+    notebook = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "docs/optuna_inference_optimization_lab_v2.ipynb"
+        ).read_text()
+    )
+    cell = next(
+        c
+        for c in notebook["cells"]
+        if "### FOR SGLANG Dspark:" in "".join(c.get("source", []))
+    )
+    exec(compile("".join(cell["source"]), "v2-dspark-setup", "exec"), reference)
+    expected = reference["REAL_PREFLIGHT"][("B", "sglang")]
+    assert profile["fixed_server"] == expected["fixed_server"]
+    assert profile["speculative_decoding"] == expected["speculative_decoding"]
+    assert result == reference["hf_models"]
+
+    configure_hf_models(namespace, "Qwen/Qwen3-4B", framework="sglang")
+    assert namespace["REAL_PREFLIGHT"][("B", "sglang")]["fixed_server"] == {
+        "tp_size": 1
+    }
+    assert "speculative_decoding" not in namespace["REAL_PREFLIGHT"][("B", "sglang")]
+
+
+@pytest.mark.parametrize("framework", ["vllm", "sglang", "trtllm"])
+@pytest.mark.parametrize("run_label", ["search", "validation"])
+def test_python_adapter_uses_phase_draft_settings(framework, run_label):
+    from llm_optimizer.experiment.lab import Lab
+
+    fixed = (
+        {"speculative_algorithm": "DSPARK", "speculative_draft_model_path": "/draft"}
+        if framework == "sglang"
+        else {"speculative_config": {"model": "/draft"}}
+    )
+    profile = {
+        "gpu_type": "mock-gpu",
+        "quality_verified": True,
+        "expanded_choices": {},
+        "fixed_server": fixed,
+        "draft_revision": DRAFT_SHA,
+    }
+    lab = Lab.__new__(Lab)
+    lab.__dict__.update(
+        RUN_REAL_GPU=True,
+        REAL_FRAMEWORKS=(framework,),
+        REAL_PREFLIGHT={("B", framework): profile},
+        MODEL_SNAPSHOTS={"B": "/target"},
+        GPU_COUNT=1,
+        REST_SECONDS=0,
+        FIXED_SERVER={framework: {"port": 9000, **dict.fromkeys(fixed, "stale")}},
+        expanded_choices=lambda *a: None,
+        RepositoryBenchmark=lambda *a, **k: SimpleNamespace(**k),
+    )
+    benchmark = lab.benchmark_for("B", framework, 1, run_label)
+    assert benchmark.fixed_server == {"port": 9000, **fixed}
+    assert benchmark.environment["draft_revision"] == DRAFT_SHA
+    assert profile["fixed_server"] == fixed

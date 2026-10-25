@@ -34,6 +34,7 @@ class OptimizationRequest:
     spot_pricing_policy_id: str | None = None
     follows_spot_price: bool | None = None
     semantic_context: dict[str, Any] | None = None
+    workload_manifest: dict[str, Any] | None = None
 
     @classmethod
     def parse(cls, data: dict[str, Any]) -> OptimizationRequest:
@@ -243,10 +244,23 @@ class OptimizationRequest:
                 raise ValueError(
                     "Merged Optuna settings must omit objective when objectives is set"
                 )
+        if any(arg.partition('=')[0].startswith('hf_dataset') for arg in request.client_args):
+            raise ValueError('Remote HF datasets must be prepared once as workload_manifest before submission')
+        if request.workload_manifest is not None:
+            from llm_optimizer.hf_workload import validate_manifest
+            validate_manifest(request.workload_manifest)
+            if any(arg.partition('=')[0] in {'dataset_path', 'workload_path'} for arg in request.client_args):
+                raise ValueError('Custom workload paths are managed by the worker')
+            if any(config.get('client_args') for config in [request.optuna, *request.optuna_by_framework.values()]):
+                raise ValueError('Custom workloads cannot be overridden by Optuna')
         return request
 
     def optuna_for(self, framework: str) -> dict[str, Any]:
         return {**self.optuna, **self.optuna_by_framework.get(framework, {})}
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        # Preserve the payload accepted by existing images for default workloads.
+        if self.workload_manifest is None:
+            data.pop("workload_manifest")
+        return data

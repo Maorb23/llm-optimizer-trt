@@ -215,3 +215,21 @@ def test_pruning_interrupts_slow_request_submission(monkeypatch):
         assert not [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
 
     asyncio.run(exercise())
+
+
+def test_missing_output_is_incomplete_even_if_returned_outputs_succeeded():
+    metrics, _ = calculate_metrics(
+        [DatasetRow("a", 1, 1), DatasetRow("b", 1, 1)],
+        [
+            RequestFuncOutput(
+                success=True, generated_text="a", output_len=1, ttft=0.01, latency=0.02
+            )
+        ],
+        1.0,
+        FakeTokenizer(),
+        "vllm",
+    )
+    assert metrics.total_requests == 2
+    assert metrics.failed == 1
+    assert metrics.failure_categories == {"missing_response": 1}
+    assert not metrics.benchmark_valid

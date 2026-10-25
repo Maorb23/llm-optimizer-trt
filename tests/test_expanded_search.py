@@ -82,10 +82,11 @@ def test_expanded_domains_and_native_worker_serialization(
         assert source["cuda_graph_backend_decode"] == [
             "disabled",
             "full",
-            "tc_piecewise",
         ]
-        assert [True, "shortest-prefill-first"] not in source[
-            "disable_radix_cache*schedule_policy"
+        assert source["cuda_graph_backend_prefill"] == ["disabled", "breakable"]
+        assert source["attention_backend"] == ["triton", "fa3", "flashinfer"]
+        assert source["disable_radix_cache*schedule_policy"] == [
+            [False, "fcfs"], [False, "lpm"], [True, "fcfs"], [True, "lpm"]
         ]
     data = request(framework, arguments, files)
     assert OptimizationRequest.parse(data).frameworks == [framework]

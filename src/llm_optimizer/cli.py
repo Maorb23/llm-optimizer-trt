@@ -374,6 +374,8 @@ def run_single_configuration(
             for key in ("completed", "total_requests", "failed")
             if key in benchmark_result
         }
+        telemetry.data["request_errors"] = benchmark_result.get("request_errors", [])
+        telemetry.save()
         feasible = satisfies_constraints(benchmark_result, parsed_constraints or [])
         input_len, output_len = extract_token_lengths(client_params)
         result: dict[str, t.Any] = {

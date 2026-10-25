@@ -47,10 +47,10 @@ EXPANDED_CHOICES = {
     "sglang": {
         "attention_backend": ["triton", "fa3", "flashinfer"],
         "disable_radix_cache": [False, True],
-        "schedule_policy": ["fcfs", "lpm", "shortest-prefill-first"],
+        "schedule_policy": ["fcfs", "lpm"],
         "enable_mixed_chunk": [False, True],
         "disable_overlap_schedule": [False, True],
-        "cuda_graph_backend_decode": ["disabled", "full", "tc_piecewise"],
+        "cuda_graph_backend_decode": ["disabled", "full"],
         "cuda_graph_backend_prefill": ["disabled", "breakable"],
     },
     "trtllm": {

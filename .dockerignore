@@ -6,3 +6,4 @@
 !src/**
 !docker/
 !docker/*.Dockerfile
+!docker/runtime_constraints.py

@@ -58,7 +58,15 @@ def objective_direction(metric: str) -> str:
 def _extract_single_objective(metrics: dict[str, t.Any], metric: str) -> float:
     """Extract a finite numeric objective value, rejecting bools and missing data."""
     objective_direction(metric)  # also validates the name
-    if metrics.get("benchmark_valid") is False or metrics.get("failure_rate", 0) != 0:
+    if (
+        metrics.get("benchmark_valid") is False
+        or metrics.get("failure_rate", 0) != 0
+        or metrics.get("failed", 0) != 0
+        or (
+            "total_requests" in metrics
+            and metrics.get("completed") != metrics["total_requests"]
+        )
+    ):
         raise ValueError("Benchmark is failed or incomplete; objective is invalid")
     value = metrics.get(metric)
     if isinstance(value, bool) or not isinstance(value, (int, float)):
@@ -144,6 +152,15 @@ def summarize_study(study: t.Any, objectives: list[str]) -> dict[str, t.Any]:
         "directions": [objective_direction(name) for name in objectives],
         "completed_trials": len(trials),
         "trial_states": {str(trial.number): trial.state.name for trial in study.trials},
+        "failed_trials": [
+            {"number": trial.number,
+             "reason": trial.user_attrs.get("failure_reason", "Trial failed"),
+             "request_accounting": trial.user_attrs.get("execution", {}).get(
+                 "request_accounting", trial.user_attrs.get("request_accounting", {})),
+             "request_errors": trial.user_attrs.get("execution", {}).get(
+                 "request_errors", [])}
+            for trial in study.trials if trial.state == optuna.trial.TrialState.FAIL
+        ],
         "trial_state_counts": {
             state.name: sum(trial.state == state for trial in study.trials)
             for state in optuna.trial.TrialState

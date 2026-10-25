@@ -32,14 +32,14 @@ def lab(tmp_path):
 
 @pytest.mark.parametrize("concurrency", [1, 128])
 @pytest.mark.parametrize("disabled", [False, True])
-@pytest.mark.parametrize("policy", ["fcfs", "lpm", "shortest-prefill-first"])
-def test_separate_parameters_preserve_all_six_combinations(
+@pytest.mark.parametrize("policy", ["fcfs", "lpm"])
+def test_separate_parameters_preserve_all_four_combinations(
     lab, concurrency, disabled, policy
 ):
     menu = lab.sampling_menu("sglang", concurrency, "expanded")
     assert CACHE_POLICY_PARAMETER not in menu
     assert menu["disable_radix_cache"] == [False, True]
-    assert menu["schedule_policy"] == ["fcfs", "lpm", "shortest-prefill-first"]
+    assert menu["schedule_policy"] == ["fcfs", "lpm"]
     params = {key: values[0] for key, values in menu.items()}
     params.update(disable_radix_cache=disabled, schedule_policy=policy)
     trial = optuna.trial.FixedTrial(params)
@@ -88,7 +88,7 @@ def test_real_sampler_uses_original_separate_parameters(lab, sampler_name):
     assert all(
         tuple(t.distributions["disable_radix_cache"].choices) == (False, True)
         and tuple(t.distributions["schedule_policy"].choices)
-        == ("fcfs", "lpm", "shortest-prefill-first")
+        == ("fcfs", "lpm")
         for t in study.trials
     )
     assert all(
@@ -101,7 +101,6 @@ def test_breakable_reaches_native_sglang_command(lab):
     assert lab.EXPANDED_CHOICES["sglang"]["cuda_graph_backend_decode"] == [
         "disabled",
         "full",
-        "tc_piecewise",
     ]
     assert lab.EXPANDED_CHOICES["sglang"]["cuda_graph_backend_prefill"] == [
         "disabled",
@@ -280,7 +279,11 @@ def test_notebook_search_representation_and_breakable(notebook_lab, notebook):
         )
     menu = namespace["sampling_menu"]("sglang", 128, "expanded")
     assert menu["cuda_graph_backend_prefill"] == ["disabled", "breakable"]
-    assert menu["cuda_graph_backend_decode"] == ["disabled", "full", "tc_piecewise"]
+    assert menu["cuda_graph_backend_decode"] == (
+        ["disabled", "full"]
+        if notebook == "docs/optuna_inference_optimization_lab.ipynb"
+        else ["disabled", "full", "tc_piecewise"]
+    )
     separate = notebook.endswith("_prune.ipynb")
     if separate:
         assert CACHE_POLICY_PARAMETER not in menu
@@ -290,8 +293,12 @@ def test_notebook_search_representation_and_breakable(notebook_lab, notebook):
             "".join(cell["source"]) for cell in cells
         )
     else:
-        assert menu[CACHE_POLICY_PARAMETER] == list(CACHE_POLICIES)
-    for policy in CACHE_POLICIES:
+        expected = list(CACHE_POLICIES)
+        if notebook == "docs/optuna_inference_optimization_lab.ipynb":
+            expected = [p for p in expected if not p.endswith("shortest-prefill-first")]
+        assert menu[CACHE_POLICY_PARAMETER] == expected
+    policies = CACHE_POLICIES if separate else menu[CACHE_POLICY_PARAMETER]
+    for policy in policies:
         params = {key: values[0] for key, values in menu.items()}
         if separate:
             params.update(resolve_cache_policy(policy))

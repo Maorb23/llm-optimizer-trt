@@ -97,6 +97,8 @@ class RequestFuncOutput:
     error: str = ""
     error_category: str = ""
     output_len: int = 0
+    usage: dict[str, Any] = field(default_factory=dict)
+    output_len_is_estimate: bool = False
 
     @staticmethod
     def init_new(request_func_input: RequestFuncInput):
@@ -147,6 +149,36 @@ async def _response_error(response: Any) -> str:
     except Exception:
         body = ""
     return f"{error}: {body}" if body else error
+
+
+def request_errors(outputs, indices=None):
+    """Bounded diagnostics without request/response bodies or tracebacks."""
+    indices = range(len(outputs)) if indices is None else indices
+    errors = []
+    for index, output in zip(indices, outputs):
+        if output.success:
+            continue
+        reason = output.error
+        # Other backend handlers can contain arbitrary response bodies/tracebacks.
+        if reason == "Successful response contained no streamed token.":
+            pass
+        elif output.error_category not in {
+            "empty_response",
+            "malformed_event",
+            "interrupted_stream",
+        }:
+            category = output.error_category or classify_error(reason)
+            reason = f"Request failed ({category}); inspect server logs"
+        errors.append(
+            {
+                "request_index": index,
+                "category": output.error_category or classify_error(output.error),
+                "error": reason[:2000],
+            }
+        )
+        if len(errors) == 20:
+            break
+    return errors
 
 
 def remove_prefix(text: str, prefix: str) -> str:
@@ -263,57 +295,137 @@ async def async_request_openai_completions(
 
         output = RequestFuncOutput.init_new(request_func_input)
 
-        generated_text = ""
-        output_len = request_func_input.output_len
-        ttft = 0.0
         st = time.perf_counter()
         most_recent_timestamp = st
+        terminated = False
+        finished = False
+
+        class CompletionEventError(ValueError):
+            """Schema error with a safe message containing no response content."""
+
+        def consume(data):
+            nonlocal most_recent_timestamp, finished
+            if not isinstance(data, dict):
+                raise CompletionEventError("Expected a completion object")
+            if data.get("error") is not None:
+                output.error_category = classify_error(json.dumps(data["error"]), 500)
+                raise CompletionEventError(
+                    "Server returned an error event; inspect server logs"
+                )
+            usage = data.get("usage")
+            if usage is not None:
+                if not isinstance(usage, dict):
+                    raise CompletionEventError("Expected a usage object")
+                # Keep only numeric token counts, never arbitrary server content.
+                for key in ("prompt_tokens", "completion_tokens", "total_tokens"):
+                    value = usage.get(key)
+                    if value is not None:
+                        if (
+                            isinstance(value, bool)
+                            or not isinstance(value, int)
+                            or value < 0
+                        ):
+                            raise CompletionEventError("Invalid usage token count")
+                        output.usage[key] = value
+                output.output_len = output.usage.get(
+                    "completion_tokens", output.output_len
+                )
+            choices = data.get("choices")
+            if not isinstance(choices, list):
+                raise CompletionEventError("Expected a choices list")
+            if not choices:
+                return
+            choice = choices[0]
+            if not isinstance(choice, dict):
+                raise CompletionEventError("Expected a choice object")
+            if "text" not in choice and choice.get("finish_reason") is None:
+                raise CompletionEventError("Choice has neither text nor finish reason")
+            text = choice.get("text", "")
+            if not isinstance(text, str):
+                raise CompletionEventError("Expected completion text to be a string")
+            if text and finished:
+                raise CompletionEventError("Received text after a finish event")
+            if choice.get("finish_reason") is not None and not isinstance(
+                choice["finish_reason"], str
+            ):
+                raise CompletionEventError("Expected a string finish reason")
+            if text:
+                timestamp = time.perf_counter()
+                if not output.generated_text:
+                    output.ttft = timestamp - st
+                else:
+                    output.itl.append(timestamp - most_recent_timestamp)
+                most_recent_timestamp = timestamp
+                output.generated_text += text
+            if choice.get("finish_reason") is not None:
+                finished = True
+
         try:
             async with session.post(
                 url=api_url, json=payload, headers=headers
             ) as response:
-                if response.status == 200:
-                    async for chunk_bytes in response.content:
-                        chunk_bytes = chunk_bytes.strip()
-                        if not chunk_bytes:
-                            continue
-
-                        chunk = remove_prefix(chunk_bytes.decode("utf-8"), "data: ")
-                        latency = time.perf_counter() - st
-                        if chunk == "[DONE]":
-                            pass
-                        else:
-                            data = json.loads(chunk)
-
-                            # NOTE: Some completion API might have a last
-                            # usage summary response without a token so we
-                            # want to check a token was generated
-                            if data["choices"][0]["text"]:
-                                timestamp = time.perf_counter()
-                                # First token
-                                if ttft == 0.0:
-                                    ttft = time.perf_counter() - st
-                                    output.ttft = ttft
-
-                                # Decoding phase
-                                else:
-                                    output.itl.append(timestamp - most_recent_timestamp)
-
-                                most_recent_timestamp = timestamp
-                                generated_text += data["choices"][0]["text"]
-                                output_len = (data.get("usage") or {}).get(
-                                    "completion_tokens", output_len
-                                )
-
-                    output.generated_text = generated_text
-                    _mark_success_or_empty_failure(output)
-                    output.latency = latency
-                    output.output_len = output_len
+                if response.status != 200:
+                    # Do not persist response bodies, which may echo prompts or secrets.
+                    category = classify_error(
+                        await _response_error(response), response.status
+                    )
+                    _mark_failure(
+                        output,
+                        f"HTTP {response.status}; inspect server logs",
+                        response.status,
+                    )
+                    output.error_category = category
                 else:
-                    _mark_failure(output, await _response_error(response), response.status)
-        except Exception:
-            exc_info = sys.exc_info()
-            _mark_failure(output, "".join(traceback.format_exception(*exc_info)))
+                    if disable_stream:
+                        consume(await response.json())
+                        terminated = True
+                    else:
+                        async for raw in response.content:
+                            line = raw.decode("utf-8").strip()
+                            if (
+                                not line
+                                or line.startswith(":")
+                                or line.startswith(("event:", "id:", "retry:"))
+                            ):
+                                continue
+                            if not line.startswith("data:"):
+                                raise ValueError("Expected an SSE data field")
+                            chunk = line[5:].strip()
+                            if chunk == "[DONE]":
+                                terminated = True
+                                break
+                            consume(json.loads(chunk))
+                    if not (terminated or finished):
+                        output.error_category = "interrupted_stream"
+                        output.error = "Stream ended without a finish event or [DONE]"
+                    elif not output.generated_text:
+                        output.error_category = "empty_response"
+                        output.error = (
+                            "Successful response contained no streamed token."
+                        )
+                    else:
+                        output.success = True
+                        if "completion_tokens" not in output.usage:
+                            output.output_len = request_func_input.output_len
+                            output.output_len_is_estimate = True
+        except (ValueError, UnicodeError) as exc:
+            output.error_category = output.error_category or "malformed_event"
+            # Exception messages from JSON/decoding can contain response content.
+            reason = (
+                str(exc)
+                if isinstance(exc, CompletionEventError)
+                else "Invalid JSON or UTF-8 in completion event"
+            )
+            output.error = f"{reason}; inspect server logs"
+        except Exception as exc:
+            output.error_category = classify_error(type(exc).__name__)
+            if output.error_category == "client_error":
+                output.error_category = "interrupted_stream"
+            output.error = (
+                f"{type(exc).__name__}: request interrupted; inspect server logs"
+            )
+        finally:
+            output.latency = time.perf_counter() - st
 
     if pbar:
         pbar.update(1)
@@ -567,6 +679,9 @@ def get_tokenizer(
 def get_dataset(
     args_dict: dict[str, t.Any], tokenizer: PreTrainedTokenizerBase
 ) -> list[dict]:
+    if args_dict.get("hf_dataset") or args_dict.get("workload_path"):
+        manifest, _ = prepare_workload_manifest(args_dict)
+        return [DatasetRow(**row) for row in manifest["requests"]]
     tokenize_prompt = args_dict.get("tokenize_prompt", False)
     dataset_name = args_dict.get("dataset_name", "sharegpt")
 
@@ -627,6 +742,25 @@ def get_dataset(
 
 def prepare_workload_manifest(args_dict: dict[str, t.Any]) -> tuple[dict[str, t.Any], dict[str, t.Any]]:
     """Load/tokenize the workload once so subsequent trials reuse exact requests."""
+    if args_dict.get("hf_dataset") and args_dict.get("workload_path"):
+        raise ValueError("Choose hf_dataset or an already frozen workload_path")
+    if args_dict.get("hf_dataset"):
+        from llm_optimizer.hf_workload import prepare_hf_workload
+        manifest = prepare_hf_workload(
+            {"repo_id": args_dict['hf_dataset'],
+             "revision": args_dict.get('hf_dataset_revision'),
+             "config": args_dict.get('hf_dataset_config'),
+             "split": args_dict.get('hf_dataset_split', 'train')},
+            args_dict.get('tokenizer') or args_dict['model'],
+            args_dict.get('tokenizer_revision') or args_dict.get('model_revision'),
+            args_dict.get('random_input_len', 1024), args_dict.get('random_output_len', 1024),
+            args_dict.get('num_prompts', 1000), args_dict.get('seed', 1))
+        return manifest, workload_metadata(manifest, args_dict, args_dict['model'], manifest['tokenizer'])
+    if args_dict.get("workload_path"):
+        from llm_optimizer.hf_workload import validate_manifest
+        with open(args_dict["workload_path"], encoding="utf-8") as source:
+            manifest = validate_manifest(json.load(source))
+        return manifest, workload_metadata(manifest, args_dict, args_dict["model"], manifest["tokenizer"])
     tokenizer_id = args_dict.get("tokenizer") or args_dict["model"]
     tokenizer = get_tokenizer(tokenizer_id)
     input_requests = get_dataset(args_dict, tokenizer)
@@ -751,7 +885,9 @@ def workload_metadata(
         "model": model,
         "model_revision": args_dict.get("model_revision"),
         "tokenizer": tokenizer_id,
-        "tokenizer_revision": args_dict.get("tokenizer_revision"),
+        "tokenizer_revision": manifest.get("tokenizer_revision", args_dict.get("tokenizer_revision")),
+        "dataset_identity": manifest.get("dataset"),
+        "row_indices": manifest.get("row_indices"),
         "framework": args_dict.get("framework"),
         "python_version": platform.python_version(),
         "platform": platform.platform(),
@@ -1050,7 +1186,9 @@ def sample_random_requests(
         # Sample token ids from ShareGPT and repeat/truncate them to satisfy the input_lens
 
         # Download sharegpt if necessary
-        if not is_file_valid_json(dataset_path):
+        if dataset_path and not is_file_valid_json(dataset_path):
+            raise ValueError("Custom dataset_path is missing or invalid JSON")
+        if not dataset_path:
             dataset_path = download_and_cache_file(SHAREGPT_URL)
 
         # Load the dataset.
@@ -1291,10 +1429,12 @@ def calculate_metrics(
     for i in range(len(outputs)):
         if outputs[i].success:
             output_len = outputs[i].output_len
-            output_lens.append(output_len)
             retokenized_output_len = len(
                 tokenizer.encode(outputs[i].generated_text, add_special_tokens=False)
             )
+            if outputs[i].output_len_is_estimate:
+                output_len = retokenized_output_len
+            output_lens.append(output_len)
             retokenized_output_lens.append(retokenized_output_len)
             total_input += input_requests[i].prompt_len
             if output_len > 1:
@@ -1317,7 +1457,10 @@ def calculate_metrics(
             "on the benchmark arguments.",
             stacklevel=2,
         )
-    total_requests = len(outputs)
+    total_requests = len(input_requests)
+    missing = max(0, total_requests - len(outputs))
+    if missing:
+        failure_categories["missing_response"] = missing
     failed = total_requests - completed
     metrics = BenchmarkMetrics(
         total_requests=total_requests,
@@ -1325,7 +1468,11 @@ def calculate_metrics(
         failed=failed,
         failure_rate=failed / total_requests if total_requests else 1.0,
         failure_categories=failure_categories,
-        benchmark_valid=total_requests > 0 and completed == total_requests,
+        benchmark_valid=(
+            total_requests > 0
+            and len(outputs) == total_requests
+            and completed == total_requests
+        ),
         total_input=total_input,
         total_output=sum(output_lens),
         total_output_retokenized=sum(retokenized_output_lens),
@@ -1413,10 +1560,13 @@ async def benchmark(
     checkpoint_requests = set((args_dict or {}).get("_checkpoint_requests") or [])
     finished_requests = []
     finished_outputs = []
+    finished_indices = []
     successful_requests = 0
     checkpoint_failure = asyncio.get_running_loop().create_future()
 
-    async def limited_request_func(request_func_input, pbar, dataset_request):
+    async def limited_request_func(
+        request_func_input, pbar, dataset_request, request_index
+    ):
         nonlocal successful_requests
         if semaphore is None:
             output = await request_func(
@@ -1434,12 +1584,21 @@ async def benchmark(
             # the event loop cannot advance other requests past this checkpoint.
             finished_requests.append(dataset_request)
             finished_outputs.append(output)
+            finished_indices.append(request_index)
             successful_requests += int(output.success)
             if successful_requests in checkpoint_requests or not output.success:
                 elapsed = max(time.perf_counter() - benchmark_start_time, 1e-9)
                 partial, _ = calculate_metrics(
                     finished_requests, finished_outputs, elapsed, tokenizer, backend
                 )
+                errors = request_errors(finished_outputs, finished_indices)
+                if telemetry is not None:
+                    telemetry.data["request_errors"] = errors
+                    telemetry.data["request_accounting"] = {
+                        key: getattr(partial, key)
+                        for key in ("completed", "total_requests", "failed")
+                    }
+                    telemetry.save()
                 try:
                     checkpoint_callback(
                         {**vars(partial), "benchmark_duration": elapsed}
@@ -1536,6 +1695,7 @@ async def benchmark(
         telemetry.start("benchmark")
     tasks: list[asyncio.Task] = []
     async def submit_requests():
+        request_index = 0
         async for request in get_request(input_requests, request_rate):
             prompt, prompt_len, output_len = (
                 request.prompt,
@@ -1573,9 +1733,11 @@ async def benchmark(
                         request_func_input=request_func_input,
                         pbar=pbar,
                         dataset_request=request,
+                        request_index=request_index,
                     )
                 )
             )
+            request_index += 1
     producer = asyncio.create_task(submit_requests())
     measurement_completed = False
     try:
@@ -1751,6 +1913,14 @@ async def benchmark(
         print(f"Error running benchmark for request rate: {request_rate}")
         print("-" * 30)
 
+    # Failed trials are excluded from metric rows, so preserve bounded request
+    # diagnostics separately. Never include prompts or generated text here.
+    result["request_errors"] = request_errors(outputs)
+    telemetry = args_dict.get("_telemetry")
+    if telemetry is not None:
+        telemetry.data["request_errors"] = result["request_errors"]
+        telemetry.save()
+
     result_details = {
         "input_lens": [output.prompt_len for output in outputs],
         "output_lens": output_lens,
@@ -1759,6 +1929,7 @@ async def benchmark(
         "generated_texts": [output.generated_text for output in outputs],
         "errors": [output.error for output in outputs],
         "error_categories": [output.error_category for output in outputs],
+        "usages": [output.usage for output in outputs],
     }
 
     if args_dict.get("output_details"):

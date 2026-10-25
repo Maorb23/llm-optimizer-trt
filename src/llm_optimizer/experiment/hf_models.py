@@ -16,7 +16,11 @@ def configure_hf_models(
     num_speculative_tokens=15,
     cache_dir=None,
 ):
-    """Configure Phase B atomically, retaining resolved revisions for safe resume."""
+    """Configure Phase B atomically, retaining resolved revisions for safe resume.
+
+    The legacy enable_dflash toggle selects vLLM DSpark or SGLang DFlash,
+    matching the v2 notebook. SGLang DSPARK is selected explicitly.
+    """
     import copy
     import importlib.metadata
     import json
@@ -65,15 +69,27 @@ def configure_hf_models(
         from llm_optimizer.predefined.trtllm import validate_draft_request
 
         validate_draft_request(speculative_algorithm, max_draft_len, draft_model_id)
+    elif framework == "sglang" and speculative_algorithm is not None:
+        if speculative_algorithm not in {"DFLASH", "DSPARK"}:
+            raise ValueError("Select SGLang DFLASH or DSPARK")
+        if enable_dflash and speculative_algorithm != "DFLASH":
+            raise ValueError("Disable enable_dflash when selecting DSPARK")
     elif speculative_algorithm is not None:
-        raise ValueError("speculative_algorithm is currently a TRT-LLM option")
-    if enable_dflash and (
-        not draft_model_id
-        or isinstance(block_size, bool)
-        or not isinstance(block_size, int)
-        or block_size < 1
+        raise ValueError("speculative_algorithm is supported for SGLang and TRT-LLM")
+    if (
+        framework != "trtllm"
+        and draft_enabled
+        and (
+            not draft_model_id
+            or isinstance(block_size, bool)
+            or not isinstance(block_size, int)
+            or block_size < 1
+        )
     ):
-        raise ValueError("DFlash requires a draft model ID and a positive block size")
+        raise ValueError(
+            "Draft setup requires a draft model ID and a positive block size"
+        )
+    sglang_algorithm = speculative_algorithm or "DFLASH"
 
     HF_BASE_PROFILES = context.setdefault("HF_BASE_PROFILES", {})
     profile_key = ("B", framework)
@@ -91,7 +107,7 @@ def configure_hf_models(
         if fixed_server.get("backend", "pytorch") != "pytorch":
             raise ValueError("TRT draft setup requires the PyTorch backend")
 
-    if enable_dflash:
+    if draft_enabled and framework != "trtllm":
         if framework == "vllm" and (
             isinstance(num_speculative_tokens, bool)
             or not isinstance(num_speculative_tokens, int)
@@ -112,7 +128,7 @@ def configure_hf_models(
         help_text = help_result.stdout + help_result.stderr
         required = (
             [
-                "DFLASH",
+                sglang_algorithm,
                 "--speculative-algorithm",
                 "--speculative-draft-model-path",
                 "--speculative-num-draft-tokens",
@@ -125,7 +141,11 @@ def configure_hf_models(
                 f"This notebook kernel's {framework} does not expose the required "
                 "speculative decoding flags. Runtime output:\n" + help_text[-2000:]
             )
-        if framework == "sglang":
+        if framework == "sglang" and sglang_algorithm == "DSPARK":
+            from sglang.srt.speculative.spec_info import SpeculativeAlgorithm
+
+            SpeculativeAlgorithm.from_string("DSPARK")
+        if framework == "sglang" and sglang_algorithm == "DFLASH":
             choices = profile["expanded_choices"]
             for key, value in (
                 ("enable_mixed_chunk", False),
@@ -169,11 +189,23 @@ def configure_hf_models(
                 speculative_algorithm, max_draft_len, target_path, draft_path
             )
         elif framework == "sglang":
+            if sglang_algorithm == "DSPARK":
+                draft_config = json.loads(
+                    (Path(draft_path) / "config.json").read_text()
+                )
+                if draft_config.get("block_size") != block_size:
+                    raise ValueError(
+                        "DSPARK checkpoint block_size must match block_size"
+                    )
             fixed_server.update(
-                speculative_algorithm="DFLASH",
+                speculative_algorithm=sglang_algorithm,
                 speculative_draft_model_path=draft_path,
-                speculative_num_draft_tokens=block_size,
+                speculative_num_draft_tokens=(
+                    block_size + 1 if sglang_algorithm == "DSPARK" else block_size
+                ),
             )
+            if sglang_algorithm == "DSPARK":
+                fixed_server.update(speculative_num_steps=1, speculative_eagle_topk=1)
         else:
             fixed_server["speculative_config"] = {
                 "method": "dspark",
@@ -186,7 +218,9 @@ def configure_hf_models(
             speculative_decoding={
                 "algorithm": speculative_algorithm
                 if framework == "trtllm"
-                else "DFLASH",
+                else sglang_algorithm
+                if framework == "sglang"
+                else "DSPARK",
                 **(
                     {"native_config": fixed_server["speculative_config"]}
                     if framework == "trtllm"
@@ -194,6 +228,14 @@ def configure_hf_models(
                 ),
                 "draft_model_id": draft_model_id,
                 "draft_revision": resolved_draft,
+                **(
+                    {
+                        "num_speculative_tokens": block_size,
+                        "verify_window": block_size + 1,
+                    }
+                    if framework == "sglang" and sglang_algorithm == "DSPARK"
+                    else {}
+                ),
                 **(
                     {"max_draft_len": max_draft_len}
                     if framework == "trtllm"
