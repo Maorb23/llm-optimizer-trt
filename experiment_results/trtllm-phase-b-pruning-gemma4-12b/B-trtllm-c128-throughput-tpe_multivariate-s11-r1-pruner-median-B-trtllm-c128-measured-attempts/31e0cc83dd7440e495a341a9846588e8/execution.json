@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "attempt_id": "31e0cc83dd7440e495a341a9846588e8",
+  "started_at": "2026-10-26T11:43:40.587563+00:00",
+  "status": "complete",
+  "timings_s": {
+    "launch_to_ready": 80.05704336000053,
+    "client_preparation": 4.077343831999315,
+    "warmup": 1.5303423149998707,
+    "benchmark": 80.84388744199896,
+    "cleanup": 22.36597041099958,
+    "runner_wall": 190.11214096999902,
+    "orchestration": 1.2375536100007594,
+    "rest": 10.000077086999227,
+    "allocation_wall": 200.11634807700102
+  },
+  "phase_status": {
+    "launch_to_ready": "complete",
+    "client_preparation": "complete",
+    "warmup": "complete",
+    "benchmark": "complete",
+    "cleanup": "complete",
+    "rest": "complete"
+  },
+  "startup_observations": [],
+  "server_log": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-gemma4-12b/B-trtllm-c128-throughput-tpe_multivariate-s11-r1-pruner-median-B-trtllm-c128-measured-attempts/31e0cc83dd7440e495a341a9846588e8/server.log",
+  "attempt_artifact": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-gemma4-12b/B-trtllm-c128-throughput-tpe_multivariate-s11-r1-pruner-median-B-trtllm-c128-measured-attempts/31e0cc83dd7440e495a341a9846588e8/execution.json",
+  "framework": "trtllm",
+  "model": "/root/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+  "environment": {
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "framework_version": "1.3.0rc26",
+    "cuda_version": "13.2",
+    "driver_version": "580.173.02",
+    "model_revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "native_config_verified": true,
+    "quality_verified": true,
+    "expanded_choices": {
+      "attn_backend": [
+        "FLASHINFER"
+      ],
+      "enable_chunked_prefill": [
+        false,
+        true
+      ],
+      "enable_block_reuse": [
+        false,
+        true
+      ],
+      "capacity_scheduler_policy": [
+        "GUARANTEED_NO_EVICT",
+        "MAX_UTILIZATION"
+      ],
+      "graph_enabled": [
+        false,
+        true
+      ]
+    },
+    "excluded_choices": {},
+    "hf_target_model_id": "google/gemma-4-12B-it",
+    "fixed_server": {},
+    "measurement": "MEASURED",
+    "python": "3.12.3",
+    "optuna": "4.9.0",
+    "gpu_count": 1,
+    "model": "/root/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "phase": "B",
+    "target_model": "google/gemma-4-12B-it",
+    "concurrency": 128,
+    "workload_sha256": "c42c9714364c75bad024589e72f3213533e56b1b6f910adf2b66917eaabe4ddf",
+    "dataset": {
+      "dataset_name": "random",
+      "dataset_path": null,
+      "num_prompts": 1000
+    },
+    "seed": 2026,
+    "tokenizer": "/root/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "tokenizer_revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "dataset_identity": null,
+    "row_indices": null,
+    "framework": null,
+    "python_version": "3.12.3",
+    "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+    "cuda_visible_devices": null,
+    "package_versions": {
+      "llm-optimizer": "0.0.1",
+      "numpy": "2.3.5",
+      "aiohttp": "3.13.5",
+      "transformers": "5.5.4",
+      "optuna": "4.9.0",
+      "tensorrt-llm": "1.3.0rc26"
+    },
+    "requests_sha256": "15a336dd8cf8894b5ed83af87f06c2a7f8936de91a18ee36319db23a0cc598e5"
+  },
+  "sampled_config": {
+    "max_batch_size": 120,
+    "max_num_tokens": 21760,
+    "kv_cache_config": {
+      "free_gpu_memory_fraction": 0.85,
+      "enable_block_reuse": true
+    },
+    "cuda_graph_config": null,
+    "attn_backend": "FLASHINFER",
+    "enable_chunked_prefill": true,
+    "scheduler_config": {
+      "capacity_scheduler_policy": "MAX_UTILIZATION"
+    }
+  },
+  "workload_preparation_seconds": 7.47412546600026,
+  "workload_preparation_id": "b03150690fc84b77a6632e94a16d52fd",
+  "trial_number": null,
+  "study_signature": null,
+  "command": "trtllm-serve /root/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7 --host 127.0.0.1 --port 8000 --max_batch_size=120 --max_num_tokens=21760 --config=/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-gemma4-12b/trt-config-57d8b034eee02d37.yaml",
+  "config": {
+    "framework": "trtllm",
+    "client_args": {
+      "dataset_name": "random",
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "random_range_ratio": 1.0,
+      "seed": 2026,
+      "request_rate": null,
+      "num_prompts": 1000,
+      "max_concurrency": 128
+    },
+    "server_args": {
+      "max_batch_size": 120,
+      "max_num_tokens": 21760,
+      "config": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-gemma4-12b/trt-config-57d8b034eee02d37.yaml"
+    },
+    "server_cmd_args": [
+      "--max_batch_size=120",
+      "--max_num_tokens=21760",
+      "--config=/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-gemma4-12b/trt-config-57d8b034eee02d37.yaml"
+    ],
+    "normalized_config": {
+      "max_batched_tokens": 21760,
+      "max_concurrent_sequences": 120,
+      "max_concurrency": 128,
+      "request_rate": null,
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "num_prompts": 1000,
+      "input_length": 512,
+      "output_length": 128
+    },
+    "engine_args": {
+      "max_batch_size": 120,
+      "max_num_tokens": 21760,
+      "config": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-gemma4-12b/trt-config-57d8b034eee02d37.yaml"
+    },
+    "runtime_args": {},
+    "native_config": {
+      "attn_backend": "FLASHINFER",
+      "cuda_graph_config": null,
+      "enable_chunked_prefill": true,
+      "kv_cache_config": {
+        "enable_block_reuse": true,
+        "free_gpu_memory_fraction": 0.85
+      },
+      "scheduler_config": {
+        "capacity_scheduler_policy": "MAX_UTILIZATION"
+      }
+    }
+  },
+  "server_environment": {
+    "CUDA_VISIBLE_DEVICES": "0"
+  },
+  "readiness_reached": true,
+  "request_errors": [],
+  "request_accounting": {
+    "completed": 1000,
+    "total_requests": 1000,
+    "failed": 0
+  },
+  "metric_benchmark_duration_s": 80.84451725399776,
+  "incomplete_phases": [],
+  "finished_at": "2026-10-26T11:47:00.702590+00:00",
+  "rest_status": "complete",
+  "gpu_seconds": 200.11634807700102
+}

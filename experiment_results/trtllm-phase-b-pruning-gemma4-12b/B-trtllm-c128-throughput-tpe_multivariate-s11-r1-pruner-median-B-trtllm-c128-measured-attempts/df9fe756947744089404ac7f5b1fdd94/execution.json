@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "attempt_id": "df9fe756947744089404ac7f5b1fdd94",
+  "started_at": "2026-10-26T11:52:41.635775+00:00",
+  "status": "failed",
+  "timings_s": {
+    "launch_to_ready": 60.016686867002136,
+    "cleanup": 20.2050230370005,
+    "runner_wall": 80.22597663800116,
+    "orchestration": 0.004266733998520067,
+    "allocation_wall": 80.22795788199801
+  },
+  "phase_status": {
+    "launch_to_ready": "partial",
+    "cleanup": "complete"
+  },
+  "startup_observations": [],
+  "server_log": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-gemma4-12b/B-trtllm-c128-throughput-tpe_multivariate-s11-r1-pruner-median-B-trtllm-c128-measured-attempts/df9fe756947744089404ac7f5b1fdd94/server.log",
+  "attempt_artifact": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-gemma4-12b/B-trtllm-c128-throughput-tpe_multivariate-s11-r1-pruner-median-B-trtllm-c128-measured-attempts/df9fe756947744089404ac7f5b1fdd94/execution.json",
+  "framework": "trtllm",
+  "model": "/root/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+  "environment": {
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "framework_version": "1.3.0rc26",
+    "cuda_version": "13.2",
+    "driver_version": "580.173.02",
+    "model_revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "native_config_verified": true,
+    "quality_verified": true,
+    "expanded_choices": {
+      "attn_backend": [
+        "FLASHINFER"
+      ],
+      "enable_chunked_prefill": [
+        false,
+        true
+      ],
+      "enable_block_reuse": [
+        false,
+        true
+      ],
+      "capacity_scheduler_policy": [
+        "GUARANTEED_NO_EVICT",
+        "MAX_UTILIZATION"
+      ],
+      "graph_enabled": [
+        false,
+        true
+      ]
+    },
+    "excluded_choices": {},
+    "hf_target_model_id": "google/gemma-4-12B-it",
+    "fixed_server": {},
+    "measurement": "MEASURED",
+    "python": "3.12.3",
+    "optuna": "4.9.0",
+    "gpu_count": 1,
+    "model": "/root/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "phase": "B",
+    "target_model": "google/gemma-4-12B-it",
+    "concurrency": 128,
+    "workload_sha256": "c42c9714364c75bad024589e72f3213533e56b1b6f910adf2b66917eaabe4ddf",
+    "dataset": {
+      "dataset_name": "random",
+      "dataset_path": null,
+      "num_prompts": 1000
+    },
+    "seed": 2026,
+    "tokenizer": "/root/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "tokenizer_revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+    "dataset_identity": null,
+    "row_indices": null,
+    "framework": null,
+    "python_version": "3.12.3",
+    "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+    "cuda_visible_devices": null,
+    "package_versions": {
+      "llm-optimizer": "0.0.1",
+      "numpy": "2.3.5",
+      "aiohttp": "3.13.5",
+      "transformers": "5.5.4",
+      "optuna": "4.9.0",
+      "tensorrt-llm": "1.3.0rc26"
+    },
+    "requests_sha256": "15a336dd8cf8894b5ed83af87f06c2a7f8936de91a18ee36319db23a0cc598e5"
+  },
+  "sampled_config": {
+    "max_batch_size": 128,
+    "max_num_tokens": 30720,
+    "kv_cache_config": {
+      "free_gpu_memory_fraction": 0.95,
+      "enable_block_reuse": true
+    },
+    "cuda_graph_config": {
+      "batch_sizes": [
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        128
+      ],
+      "enable_padding": true
+    },
+    "attn_backend": "FLASHINFER",
+    "enable_chunked_prefill": true,
+    "scheduler_config": {
+      "capacity_scheduler_policy": "MAX_UTILIZATION"
+    }
+  },
+  "workload_preparation_seconds": 7.47412546600026,
+  "workload_preparation_id": "b03150690fc84b77a6632e94a16d52fd",
+  "trial_number": null,
+  "study_signature": null,
+  "command": "trtllm-serve /root/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7 --host 127.0.0.1 --port 8000 --max_batch_size=128 --max_num_tokens=30720 --config=/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-gemma4-12b/trt-config-52005c4bb4ee2a17.yaml",
+  "config": {
+    "framework": "trtllm",
+    "client_args": {
+      "dataset_name": "random",
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "random_range_ratio": 1.0,
+      "seed": 2026,
+      "request_rate": null,
+      "num_prompts": 1000,
+      "max_concurrency": 128
+    },
+    "server_args": {
+      "max_batch_size": 128,
+      "max_num_tokens": 30720,
+      "config": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-gemma4-12b/trt-config-52005c4bb4ee2a17.yaml"
+    },
+    "server_cmd_args": [
+      "--max_batch_size=128",
+      "--max_num_tokens=30720",
+      "--config=/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-gemma4-12b/trt-config-52005c4bb4ee2a17.yaml"
+    ],
+    "normalized_config": {
+      "max_batched_tokens": 30720,
+      "max_concurrent_sequences": 128,
+      "max_concurrency": 128,
+      "request_rate": null,
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "num_prompts": 1000,
+      "input_length": 512,
+      "output_length": 128
+    },
+    "engine_args": {
+      "max_batch_size": 128,
+      "max_num_tokens": 30720,
+      "config": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-gemma4-12b/trt-config-52005c4bb4ee2a17.yaml"
+    },
+    "runtime_args": {},
+    "native_config": {
+      "attn_backend": "FLASHINFER",
+      "cuda_graph_config": {
+        "batch_sizes": [
+          1,
+          2,
+          4,
+          8,
+          16,
+          32,
+          128
+        ],
+        "enable_padding": true
+      },
+      "enable_chunked_prefill": true,
+      "kv_cache_config": {
+        "enable_block_reuse": true,
+        "free_gpu_memory_fraction": 0.95
+      },
+      "scheduler_config": {
+        "capacity_scheduler_policy": "MAX_UTILIZATION"
+      }
+    }
+  },
+  "server_environment": {
+    "CUDA_VISIBLE_DEVICES": "0"
+  },
+  "startup_error": "ServerNotReadyError: Server did not become ready in the allotted time.",
+  "readiness_reached": false,
+  "incomplete_phases": [
+    "launch_to_ready"
+  ],
+  "error": "ServerNotReadyError: Server did not become ready in the allotted time.",
+  "finished_at": "2026-10-26T11:54:01.862724+00:00",
+  "request_accounting": {},
+  "gpu_seconds": 80.22795788199801
+}

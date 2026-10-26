@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "attempt_id": "cec3fb3fadc6477f8332aac63bd4b0c6",
+  "started_at": "2026-10-26T15:47:46.291414+00:00",
+  "status": "failed",
+  "timings_s": {
+    "launch_to_ready": 30.019974598999966,
+    "client_preparation": 1.4109800019999739,
+    "warmup": 0.9003328150000698,
+    "benchmark": 4.077117132000012,
+    "cleanup": 21.507035678999955,
+    "runner_wall": 58.921290908999936,
+    "orchestration": 1.0058506819999593,
+    "allocation_wall": 58.92301969599998
+  },
+  "phase_status": {
+    "launch_to_ready": "complete",
+    "client_preparation": "complete",
+    "warmup": "complete",
+    "benchmark": "partial",
+    "cleanup": "complete"
+  },
+  "startup_observations": [],
+  "server_log": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-openbmb/MiniCPM5-2B/B-trtllm-c128-e2e-tpe-s11-r2-pruner-median-B-trtllm-c128-measured-attempts/cec3fb3fadc6477f8332aac63bd4b0c6/server.log",
+  "attempt_artifact": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-openbmb/MiniCPM5-2B/B-trtllm-c128-e2e-tpe-s11-r2-pruner-median-B-trtllm-c128-measured-attempts/cec3fb3fadc6477f8332aac63bd4b0c6/execution.json",
+  "framework": "trtllm",
+  "model": "/root/.cache/huggingface/hub/models--openbmb--MiniCPM5-2B/snapshots/f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+  "environment": {
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "framework_version": "1.3.0rc26",
+    "cuda_version": "13.2",
+    "driver_version": "580.173.02",
+    "model_revision": "f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+    "native_config_verified": true,
+    "quality_verified": true,
+    "expanded_choices": {
+      "attn_backend": [
+        "FLASHINFER"
+      ],
+      "enable_chunked_prefill": [
+        false,
+        true
+      ],
+      "enable_block_reuse": [
+        false,
+        true
+      ],
+      "capacity_scheduler_policy": [
+        "GUARANTEED_NO_EVICT",
+        "MAX_UTILIZATION"
+      ],
+      "graph_enabled": [
+        false,
+        true
+      ]
+    },
+    "excluded_choices": {},
+    "hf_target_model_id": "openbmb/MiniCPM5-2B",
+    "fixed_server": {},
+    "measurement": "MEASURED",
+    "python": "3.12.3",
+    "optuna": "4.9.0",
+    "gpu_count": 1,
+    "model": "/root/.cache/huggingface/hub/models--openbmb--MiniCPM5-2B/snapshots/f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+    "phase": "B",
+    "target_model": "Qwen/Qwen3.5-4B",
+    "concurrency": 128,
+    "workload_sha256": "c39e84e456e485f0e75a2d866c01190d3fc9185b4445b2758cf593730c1bd8c8",
+    "dataset": {
+      "dataset_name": "random",
+      "dataset_path": null,
+      "num_prompts": 1000
+    },
+    "seed": 2026,
+    "tokenizer": "/root/.cache/huggingface/hub/models--openbmb--MiniCPM5-2B/snapshots/f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+    "tokenizer_revision": "f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+    "dataset_identity": null,
+    "row_indices": null,
+    "framework": null,
+    "python_version": "3.12.3",
+    "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+    "cuda_visible_devices": null,
+    "package_versions": {
+      "llm-optimizer": "0.0.1",
+      "numpy": "2.3.5",
+      "aiohttp": "3.13.5",
+      "transformers": "5.5.4",
+      "optuna": "4.9.0",
+      "tensorrt-llm": "1.3.0rc26"
+    },
+    "requests_sha256": "93f26c0d2e803f37d04c2f246301b490790e1b6e3101c47a1bffee1ebe1c48f4"
+  },
+  "sampled_config": {
+    "max_batch_size": 104,
+    "max_num_tokens": 2816,
+    "kv_cache_config": {
+      "free_gpu_memory_fraction": 0.75,
+      "enable_block_reuse": true
+    },
+    "cuda_graph_config": null,
+    "attn_backend": "FLASHINFER",
+    "enable_chunked_prefill": true,
+    "scheduler_config": {
+      "capacity_scheduler_policy": "MAX_UTILIZATION"
+    }
+  },
+  "workload_preparation_seconds": 6.317285967999965,
+  "workload_preparation_id": "aeed29768ee64e5c89b2d509b4b26c5a",
+  "trial_number": null,
+  "study_signature": null,
+  "command": "trtllm-serve /root/.cache/huggingface/hub/models--openbmb--MiniCPM5-2B/snapshots/f97400052a43d642bbc6e9975e2397e3ae6a6b52 --host 127.0.0.1 --port 8000 --max_batch_size=104 --max_num_tokens=2816 --config=/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-openbmb/MiniCPM5-2B/trt-config-12fca13980311b04.yaml",
+  "config": {
+    "framework": "trtllm",
+    "client_args": {
+      "dataset_name": "random",
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "random_range_ratio": 1.0,
+      "seed": 2026,
+      "request_rate": null,
+      "num_prompts": 1000,
+      "max_concurrency": 128
+    },
+    "server_args": {
+      "max_batch_size": 104,
+      "max_num_tokens": 2816,
+      "config": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-openbmb/MiniCPM5-2B/trt-config-12fca13980311b04.yaml"
+    },
+    "server_cmd_args": [
+      "--max_batch_size=104",
+      "--max_num_tokens=2816",
+      "--config=/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-openbmb/MiniCPM5-2B/trt-config-12fca13980311b04.yaml"
+    ],
+    "normalized_config": {
+      "max_batched_tokens": 2816,
+      "max_concurrent_sequences": 104,
+      "max_concurrency": 128,
+      "request_rate": null,
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "num_prompts": 1000,
+      "input_length": 512,
+      "output_length": 128
+    },
+    "engine_args": {
+      "max_batch_size": 104,
+      "max_num_tokens": 2816,
+      "config": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-openbmb/MiniCPM5-2B/trt-config-12fca13980311b04.yaml"
+    },
+    "runtime_args": {},
+    "native_config": {
+      "attn_backend": "FLASHINFER",
+      "cuda_graph_config": null,
+      "enable_chunked_prefill": true,
+      "kv_cache_config": {
+        "enable_block_reuse": true,
+        "free_gpu_memory_fraction": 0.75
+      },
+      "scheduler_config": {
+        "capacity_scheduler_policy": "MAX_UTILIZATION"
+      }
+    }
+  },
+  "server_environment": {
+    "CUDA_VISIBLE_DEVICES": "0"
+  },
+  "readiness_reached": true,
+  "request_errors": [
+    {
+      "request_index": 7,
+      "category": "empty_response",
+      "error": "Successful response contained no streamed token."
+    }
+  ],
+  "request_accounting": {
+    "completed": 9,
+    "total_requests": 10,
+    "failed": 1
+  },
+  "incomplete_phases": [
+    "benchmark"
+  ],
+  "error": "BenchmarkFailure: Incomplete/rejected requests invalidate this trial.",
+  "finished_at": "2026-10-26T15:48:45.213559+00:00",
+  "gpu_seconds": 58.92301969599998
+}

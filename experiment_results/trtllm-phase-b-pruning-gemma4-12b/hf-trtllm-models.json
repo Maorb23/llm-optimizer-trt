@@ -1,0 +1,10 @@
+{
+  "framework": "trtllm",
+  "target_model_id": "openbmb/MiniCPM5-2B",
+  "target_revision": "f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+  "target_path": "/root/.cache/huggingface/hub/models--openbmb--MiniCPM5-2B/snapshots/f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+  "draft_model_id": null,
+  "draft_revision": null,
+  "draft_path": null,
+  "speculative_decoding": null
+}

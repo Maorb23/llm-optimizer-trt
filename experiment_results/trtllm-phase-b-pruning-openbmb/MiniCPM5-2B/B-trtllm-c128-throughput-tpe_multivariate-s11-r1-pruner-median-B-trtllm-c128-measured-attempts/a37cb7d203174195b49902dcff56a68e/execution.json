@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "attempt_id": "a37cb7d203174195b49902dcff56a68e",
+  "started_at": "2026-10-26T18:35:14.776527+00:00",
+  "status": "complete",
+  "timings_s": {
+    "launch_to_ready": 35.065553944001294,
+    "client_preparation": 1.1540807119999954,
+    "warmup": 0.9901320379995013,
+    "benchmark": 45.581766978000815,
+    "cleanup": 21.78681320999931,
+    "runner_wall": 105.90885945199989,
+    "orchestration": 1.330512569998973,
+    "rest": 10.000099599999885,
+    "allocation_wall": 115.91307769100058
+  },
+  "phase_status": {
+    "launch_to_ready": "complete",
+    "client_preparation": "complete",
+    "warmup": "complete",
+    "benchmark": "complete",
+    "cleanup": "complete",
+    "rest": "complete"
+  },
+  "startup_observations": [],
+  "server_log": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-openbmb/MiniCPM5-2B/B-trtllm-c128-throughput-tpe_multivariate-s11-r1-pruner-median-B-trtllm-c128-measured-attempts/a37cb7d203174195b49902dcff56a68e/server.log",
+  "attempt_artifact": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-openbmb/MiniCPM5-2B/B-trtllm-c128-throughput-tpe_multivariate-s11-r1-pruner-median-B-trtllm-c128-measured-attempts/a37cb7d203174195b49902dcff56a68e/execution.json",
+  "framework": "trtllm",
+  "model": "/root/.cache/huggingface/hub/models--openbmb--MiniCPM5-2B/snapshots/f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+  "environment": {
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "framework_version": "1.3.0rc26",
+    "cuda_version": "13.2",
+    "driver_version": "580.173.02",
+    "model_revision": "f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+    "native_config_verified": true,
+    "quality_verified": true,
+    "expanded_choices": {
+      "attn_backend": [
+        "FLASHINFER"
+      ],
+      "enable_chunked_prefill": [
+        true
+      ],
+      "enable_block_reuse": [
+        false,
+        true
+      ],
+      "capacity_scheduler_policy": [
+        "GUARANTEED_NO_EVICT",
+        "MAX_UTILIZATION"
+      ],
+      "graph_enabled": [
+        false,
+        true
+      ]
+    },
+    "excluded_choices": {},
+    "hf_target_model_id": "openbmb/MiniCPM5-2B",
+    "fixed_server": {},
+    "measurement": "MEASURED",
+    "python": "3.12.3",
+    "optuna": "4.9.0",
+    "gpu_count": 1,
+    "model": "/root/.cache/huggingface/hub/models--openbmb--MiniCPM5-2B/snapshots/f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+    "phase": "B",
+    "target_model": "openbmb/MiniCPM5-2B",
+    "concurrency": 128,
+    "workload_sha256": "9b366b85b81ea39a1a5e15a8f8c565b24a99bacce6f7bc84b2b73829901830e5",
+    "dataset": {
+      "dataset_name": "random",
+      "dataset_path": null,
+      "num_prompts": 1000
+    },
+    "seed": 2026,
+    "tokenizer": "/root/.cache/huggingface/hub/models--openbmb--MiniCPM5-2B/snapshots/f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+    "tokenizer_revision": "f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+    "dataset_identity": null,
+    "row_indices": null,
+    "framework": null,
+    "python_version": "3.12.3",
+    "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+    "cuda_visible_devices": null,
+    "package_versions": {
+      "llm-optimizer": "0.0.1",
+      "numpy": "2.3.5",
+      "aiohttp": "3.13.5",
+      "transformers": "5.5.4",
+      "optuna": "4.9.0",
+      "tensorrt-llm": "1.3.0rc26"
+    },
+    "requests_sha256": "f5b4a8505a709fc4b1d648c0fe5b9f086cb992d72fe4e0ddb8ef92df3476c6f7"
+  },
+  "sampled_config": {
+    "max_batch_size": 104,
+    "max_num_tokens": 10496,
+    "kv_cache_config": {
+      "free_gpu_memory_fraction": 0.85,
+      "enable_block_reuse": true
+    },
+    "cuda_graph_config": null,
+    "attn_backend": "FLASHINFER",
+    "enable_chunked_prefill": true,
+    "scheduler_config": {
+      "capacity_scheduler_policy": "GUARANTEED_NO_EVICT"
+    }
+  },
+  "workload_preparation_seconds": 11.461518988000535,
+  "workload_preparation_id": "20d2adc5b2b141d4b8ff4034e5b1568c",
+  "trial_number": null,
+  "study_signature": null,
+  "command": "trtllm-serve /root/.cache/huggingface/hub/models--openbmb--MiniCPM5-2B/snapshots/f97400052a43d642bbc6e9975e2397e3ae6a6b52 --host 127.0.0.1 --port 8000 --max_batch_size=104 --max_num_tokens=10496 --config=/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-openbmb/MiniCPM5-2B/trt-config-d8c88592d94528ce.yaml",
+  "config": {
+    "framework": "trtllm",
+    "client_args": {
+      "dataset_name": "random",
+      "apply_chat_template": true,
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "random_range_ratio": 1.0,
+      "seed": 2026,
+      "request_rate": null,
+      "num_prompts": 1000,
+      "max_concurrency": 128
+    },
+    "server_args": {
+      "max_batch_size": 104,
+      "max_num_tokens": 10496,
+      "config": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-openbmb/MiniCPM5-2B/trt-config-d8c88592d94528ce.yaml"
+    },
+    "server_cmd_args": [
+      "--max_batch_size=104",
+      "--max_num_tokens=10496",
+      "--config=/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-openbmb/MiniCPM5-2B/trt-config-d8c88592d94528ce.yaml"
+    ],
+    "normalized_config": {
+      "max_batched_tokens": 10496,
+      "max_concurrent_sequences": 104,
+      "max_concurrency": 128,
+      "request_rate": null,
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "num_prompts": 1000,
+      "input_length": 512,
+      "output_length": 128
+    },
+    "engine_args": {
+      "max_batch_size": 104,
+      "max_num_tokens": 10496,
+      "config": "/workspace/llm-optimizer/experiment_results/trtllm-phase-b-pruning-openbmb/MiniCPM5-2B/trt-config-d8c88592d94528ce.yaml"
+    },
+    "runtime_args": {},
+    "native_config": {
+      "attn_backend": "FLASHINFER",
+      "cuda_graph_config": null,
+      "enable_chunked_prefill": true,
+      "kv_cache_config": {
+        "enable_block_reuse": true,
+        "free_gpu_memory_fraction": 0.85
+      },
+      "scheduler_config": {
+        "capacity_scheduler_policy": "GUARANTEED_NO_EVICT"
+      }
+    }
+  },
+  "server_environment": {
+    "CUDA_VISIBLE_DEVICES": "0"
+  },
+  "readiness_reached": true,
+  "request_errors": [],
+  "request_accounting": {
+    "completed": 1000,
+    "total_requests": 1000,
+    "failed": 0
+  },
+  "metric_benchmark_duration_s": 45.58257660799973,
+  "incomplete_phases": [],
+  "finished_at": "2026-10-26T18:37:10.688400+00:00",
+  "rest_status": "complete",
+  "gpu_seconds": 115.91307769100058
+}

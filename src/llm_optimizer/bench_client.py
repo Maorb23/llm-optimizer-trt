@@ -706,6 +706,7 @@ def get_dataset(
             dataset_path=args_dict.get("dataset_path", ""),
             random_sample=dataset_name == "random",
             return_text=not tokenize_prompt,
+            apply_chat_template=args_dict.get("apply_chat_template", False),
         )
     elif dataset_name == "generated-shared-prefix":
         assert not tokenize_prompt
@@ -1161,6 +1162,83 @@ def sample_sharegpt_requests(
     return filtered_dataset
 
 
+def _fixed_length_chat_prompt(tokenizer, content, target_len, return_text=True):
+    """Fit user content without truncating the template or generation marker.
+
+    Count the final text with encode's default special-token policy, matching
+    text completion requests. Never silently report a nominal token count.
+    """
+    source = tokenizer.encode(content, add_special_tokens=False)
+    if not source:
+        raise ValueError("Chat prompt content must contain tokens")
+    source = (source * ((target_len + len(source) - 1) // len(source)))[:target_len]
+    def render(user_text):
+        prompt = tokenizer.apply_chat_template(
+            [{"role": "user", "content": user_text}],
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+        return prompt, tokenizer.encode(prompt)
+
+    def result(prompt, ids):
+        return prompt if return_text else ids
+
+    budget = target_len
+    visited = set()
+    best = None
+    while 0 <= budget <= target_len and budget not in visited:
+        visited.add(budget)
+        user_text = tokenizer.decode(source[:budget], skip_special_tokens=False)
+        prompt, ids = render(user_text)
+        difference = target_len - len(ids)
+        if difference == 0:
+            return result(prompt, ids)
+        if difference > 0 and (best is None or len(ids) > best[0]):
+            best = (len(ids), user_text)
+        budget += difference
+
+    # Decode/encode is not an inverse: Unicode boundaries and merged tokens can
+    # make the adjustment above oscillate across the target. Find an undershoot
+    # before padding user content; never truncate the assistant generation marker.
+    if best is None:
+        for budget in range(target_len, -1, -1):
+            if budget in visited:
+                continue
+            user_text = tokenizer.decode(source[:budget], skip_special_tokens=False)
+            prompt, ids = render(user_text)
+            if len(ids) == target_len:
+                return result(prompt, ids)
+            if len(ids) < target_len:
+                best = (len(ids), user_text)
+                break
+
+    if best is not None:
+        count, user_text = best
+        while count < target_len:
+            remaining = target_len - count
+            options = []
+            # Small deterministic padding stays inside the user message. Check
+            # the entire formatted text each time rather than assuming a token
+            # cost for a space, newline, or word on a particular tokenizer.
+            for padding in (" x", " a", " 0", "\n", " ", ".", "x", "0"):
+                candidate = user_text + padding
+                prompt, ids = render(candidate)
+                growth = len(ids) - count
+                if growth == remaining:
+                    return result(prompt, ids)
+                if 0 < growth < remaining:
+                    options.append((len(ids), candidate))
+            if not options:
+                break
+            count, user_text = max(options, key=lambda option: option[0])
+
+    raise ValueError(
+        f"Cannot fit chat template into exactly {target_len} input tokens; "
+        "the template may exceed the budget or this tokenizer cannot represent "
+        "the remaining padding exactly."
+    )
+
+
 def sample_random_requests(
     input_len: int,
     output_len: int,
@@ -1170,6 +1248,7 @@ def sample_random_requests(
     dataset_path: str,
     random_sample: bool = True,
     return_text: bool = True,
+    apply_chat_template: bool = False,
 ) -> list[DatasetRow]:
     input_lens = np.random.randint(
         max(int(input_len * range_ratio), 1),
@@ -1233,7 +1312,11 @@ def sample_random_requests(
                 ratio = (input_lens[i] + prompt_len - 1) // prompt_len
                 input_ids = (prompt_token_ids * ratio)[: input_lens[i]]
             input_content = input_ids
-            if return_text:
+            if apply_chat_template:
+                input_content = _fixed_length_chat_prompt(
+                    tokenizer, prompt, int(input_lens[i]), return_text
+                )
+            elif return_text:
                 input_content = tokenizer.decode(input_content)
             input_requests.append(
                 DatasetRow(
@@ -1251,7 +1334,14 @@ def sample_random_requests(
                 (offsets[i] + i + j) % tokenizer.vocab_size
                 for j in range(input_lens[i])
             ]
-            if return_text:
+            if apply_chat_template:
+                input_content = _fixed_length_chat_prompt(
+                    tokenizer,
+                    tokenizer.decode(input_content),
+                    int(input_lens[i]),
+                    return_text,
+                )
+            elif return_text:
                 input_content = tokenizer.decode(input_content)
             input_requests.append(
                 DatasetRow(
