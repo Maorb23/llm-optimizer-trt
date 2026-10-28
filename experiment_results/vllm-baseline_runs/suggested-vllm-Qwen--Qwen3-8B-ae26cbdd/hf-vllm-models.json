@@ -1,0 +1,10 @@
+{
+  "framework": "vllm",
+  "target_model_id": "Qwen/Qwen3-8B",
+  "target_revision": "b968826d9c46dd6066d109eabc6255188de91218",
+  "target_path": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-8B/snapshots/b968826d9c46dd6066d109eabc6255188de91218",
+  "draft_model_id": null,
+  "draft_revision": null,
+  "draft_path": null,
+  "speculative_decoding": null
+}

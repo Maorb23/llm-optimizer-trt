@@ -1,0 +1,10 @@
+{
+  "framework": "vllm",
+  "target_model_id": "google/gemma-4-12B-it",
+  "target_revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+  "target_path": "/home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+  "draft_model_id": null,
+  "draft_revision": null,
+  "draft_path": null,
+  "speculative_decoding": null
+}
