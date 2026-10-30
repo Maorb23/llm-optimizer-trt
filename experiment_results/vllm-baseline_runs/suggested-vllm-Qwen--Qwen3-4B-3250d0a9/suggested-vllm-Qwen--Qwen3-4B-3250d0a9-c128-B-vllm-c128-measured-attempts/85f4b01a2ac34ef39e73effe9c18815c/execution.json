@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "attempt_id": "85f4b01a2ac34ef39e73effe9c18815c",
+  "started_at": "2026-10-28T09:54:49.615899+00:00",
+  "status": "complete",
+  "timings_s": {
+    "launch_to_ready": 35.01284488800002,
+    "client_preparation": 0.7716653760003283,
+    "warmup": 0.17144535700026609,
+    "benchmark": 28.472796641999594,
+    "cleanup": 0.4027987260001282,
+    "runner_wall": 66.12380127000006,
+    "orchestration": 1.292250280999724,
+    "rest": 10.000120571000025,
+    "allocation_wall": 76.12803154899984
+  },
+  "phase_status": {
+    "launch_to_ready": "complete",
+    "client_preparation": "complete",
+    "warmup": "complete",
+    "benchmark": "complete",
+    "cleanup": "complete",
+    "rest": "complete"
+  },
+  "startup_observations": [
+    {
+      "phase": "weight_loading",
+      "seconds": 1.289638,
+      "line_number": 20,
+      "source": "\u001b[0;36m(EngineCore pid=8789)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-28 09:55:10\u001b[0m \u001b[90m[base_loader.py:82]\u001b[0m Initializing model took 1.289638 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "weight_loading",
+      "seconds": 1.34,
+      "line_number": 32,
+      "source": "\u001b[0;36m(EngineCore pid=8789)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-28 09:55:12\u001b[0m \u001b[90m[default_loader.py:501]\u001b[0m Loading weights took 1.34 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "weight_loading",
+      "seconds": 3.976237,
+      "line_number": 33,
+      "source": "\u001b[0;36m(EngineCore pid=8789)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-28 09:55:13\u001b[0m \u001b[90m[model_runner.py:424]\u001b[0m Model loading took 7.56 GiB memory and 3.976237 seconds",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "compilation",
+      "seconds": 0.64,
+      "line_number": 39,
+      "source": "\u001b[0;36m(EngineCore pid=8789)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-28 09:55:14\u001b[0m \u001b[90m[monitor.py:62]\u001b[0m [backbone] torch.compile took 0.64 s in total",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "graph_capture",
+      "seconds": 1.0,
+      "line_number": 52,
+      "source": "\u001b[0;36m(EngineCore pid=8789)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-28 09:55:17\u001b[0m \u001b[90m[model_runner.py:1127]\u001b[0m Graph capturing finished in 1 secs, took 0.11 GiB",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "graph_capture",
+      "seconds": 1.0,
+      "line_number": 75,
+      "source": "\u001b[0;36m(EngineCore pid=8789)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-28 09:55:19\u001b[0m \u001b[90m[model_runner.py:1127]\u001b[0m Graph capturing finished in 1 secs, took 0.07 GiB",
+      "parser": "explicit-log-duration-v1"
+    },
+    {
+      "phase": "compilation",
+      "seconds": 6.8,
+      "line_number": 79,
+      "source": "\u001b[0;36m(EngineCore pid=8789)\u001b[0;0m \u001b[32mINFO\u001b[0m \u001b[90m10-28 09:55:20\u001b[0m \u001b[90m[core.py:395]\u001b[0m init engine (profile, create kv cache, warmup model) took 6.80 s (compilation: 0.64 s)",
+      "parser": "explicit-log-duration-v1"
+    }
+  ],
+  "server_log": "/home/ubuntu/llm-optimizer-trt/experiment_results/vllm-baseline_runs/suggested-vllm-Qwen--Qwen3-4B-3250d0a9/suggested-vllm-Qwen--Qwen3-4B-3250d0a9-c128-B-vllm-c128-measured-attempts/85f4b01a2ac34ef39e73effe9c18815c/server.log",
+  "attempt_artifact": "/home/ubuntu/llm-optimizer-trt/experiment_results/vllm-baseline_runs/suggested-vllm-Qwen--Qwen3-4B-3250d0a9/suggested-vllm-Qwen--Qwen3-4B-3250d0a9-c128-B-vllm-c128-measured-attempts/85f4b01a2ac34ef39e73effe9c18815c/execution.json",
+  "framework": "vllm",
+  "model": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+  "environment": {
+    "gpu_type": "NVIDIA H100 80GB HBM3",
+    "framework_version": "0.32.0",
+    "cuda_version": "13.0",
+    "driver_version": "580.173.02",
+    "model_revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+    "native_config_verified": true,
+    "quality_verified": true,
+    "expanded_choices": {
+      "async_scheduling": [
+        false,
+        true
+      ],
+      "performance_mode": [
+        "balanced",
+        "interactivity",
+        "throughput"
+      ],
+      "attention_backend": [
+        "auto",
+        "FLASH_ATTN",
+        "FLASHINFER"
+      ],
+      "kv_cache_dtype": [
+        "auto",
+        "fp8"
+      ],
+      "enable_prefix_caching": [
+        false,
+        true
+      ],
+      "graph_mode": [
+        "NONE",
+        "PIECEWISE",
+        "FULL_AND_PIECEWISE"
+      ]
+    },
+    "excluded_choices": {},
+    "hf_target_model_id": "Qwen/Qwen3-4B",
+    "fixed_server": {},
+    "suggested_baseline_config": {
+      "dtype": "bfloat16",
+      "max_model_len": 8192,
+      "gpu_memory_utilization": 0.9,
+      "max_num_seqs": 32,
+      "max_num_batched_tokens": 8192,
+      "enable_auto_tool_choice": true,
+      "tool_call_parser": "hermes",
+      "reasoning_parser": "qwen3",
+      "seed": 2026
+    },
+    "measurement": "MEASURED",
+    "python": "3.12.3",
+    "optuna": "4.9.0",
+    "gpu_count": 1,
+    "model": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+    "phase": "B",
+    "target_model": "Qwen/Qwen3-4B",
+    "concurrency": 128,
+    "workload_sha256": "d86f21d379b6d9dd2e320d054bbe2337f825c18f81808f4b162792001143832b",
+    "dataset": {
+      "dataset_name": "random",
+      "dataset_path": null,
+      "num_prompts": 1000
+    },
+    "seed": 2026,
+    "tokenizer": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+    "tokenizer_revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+    "dataset_identity": null,
+    "row_indices": null,
+    "framework": null,
+    "python_version": "3.12.3",
+    "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+    "cuda_visible_devices": null,
+    "package_versions": {
+      "llm-optimizer": "0.0.1",
+      "numpy": "2.3.5",
+      "aiohttp": "3.14.5",
+      "transformers": "5.19.0",
+      "optuna": "4.9.0",
+      "vllm": "0.32.0"
+    },
+    "requests_sha256": "b902fdc74082037bd48825ba19a688238da8c870388c7680651fb674bc58620a"
+  },
+  "sampled_config": {
+    "dtype": "bfloat16",
+    "max_model_len": 8192,
+    "gpu_memory_utilization": 0.9,
+    "max_num_seqs": 32,
+    "max_num_batched_tokens": 8192,
+    "reasoning_parser": "qwen3",
+    "seed": 2026
+  },
+  "workload_preparation_seconds": 12.10947527899998,
+  "workload_preparation_id": "c308eecbeae94d34a7b6d24c33bd9346",
+  "trial_number": null,
+  "study_signature": null,
+  "command": "vllm serve /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c --host 127.0.0.1 --port 8000 --enable-auto-tool-choice --tool-call-parser hermes --dtype=bfloat16 --max-model-len=8192 --gpu-memory-utilization=0.9 --max-num-seqs=32 --max-num-batched-tokens=8192 --reasoning-parser=qwen3 --seed=2026",
+  "config": {
+    "framework": "vllm",
+    "client_args": {
+      "dataset_name": "random",
+      "apply_chat_template": true,
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "random_range_ratio": 1.0,
+      "seed": 2026,
+      "request_rate": null,
+      "num_prompts": 1000,
+      "max_concurrency": 128
+    },
+    "server_args": {
+      "dtype": "bfloat16",
+      "max_model_len": 8192,
+      "gpu_memory_utilization": 0.9,
+      "max_num_seqs": 32,
+      "max_num_batched_tokens": 8192,
+      "reasoning_parser": "qwen3",
+      "seed": 2026
+    },
+    "server_cmd_args": [
+      "--dtype=bfloat16",
+      "--max-model-len=8192",
+      "--gpu-memory-utilization=0.9",
+      "--max-num-seqs=32",
+      "--max-num-batched-tokens=8192",
+      "--reasoning-parser=qwen3",
+      "--seed=2026"
+    ],
+    "normalized_config": {
+      "max_batched_tokens": 8192,
+      "max_concurrent_sequences": 32,
+      "max_sequence_length": 8192,
+      "kv_cache_memory_fraction": 0.9,
+      "engine_precision": "bfloat16",
+      "max_concurrency": 128,
+      "request_rate": null,
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "num_prompts": 1000,
+      "input_length": 512,
+      "output_length": 128
+    }
+  },
+  "server_environment": {
+    "CUDA_VISIBLE_DEVICES": "0"
+  },
+  "readiness_reached": true,
+  "metric_benchmark_duration_s": 28.473234378000143,
+  "request_errors": [],
+  "request_accounting": {
+    "completed": 1000,
+    "total_requests": 1000,
+    "failed": 0
+  },
+  "incomplete_phases": [],
+  "finished_at": "2026-10-28T09:56:05.742547+00:00",
+  "rest_status": "complete",
+  "gpu_seconds": 76.12803154899984
+}
