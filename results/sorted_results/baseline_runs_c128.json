@@ -1,0 +1,673 @@
+{
+  "project": "maorblumberg-tel-aviv-university/inference-optimization",
+  "name_contains": [
+    "dsparkq3_4",
+    "-c128-"
+  ],
+  "exported_at": "2026-10-28T14:06:25.258995+00:00",
+  "run_count": 5,
+  "runs": [
+    {
+      "id": "5l57tuaj",
+      "name": "suggested-vllm-Qwen--Qwen3-4B-a19aad05-c128",
+      "url": "https://wandb.ai/maorblumberg-tel-aviv-university/inference-optimization/runs/5l57tuaj",
+      "run_state": "finished",
+      "created_at": "2026-10-28T10:01:46Z",
+      "config": {
+        "model": "Qwen/Qwen3-4B",
+        "phase": "B",
+        "workload": {
+          "seed": 2026,
+          "num_prompts": 1000,
+          "dataset_name": "random",
+          "request_rate": "inf",
+          "max_concurrency": 128,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "random_range_ratio": 1,
+          "apply_chat_template": true
+        },
+        "framework": "vllm",
+        "concurrency": 128,
+        "environment": {
+          "seed": 2026,
+          "model": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+          "phase": "B",
+          "optuna": "4.9.0",
+          "python": "3.12.3",
+          "dataset": {
+            "num_prompts": 1000,
+            "dataset_name": "random",
+            "dataset_path": null
+          },
+          "gpu_type": "NVIDIA H100 80GB HBM3",
+          "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+          "framework": null,
+          "gpu_count": 1,
+          "tokenizer": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-4B/snapshots/1cfa9a7208912126459214e8b04321603b3df60c",
+          "concurrency": 128,
+          "measurement": "MEASURED",
+          "row_indices": null,
+          "cuda_version": "13.0",
+          "target_model": "Qwen/Qwen3-4B",
+          "driver_version": "580.173.02",
+          "model_revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+          "python_version": "3.12.3",
+          "requests_sha256": "b902fdc74082037bd48825ba19a688238da8c870388c7680651fb674bc58620a",
+          "workload_sha256": "d86f21d379b6d9dd2e320d054bbe2337f825c18f81808f4b162792001143832b",
+          "dataset_identity": null,
+          "expanded_choices": {
+            "graph_mode": [
+              "NONE",
+              "PIECEWISE",
+              "FULL_AND_PIECEWISE"
+            ],
+            "kv_cache_dtype": [
+              "auto",
+              "fp8"
+            ],
+            "async_scheduling": [
+              false,
+              true
+            ],
+            "performance_mode": [
+              "balanced",
+              "interactivity",
+              "throughput"
+            ],
+            "attention_backend": [
+              "auto",
+              "FLASH_ATTN",
+              "FLASHINFER"
+            ],
+            "enable_prefix_caching": [
+              false,
+              true
+            ]
+          },
+          "package_versions": {
+            "vllm": "0.32.0",
+            "numpy": "2.3.5",
+            "optuna": "4.9.0",
+            "aiohttp": "3.14.5",
+            "transformers": "5.19.0",
+            "llm-optimizer": "0.0.1"
+          },
+          "quality_verified": true,
+          "framework_version": "0.32.0",
+          "hf_target_model_id": "Qwen/Qwen3-4B",
+          "tokenizer_revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+          "cuda_visible_devices": null,
+          "native_config_verified": true,
+          "suggested_baseline_config": {
+            "seed": 2026,
+            "dtype": "bfloat16",
+            "max_num_seqs": 32,
+            "max_model_len": 8192,
+            "reasoning_parser": "qwen3",
+            "tool_call_parser": "hermes",
+            "gpu_memory_utilization": 0.9,
+            "max_num_batched_tokens": 8192,
+            "enable_auto_tool_choice": true
+          }
+        },
+        "server_config": {
+          "seed": 2026,
+          "dtype": "bfloat16",
+          "max_num_seqs": 32,
+          "max_model_len": 8192,
+          "reasoning_parser": "qwen3",
+          "tool_call_parser": "hermes",
+          "gpu_memory_utilization": 0.9,
+          "max_num_batched_tokens": 8192,
+          "enable_auto_tool_choice": true
+        }
+      },
+      "summary": {
+        "_runtime": 76,
+        "_step": 0,
+        "_timestamp": 1793181783.1782596,
+        "_wandb.runtime": 76,
+        "benchmark_valid": true,
+        "completed": 1000,
+        "failed": 0,
+        "gpu_seconds": 76.16885896999975,
+        "output_throughput": 4493.517829723814,
+        "p95_e2e_latency_ms": 3593.82054004991,
+        "p95_ttft_ms": 2849.730480300377,
+        "results_path": "/home/ubuntu/llm-optimizer-trt/experiment_results/vllm-baseline_runs/suggested-vllm-Qwen--Qwen3-4B-a19aad05-c128-results.json",
+        "status": "completed",
+        "total_requests": 1000,
+        "wall_seconds": 76.16885896999975
+      },
+      "trial_state_counts": {},
+      "trials": []
+    },
+    {
+      "id": "87b4oar1",
+      "name": "suggested-vllm-Qwen--Qwen3-8B-87d6b05a-c128",
+      "url": "https://wandb.ai/maorblumberg-tel-aviv-university/inference-optimization/runs/87b4oar1",
+      "run_state": "finished",
+      "created_at": "2026-10-28T10:03:05Z",
+      "config": {
+        "model": "Qwen/Qwen3-8B",
+        "phase": "B",
+        "workload": {
+          "seed": 2026,
+          "num_prompts": 1000,
+          "dataset_name": "random",
+          "request_rate": "inf",
+          "max_concurrency": 128,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "random_range_ratio": 1,
+          "apply_chat_template": true
+        },
+        "framework": "vllm",
+        "concurrency": 128,
+        "environment": {
+          "seed": 2026,
+          "model": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-8B/snapshots/b968826d9c46dd6066d109eabc6255188de91218",
+          "phase": "B",
+          "optuna": "4.9.0",
+          "python": "3.12.3",
+          "dataset": {
+            "num_prompts": 1000,
+            "dataset_name": "random",
+            "dataset_path": null
+          },
+          "gpu_type": "NVIDIA H100 80GB HBM3",
+          "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+          "framework": null,
+          "gpu_count": 1,
+          "tokenizer": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-8B/snapshots/b968826d9c46dd6066d109eabc6255188de91218",
+          "concurrency": 128,
+          "measurement": "MEASURED",
+          "row_indices": null,
+          "cuda_version": "13.0",
+          "target_model": "Qwen/Qwen3-8B",
+          "driver_version": "580.173.02",
+          "model_revision": "b968826d9c46dd6066d109eabc6255188de91218",
+          "python_version": "3.12.3",
+          "requests_sha256": "b902fdc74082037bd48825ba19a688238da8c870388c7680651fb674bc58620a",
+          "workload_sha256": "3019d4decf17d6d8b56ba37244dfd5396bc621b89d151bb0747f62a3503be9d5",
+          "dataset_identity": null,
+          "expanded_choices": {
+            "graph_mode": [
+              "NONE",
+              "PIECEWISE",
+              "FULL_AND_PIECEWISE"
+            ],
+            "kv_cache_dtype": [
+              "auto",
+              "fp8"
+            ],
+            "async_scheduling": [
+              false,
+              true
+            ],
+            "performance_mode": [
+              "balanced",
+              "interactivity",
+              "throughput"
+            ],
+            "attention_backend": [
+              "auto",
+              "FLASH_ATTN",
+              "FLASHINFER"
+            ],
+            "enable_prefix_caching": [
+              false,
+              true
+            ]
+          },
+          "package_versions": {
+            "vllm": "0.32.0",
+            "numpy": "2.3.5",
+            "optuna": "4.9.0",
+            "aiohttp": "3.14.5",
+            "transformers": "5.19.0",
+            "llm-optimizer": "0.0.1"
+          },
+          "quality_verified": true,
+          "framework_version": "0.32.0",
+          "hf_target_model_id": "Qwen/Qwen3-8B",
+          "tokenizer_revision": "b968826d9c46dd6066d109eabc6255188de91218",
+          "cuda_visible_devices": null,
+          "native_config_verified": true,
+          "suggested_baseline_config": {
+            "seed": 2026,
+            "dtype": "bfloat16",
+            "max_model_len": 8192,
+            "reasoning_parser": "qwen3",
+            "tool_call_parser": "hermes",
+            "tensor_parallel_size": 1,
+            "gpu_memory_utilization": 0.9,
+            "enable_auto_tool_choice": true
+          }
+        },
+        "server_config": {
+          "seed": 2026,
+          "dtype": "bfloat16",
+          "max_model_len": 8192,
+          "reasoning_parser": "qwen3",
+          "tool_call_parser": "hermes",
+          "tensor_parallel_size": 1,
+          "gpu_memory_utilization": 0.9,
+          "enable_auto_tool_choice": true
+        }
+      },
+      "summary": {
+        "_runtime": 110,
+        "_step": 0,
+        "_timestamp": 1793181895.9227166,
+        "_wandb.runtime": 110,
+        "benchmark_valid": true,
+        "completed": 1000,
+        "failed": 0,
+        "gpu_seconds": 110.31589242799964,
+        "output_throughput": 5688.14512517497,
+        "p95_e2e_latency_ms": 3303.9125234501626,
+        "p95_ttft_ms": 1177.408185299896,
+        "results_path": "/home/ubuntu/llm-optimizer-trt/experiment_results/vllm-baseline_runs/suggested-vllm-Qwen--Qwen3-8B-87d6b05a-c128-results.json",
+        "status": "completed",
+        "total_requests": 1000,
+        "wall_seconds": 110.31589242799964
+      },
+      "trial_state_counts": {},
+      "trials": []
+    },
+    {
+      "id": "7rhfz762",
+      "name": "suggested-vllm-Qwen--Qwen3.5-4B-71cd2f1e-c128",
+      "url": "https://wandb.ai/maorblumberg-tel-aviv-university/inference-optimization/runs/7rhfz762",
+      "run_state": "finished",
+      "created_at": "2026-10-28T10:04:58Z",
+      "config": {
+        "model": "Qwen/Qwen3.5-4B",
+        "phase": "B",
+        "workload": {
+          "seed": 2026,
+          "num_prompts": 1000,
+          "dataset_name": "random",
+          "request_rate": "inf",
+          "max_concurrency": 128,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "random_range_ratio": 1,
+          "apply_chat_template": true
+        },
+        "framework": "vllm",
+        "concurrency": 128,
+        "environment": {
+          "seed": 2026,
+          "model": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+          "phase": "B",
+          "optuna": "4.9.0",
+          "python": "3.12.3",
+          "dataset": {
+            "num_prompts": 1000,
+            "dataset_name": "random",
+            "dataset_path": null
+          },
+          "gpu_type": "NVIDIA H100 80GB HBM3",
+          "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+          "framework": null,
+          "gpu_count": 1,
+          "tokenizer": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+          "concurrency": 128,
+          "measurement": "MEASURED",
+          "row_indices": null,
+          "cuda_version": "13.0",
+          "target_model": "Qwen/Qwen3.5-4B",
+          "driver_version": "580.173.02",
+          "model_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+          "python_version": "3.12.3",
+          "requests_sha256": "49b01b11c5abcdb47549a5288f26dade7f81d05d783c1d9014006aca2109433a",
+          "workload_sha256": "2c5050ccc9570d5fa069ff2d58f6f1b93864f6f36a8fe63f0a154b8ffbd61d2e",
+          "dataset_identity": null,
+          "expanded_choices": {
+            "graph_mode": [
+              "NONE",
+              "PIECEWISE",
+              "FULL_AND_PIECEWISE"
+            ],
+            "kv_cache_dtype": [
+              "auto",
+              "fp8"
+            ],
+            "async_scheduling": [
+              false,
+              true
+            ],
+            "performance_mode": [
+              "balanced",
+              "interactivity",
+              "throughput"
+            ],
+            "attention_backend": [
+              "auto",
+              "FLASH_ATTN",
+              "FLASHINFER"
+            ],
+            "enable_prefix_caching": [
+              false,
+              true
+            ]
+          },
+          "package_versions": {
+            "vllm": "0.32.0",
+            "numpy": "2.3.5",
+            "optuna": "4.9.0",
+            "aiohttp": "3.14.5",
+            "transformers": "5.19.0",
+            "llm-optimizer": "0.0.1"
+          },
+          "quality_verified": true,
+          "framework_version": "0.32.0",
+          "hf_target_model_id": "Qwen/Qwen3.5-4B",
+          "tokenizer_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+          "cuda_visible_devices": null,
+          "native_config_verified": true,
+          "suggested_baseline_config": {
+            "seed": 2026,
+            "dtype": "auto",
+            "max_model_len": 32768,
+            "reasoning_parser": "qwen3",
+            "tool_call_parser": "qwen3_coder",
+            "language_model_only": true,
+            "tensor_parallel_size": 1,
+            "gpu_memory_utilization": 0.9,
+            "enable_auto_tool_choice": true
+          }
+        },
+        "server_config": {
+          "seed": 2026,
+          "dtype": "auto",
+          "max_model_len": 32768,
+          "reasoning_parser": "qwen3",
+          "tool_call_parser": "qwen3_coder",
+          "language_model_only": true,
+          "tensor_parallel_size": 1,
+          "gpu_memory_utilization": 0.9,
+          "enable_auto_tool_choice": true
+        }
+      },
+      "summary": {
+        "_runtime": 120,
+        "_step": 0,
+        "_timestamp": 1793182019.5280707,
+        "_wandb.runtime": 120,
+        "benchmark_valid": true,
+        "completed": 1000,
+        "failed": 0,
+        "gpu_seconds": 120.47131959100034,
+        "output_throughput": 7277.888958764172,
+        "p95_e2e_latency_ms": 2574.2685645499932,
+        "p95_ttft_ms": 874.2683883998325,
+        "results_path": "/home/ubuntu/llm-optimizer-trt/experiment_results/vllm-baseline_runs/suggested-vllm-Qwen--Qwen3.5-4B-71cd2f1e-c128-results.json",
+        "status": "completed",
+        "total_requests": 1000,
+        "wall_seconds": 120.47131959100034
+      },
+      "trial_state_counts": {},
+      "trials": []
+    },
+    {
+      "id": "7d32mfiz",
+      "name": "suggested-vllm-google--gemma-4-12B-it-8c9d96dd-c128",
+      "url": "https://wandb.ai/maorblumberg-tel-aviv-university/inference-optimization/runs/7d32mfiz",
+      "run_state": "finished",
+      "created_at": "2026-10-28T10:07:02Z",
+      "config": {
+        "model": "google/gemma-4-12B-it",
+        "phase": "B",
+        "workload": {
+          "seed": 2026,
+          "num_prompts": 1000,
+          "dataset_name": "random",
+          "request_rate": "inf",
+          "max_concurrency": 128,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "random_range_ratio": 1,
+          "apply_chat_template": true
+        },
+        "framework": "vllm",
+        "concurrency": 128,
+        "environment": {
+          "seed": 2026,
+          "model": "/home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+          "phase": "B",
+          "optuna": "4.9.0",
+          "python": "3.12.3",
+          "dataset": {
+            "num_prompts": 1000,
+            "dataset_name": "random",
+            "dataset_path": null
+          },
+          "gpu_type": "NVIDIA H100 80GB HBM3",
+          "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+          "framework": null,
+          "gpu_count": 1,
+          "tokenizer": "/home/ubuntu/.cache/huggingface/hub/models--google--gemma-4-12B-it/snapshots/707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+          "concurrency": 128,
+          "measurement": "MEASURED",
+          "row_indices": null,
+          "cuda_version": "13.0",
+          "target_model": "google/gemma-4-12B-it",
+          "driver_version": "580.173.02",
+          "model_revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+          "python_version": "3.12.3",
+          "requests_sha256": "0eb5c86bfbc7bf07a7bedc3dccbdca63d9b528cce18fe02b07ec9dee298c6a94",
+          "workload_sha256": "667775d0389ae35b43c239317d266fd4dbf6c770470d47ee50eb913f5a5a96fa",
+          "dataset_identity": null,
+          "expanded_choices": {
+            "graph_mode": [
+              "NONE",
+              "PIECEWISE",
+              "FULL_AND_PIECEWISE"
+            ],
+            "kv_cache_dtype": [
+              "auto",
+              "fp8"
+            ],
+            "async_scheduling": [
+              false,
+              true
+            ],
+            "performance_mode": [
+              "balanced",
+              "interactivity",
+              "throughput"
+            ],
+            "attention_backend": [
+              "auto",
+              "FLASH_ATTN",
+              "FLASHINFER"
+            ],
+            "enable_prefix_caching": [
+              false,
+              true
+            ]
+          },
+          "package_versions": {
+            "vllm": "0.32.0",
+            "numpy": "2.3.5",
+            "optuna": "4.9.0",
+            "aiohttp": "3.14.5",
+            "transformers": "5.19.0",
+            "llm-optimizer": "0.0.1"
+          },
+          "quality_verified": true,
+          "framework_version": "0.32.0",
+          "hf_target_model_id": "google/gemma-4-12B-it",
+          "tokenizer_revision": "707f0a3b8a3c7ad586ed01e27eafbad8a27dd0f7",
+          "cuda_visible_devices": null,
+          "native_config_verified": true,
+          "suggested_baseline_config": {
+            "seed": 2026,
+            "max_model_len": 8192,
+            "tensor_parallel_size": 1,
+            "gpu_memory_utilization": 0.9
+          }
+        },
+        "server_config": {
+          "seed": 2026,
+          "max_model_len": 8192,
+          "tensor_parallel_size": 1,
+          "gpu_memory_utilization": 0.9
+        }
+      },
+      "summary": {
+        "_runtime": 272,
+        "_step": 0,
+        "_timestamp": 1793182295.717143,
+        "_wandb.runtime": 272,
+        "benchmark_valid": true,
+        "completed": 1000,
+        "failed": 0,
+        "gpu_seconds": 271.89578877799977,
+        "output_throughput": 2920.773513555585,
+        "p95_e2e_latency_ms": 9474.500410450264,
+        "p95_ttft_ms": 5667.048027749956,
+        "results_path": "/home/ubuntu/llm-optimizer-trt/experiment_results/vllm-baseline_runs/suggested-vllm-google--gemma-4-12B-it-8c9d96dd-c128-results.json",
+        "status": "completed",
+        "total_requests": 1000,
+        "wall_seconds": 271.89578877799977
+      },
+      "trial_state_counts": {},
+      "trials": []
+    },
+    {
+      "id": "6q8zo485",
+      "name": "suggested-vllm-openbmb--MiniCPM5-2B-7831e9ae-c128",
+      "url": "https://wandb.ai/maorblumberg-tel-aviv-university/inference-optimization/runs/6q8zo485",
+      "run_state": "finished",
+      "created_at": "2026-10-28T10:11:38Z",
+      "config": {
+        "model": "openbmb/MiniCPM5-2B",
+        "phase": "B",
+        "workload": {
+          "seed": 2026,
+          "num_prompts": 1000,
+          "dataset_name": "random",
+          "request_rate": "inf",
+          "max_concurrency": 128,
+          "random_input_len": 512,
+          "random_output_len": 128,
+          "random_range_ratio": 1,
+          "apply_chat_template": true
+        },
+        "framework": "vllm",
+        "concurrency": 128,
+        "environment": {
+          "seed": 2026,
+          "model": "/home/ubuntu/.cache/huggingface/hub/models--openbmb--MiniCPM5-2B/snapshots/f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+          "phase": "B",
+          "optuna": "4.9.0",
+          "python": "3.12.3",
+          "dataset": {
+            "num_prompts": 1000,
+            "dataset_name": "random",
+            "dataset_path": null
+          },
+          "gpu_type": "NVIDIA H100 80GB HBM3",
+          "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+          "framework": null,
+          "gpu_count": 1,
+          "tokenizer": "/home/ubuntu/.cache/huggingface/hub/models--openbmb--MiniCPM5-2B/snapshots/f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+          "concurrency": 128,
+          "measurement": "MEASURED",
+          "row_indices": null,
+          "cuda_version": "13.0",
+          "target_model": "openbmb/MiniCPM5-2B",
+          "driver_version": "580.173.02",
+          "model_revision": "f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+          "python_version": "3.12.3",
+          "requests_sha256": "f5b4a8505a709fc4b1d648c0fe5b9f086cb992d72fe4e0ddb8ef92df3476c6f7",
+          "workload_sha256": "ee396ac3a6f7e4c336c61a802ee308e1418f3887c993f45c7e250d9ffabf606e",
+          "dataset_identity": null,
+          "expanded_choices": {
+            "graph_mode": [
+              "NONE",
+              "PIECEWISE",
+              "FULL_AND_PIECEWISE"
+            ],
+            "kv_cache_dtype": [
+              "auto",
+              "fp8"
+            ],
+            "async_scheduling": [
+              false,
+              true
+            ],
+            "performance_mode": [
+              "balanced",
+              "interactivity",
+              "throughput"
+            ],
+            "attention_backend": [
+              "auto",
+              "FLASH_ATTN",
+              "FLASHINFER"
+            ],
+            "enable_prefix_caching": [
+              false,
+              true
+            ]
+          },
+          "package_versions": {
+            "vllm": "0.32.0",
+            "numpy": "2.3.5",
+            "optuna": "4.9.0",
+            "aiohttp": "3.14.5",
+            "transformers": "5.19.0",
+            "llm-optimizer": "0.0.1"
+          },
+          "quality_verified": true,
+          "framework_version": "0.32.0",
+          "hf_target_model_id": "openbmb/MiniCPM5-2B",
+          "tokenizer_revision": "f97400052a43d642bbc6e9975e2397e3ae6a6b52",
+          "cuda_visible_devices": null,
+          "native_config_verified": true,
+          "suggested_baseline_config": {
+            "seed": 2026,
+            "dtype": "bfloat16",
+            "max_model_len": 8192,
+            "served_model_name": "MiniCPM5-2B",
+            "tensor_parallel_size": 1,
+            "gpu_memory_utilization": 0.85
+          }
+        },
+        "server_config": {
+          "seed": 2026,
+          "dtype": "bfloat16",
+          "max_model_len": 8192,
+          "served_model_name": "MiniCPM5-2B",
+          "tensor_parallel_size": 1,
+          "gpu_memory_utilization": 0.85
+        }
+      },
+      "summary": {
+        "_runtime": 87,
+        "_step": 0,
+        "_timestamp": 1793182385.891715,
+        "_wandb.runtime": 87,
+        "benchmark_valid": true,
+        "completed": 1000,
+        "failed": 0,
+        "gpu_seconds": 86.86229879200027,
+        "output_throughput": 14301.43690438273,
+        "p95_e2e_latency_ms": 1385.0613982500363,
+        "p95_ttft_ms": 525.0576852999757,
+        "results_path": "/home/ubuntu/llm-optimizer-trt/experiment_results/vllm-baseline_runs/suggested-vllm-openbmb--MiniCPM5-2B-7831e9ae-c128-results.json",
+        "status": "completed",
+        "total_requests": 1000,
+        "wall_seconds": 86.86229879200027
+      },
+      "trial_state_counts": {},
+      "trials": []
+    }
+  ]
+}

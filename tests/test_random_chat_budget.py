@@ -54,3 +54,44 @@ def test_boundary_changes_preserve_exact_budget_and_template(fit_prompt, target,
 def test_template_exceeding_budget_fails_explicitly(fit_prompt):
     with pytest.raises(ValueError, match="exactly 2"):
         fit_prompt(BoundaryTokenizer(), "abc", 2)
+
+
+class StrandedTokenizer(BoundaryTokenizer):
+    """The initial undershoot cannot be padded; another prefix can fit."""
+
+    def encode(self, text, add_special_tokens=True):
+        if not add_special_tokens:
+            return list(text)
+        content = text[len('<user>'):-len('</user><assistant>')]
+        if content == 'abcab':
+            return list(range(14))
+        if content == 'abc':
+            return list(range(15))
+        return list(range(16 if len(content) >= 6 else 12))
+
+
+def test_alternate_prefix_recovers_stranded_greedy_fit(fit_prompt):
+    tokenizer = StrandedTokenizer()
+    prompt = fit_prompt(tokenizer, 'abc', 15)
+    assert prompt == '<user>abc</user><assistant>'
+    assert len(tokenizer.encode(prompt)) == 15
+    assert fit_prompt(tokenizer, 'abc', 15, False) == tokenizer.encode(prompt)
+
+
+class AlternatePaddingTokenizer(StrandedTokenizer):
+    def encode(self, text, add_special_tokens=True):
+        if not add_special_tokens:
+            return list(text)
+        content = text[len('<user>'):-len('</user><assistant>')]
+        if content == 'abcab!':
+            return list(range(15))
+        if content == 'abcab':
+            return list(range(14))
+        return list(range(16 if len(content) >= 6 else 12))
+
+
+def test_alternate_padding_preserves_template_and_exact_count(fit_prompt):
+    tokenizer = AlternatePaddingTokenizer()
+    prompt = fit_prompt(tokenizer, 'abc', 15)
+    assert prompt == '<user>abcab!</user><assistant>'
+    assert len(tokenizer.encode(prompt)) == 15
