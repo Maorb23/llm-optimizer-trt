@@ -64,10 +64,10 @@ Use the same benchmark command and argument syntax, adding an Optuna budget:
 llm-optimizer \
   --framework vllm \
   --model Qwen/Qwen2.5-0.5B-Instruct \
-  --server-args "tensor_parallel_size=1;max_num_seqs=[16,32,64]" \
-  --client-args "dataset_name=random;random_input_len=128;random_output_len=32;num_prompts=64;max_concurrency=[8,16,32]" \
+  --server-args "tensor_parallel_size=1;max_num_seqs=[16,32,64,96,128]" \
+  --client-args "dataset_name=random;random_input_len=128;random_output_len=32;num_prompts=64;max_concurrency=[8,16,32,48,64]" \
   --search-strategy optuna \
-  --optuna-trials 6 --optuna-seed 7 \
+  --optuna-trials 20 --optuna-seed 7 \
   --optuna-objective output_throughput \
   --output-json vllm_optuna.json
 ```
@@ -84,6 +84,20 @@ arguments. Measured tuning requires the same GPU/runtime setup as grid search.
 | SLOs | Add `--constraints`; completed trials that miss SLOs are excluded from the feasible best. |
 | Integer ranges | Use `--optuna-server-args "max_num_seqs=int(16,64,16)"` or `--optuna-client-args "max_concurrency=int(8,32,8)"`. |
 | Resume | Repeat the original command with `--continue`. Keep the model, workload, search space, objective, and constraints unchanged. |
+
+**Start with 20 trials per study.** The default CLI TPE sampler uses random
+sampling during its initial exploration phase (`n_startup_trials=10`). Choose
+more than 10 trials to leave room for guided optimization after that phase;
+failed trials and duplicate proposals can reduce the useful observations collected.
+The example above offers 25 configurations, leaving room for a 20-trial search.
+A search space with 10 or fewer distinct configurations is better suited to a
+full grid comparison than a default TPE study.
+
+The startup count is configurable through `--optuna-sampler-kwargs`, and other
+samplers and experiment-lab settings may use different counts. Twenty trials is
+a starting recommendation, not a guarantee of convergence or improved performance.
+See [Optuna's TPE documentation](https://optuna.readthedocs.io/en/v4.9.0/reference/samplers/generated/optuna.samplers.TPESampler.html)
+for startup sampling behavior.
 
 Lists and `range(...)` in ordinary argument options are categorical choices.
 Optuna-only `int(low,high[,step])` ranges use integer sampling, include both
