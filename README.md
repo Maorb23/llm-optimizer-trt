@@ -240,7 +240,7 @@ are swept. Coupled settings use syntax such as
 `tensor_parallel_size*data_parallel_size=[(1,2),(2,1)]`.
 Keep input/output lengths and request count fixed when comparing engine settings.
 
-### Use SGLang or TensorRT-LLM
+### Use SGLang, vLLM or TensorRT-LLM
 
 Use the framework's native server parameter names:
 
