@@ -8,6 +8,7 @@ from pathlib import Path
 import struct
 import tempfile
 import unittest
+from unittest.mock import patch
 from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -51,6 +52,20 @@ class FP8NotebookTests(unittest.TestCase):
                 compile(''.join(c['source']), '<cell>', 'exec')
                 self.assertEqual(c['outputs'], [])
                 self.assertIsNone(c['execution_count'])
+
+    def test_audit_reads_serve_help_instead_of_group_help(self):
+        cell = next(c for c in self.cells if 'TRT_SERVE_OPTIONS =' in c)
+        ns = dict(validate_trt140_environment=lambda: None,
+                  resolve_notebook_trt_cli=lambda: '/usr/local/bin/trtllm-serve',
+                  sys=SimpleNamespace(executable='/usr/bin/python3'),
+                  version=lambda package: '1.4.0rc3')
+        def run(command, **kwargs):
+            self.assertEqual(command, ['/usr/local/bin/trtllm-serve', 'serve', '--help'])
+            return SimpleNamespace(stdout='\x1b[32m--max_batch_size\x1b[0m --config', stderr='')
+        with patch('subprocess.run', side_effect=run):
+            exec(cell.split('def notebook_trt_command')[0], ns)
+        self.assertIn('--max_batch_size', ns['TRT_SERVE_OPTIONS'])
+        self.assertIn('--config', ns['TRT_SERVE_OPTIONS'])
 
     def test_accepts_export_and_rejects_changed_source_or_artifact(self):
         validate = self.ns['validate_fp8_checkpoint']
