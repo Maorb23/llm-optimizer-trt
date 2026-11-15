@@ -1,0 +1,893 @@
+{
+  "settings": {
+    "frameworks": [
+      "vllm"
+    ],
+    "concurrencies": [
+      1,
+      8,
+      16,
+      32,
+      128
+    ],
+    "phase_requests": {
+      "A": 1000,
+      "B": 1000
+    },
+    "validation_requests": {
+      "A": 1000,
+      "B": 1000
+    },
+    "validation_repeats": 5,
+    "phase_models": {
+      "A": "Qwen/Qwen3.5-4B",
+      "B": "Qwen/Qwen3.5-4B"
+    },
+    "seeds": [
+      11,
+      29,
+      47
+    ],
+    "quick_demo": false,
+    "search_trials": {
+      "A": {
+        "1": 20,
+        "128": 20
+      },
+      "B": {
+        "1": 20,
+        "128": 20
+      }
+    },
+    "demo_trials": {
+      "A": {
+        "1": 10,
+        "128": 24
+      },
+      "B": {
+        "1": 20,
+        "128": 20
+      }
+    },
+    "ttft_limits_ms": {
+      "1": 100.0,
+      "128": 200.0
+    },
+    "e2e_limits_ms": {
+      "1": 2000.0,
+      "128": 6000.0
+    },
+    "failure_rate_limit": 0.0,
+    "run_real_gpu": false,
+    "wandb_enabled": true,
+    "wandb_project": "inference-optimization",
+    "wandb_entity": "maorblumberg-tel-aviv-university",
+    "wandb_mode": "online",
+    "real_frameworks": [
+      "vllm"
+    ],
+    "base_workload": {
+      "dataset_name": "random",
+      "apply_chat_template": true,
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "random_range_ratio": 1.0,
+      "seed": 2026,
+      "request_rate": "inf"
+    },
+    "sampler_names": [
+      "gp",
+      "tpe",
+      "tpe_multivariate"
+    ],
+    "model_snapshots": {
+      "A": "/workspace/models/pinned-model-snapshot",
+      "B": "/workspace/models/pinned-model-snapshot"
+    },
+    "real_preflight": {
+      "A": {
+        "vllm": {
+          "gpu_type": "REPLACE",
+          "framework_version": "REPLACE",
+          "cuda_version": "REPLACE",
+          "driver_version": "REPLACE",
+          "model_revision": "REPLACE_WITH_MODEL_COMMIT",
+          "native_config_verified": false,
+          "quality_verified": false,
+          "verified_precision_combinations": [],
+          "expanded_choices": {
+            "async_scheduling": [
+              false,
+              true
+            ],
+            "performance_mode": [
+              "balanced",
+              "interactivity",
+              "throughput"
+            ],
+            "attention_backend": [
+              "auto",
+              "FLASH_ATTN",
+              "FLASHINFER"
+            ],
+            "kv_cache_dtype": [
+              "auto"
+            ],
+            "enable_prefix_caching": [
+              false,
+              true
+            ],
+            "graph_mode": [
+              "NONE",
+              "PIECEWISE",
+              "FULL_AND_PIECEWISE"
+            ]
+          }
+        }
+      },
+      "B": {
+        "vllm": {
+          "gpu_type": "REPLACE",
+          "framework_version": "REPLACE",
+          "cuda_version": "REPLACE",
+          "driver_version": "REPLACE",
+          "model_revision": "REPLACE_WITH_MODEL_COMMIT",
+          "native_config_verified": false,
+          "quality_verified": false,
+          "verified_precision_combinations": [],
+          "expanded_choices": {
+            "async_scheduling": [
+              false,
+              true
+            ],
+            "performance_mode": [
+              "balanced",
+              "interactivity",
+              "throughput"
+            ],
+            "attention_backend": [
+              "auto",
+              "FLASH_ATTN",
+              "FLASHINFER"
+            ],
+            "kv_cache_dtype": [
+              "auto"
+            ],
+            "enable_prefix_caching": [
+              false,
+              true
+            ],
+            "graph_mode": [
+              "NONE",
+              "PIECEWISE",
+              "FULL_AND_PIECEWISE"
+            ]
+          }
+        }
+      }
+    },
+    "validation_require_slo": false,
+    "phases": [
+      "A",
+      "B"
+    ],
+    "objectives": {
+      "1": [
+        "e2e",
+        "ttft",
+        "pareto_latency"
+      ],
+      "128": [
+        "e2e",
+        "throughput",
+        "pareto_throughput"
+      ]
+    },
+    "constrained": false,
+    "pruning": false,
+    "pruning_samples": 32,
+    "pruning_trials": 12,
+    "gpu_budget": null,
+    "wandb_group": "phase1-week1",
+    "sampler_settings": {
+      "startup_single": 4,
+      "startup_multi": 10,
+      "n_ei_candidates": 24,
+      "population_size": 8
+    },
+    "simulation_seed": 2026,
+    "validation_seed": 50000,
+    "validation_noise_seed": 70000,
+    "gpu_count": 1,
+    "rest_seconds": 10,
+    "fixed_server": {},
+    "pareto_samplers": [
+      "gp",
+      "tpe",
+      "tpe_multivariate",
+      "nsga2"
+    ],
+    "calibration_sampler_seed": 73,
+    "calibration_noise_seed": 9001
+  },
+  "base_spaces": {
+    "1": {
+      "vllm": {
+        "max_num_batched_tokens": [
+          1024,
+          2048,
+          3072,
+          4096,
+          5120,
+          6144,
+          7168,
+          8192
+        ],
+        "cuda_graph_on": [
+          0,
+          1
+        ]
+      },
+      "sglang": {
+        "chunked_prefill_size": [
+          1024,
+          2048,
+          3072,
+          4096,
+          5120,
+          6144,
+          7168,
+          8192
+        ],
+        "cuda_graph_on": [
+          0,
+          1
+        ]
+      },
+      "trtllm": {
+        "max_num_tokens": [
+          1024,
+          2048,
+          3072,
+          4096,
+          5120,
+          6144,
+          7168,
+          8192
+        ],
+        "cuda_graph_on": [
+          0,
+          1
+        ]
+      }
+    },
+    "128": {
+      "vllm": {
+        "max_num_seqs": [
+          8,
+          16,
+          24,
+          32,
+          40,
+          48,
+          56,
+          64,
+          72,
+          80,
+          88,
+          96,
+          104,
+          112,
+          120,
+          128
+        ],
+        "max_num_batched_tokens": [
+          1024,
+          1280,
+          1536,
+          1792,
+          2048,
+          2304,
+          2560,
+          2816,
+          3072,
+          3328,
+          3584,
+          3840,
+          4096,
+          4352,
+          4608,
+          4864,
+          5120,
+          5376,
+          5632,
+          5888,
+          6144,
+          6400,
+          6656,
+          6912,
+          7168,
+          7424,
+          7680,
+          7936,
+          8192,
+          8448,
+          8704,
+          8960,
+          9216,
+          9472,
+          9728,
+          9984,
+          10240,
+          10496,
+          10752,
+          11008,
+          11264,
+          11520,
+          11776,
+          12032,
+          12288,
+          12544,
+          12800,
+          13056,
+          13312,
+          13568,
+          13824,
+          14080,
+          14336,
+          14592,
+          14848,
+          15104,
+          15360,
+          15616,
+          15872,
+          16128,
+          16384,
+          16640,
+          16896,
+          17152,
+          17408,
+          17664,
+          17920,
+          18176,
+          18432,
+          18688,
+          18944,
+          19200,
+          19456,
+          19712,
+          19968,
+          20224,
+          20480,
+          20736,
+          20992,
+          21248,
+          21504,
+          21760,
+          22016,
+          22272,
+          22528,
+          22784,
+          23040,
+          23296,
+          23552,
+          23808,
+          24064,
+          24320,
+          24576,
+          24832,
+          25088,
+          25344,
+          25600,
+          25856,
+          26112,
+          26368,
+          26624,
+          26880,
+          27136,
+          27392,
+          27648,
+          27904,
+          28160,
+          28416,
+          28672,
+          28928,
+          29184,
+          29440,
+          29696,
+          29952,
+          30208,
+          30464,
+          30720,
+          30976,
+          31232,
+          31488,
+          31744,
+          32000,
+          32256,
+          32512,
+          32768
+        ],
+        "gpu_memory_utilization": [
+          0.75,
+          0.8,
+          0.85,
+          0.9
+        ]
+      },
+      "sglang": {
+        "max_running_requests": [
+          8,
+          16,
+          24,
+          32,
+          40,
+          48,
+          56,
+          64,
+          72,
+          80,
+          88,
+          96,
+          104,
+          112,
+          120,
+          128
+        ],
+        "chunked_prefill_size": [
+          1024,
+          1280,
+          1536,
+          1792,
+          2048,
+          2304,
+          2560,
+          2816,
+          3072,
+          3328,
+          3584,
+          3840,
+          4096,
+          4352,
+          4608,
+          4864,
+          5120,
+          5376,
+          5632,
+          5888,
+          6144,
+          6400,
+          6656,
+          6912,
+          7168,
+          7424,
+          7680,
+          7936,
+          8192,
+          8448,
+          8704,
+          8960,
+          9216,
+          9472,
+          9728,
+          9984,
+          10240,
+          10496,
+          10752,
+          11008,
+          11264,
+          11520,
+          11776,
+          12032,
+          12288,
+          12544,
+          12800,
+          13056,
+          13312,
+          13568,
+          13824,
+          14080,
+          14336,
+          14592,
+          14848,
+          15104,
+          15360,
+          15616,
+          15872,
+          16128,
+          16384,
+          16640,
+          16896,
+          17152,
+          17408,
+          17664,
+          17920,
+          18176,
+          18432,
+          18688,
+          18944,
+          19200,
+          19456,
+          19712,
+          19968,
+          20224,
+          20480,
+          20736,
+          20992,
+          21248,
+          21504,
+          21760,
+          22016,
+          22272,
+          22528,
+          22784,
+          23040,
+          23296,
+          23552,
+          23808,
+          24064,
+          24320,
+          24576,
+          24832,
+          25088,
+          25344,
+          25600,
+          25856,
+          26112,
+          26368,
+          26624,
+          26880,
+          27136,
+          27392,
+          27648,
+          27904,
+          28160,
+          28416,
+          28672,
+          28928,
+          29184,
+          29440,
+          29696,
+          29952,
+          30208,
+          30464,
+          30720,
+          30976,
+          31232,
+          31488,
+          31744,
+          32000,
+          32256,
+          32512,
+          32768
+        ],
+        "mem_fraction_static": [
+          0.7,
+          0.75,
+          0.8,
+          0.85
+        ]
+      },
+      "trtllm": {
+        "max_batch_size": [
+          8,
+          16,
+          24,
+          32,
+          40,
+          48,
+          56,
+          64,
+          72,
+          80,
+          88,
+          96,
+          104,
+          112,
+          120,
+          128
+        ],
+        "max_num_tokens": [
+          1024,
+          1280,
+          1536,
+          1792,
+          2048,
+          2304,
+          2560,
+          2816,
+          3072,
+          3328,
+          3584,
+          3840,
+          4096,
+          4352,
+          4608,
+          4864,
+          5120,
+          5376,
+          5632,
+          5888,
+          6144,
+          6400,
+          6656,
+          6912,
+          7168,
+          7424,
+          7680,
+          7936,
+          8192,
+          8448,
+          8704,
+          8960,
+          9216,
+          9472,
+          9728,
+          9984,
+          10240,
+          10496,
+          10752,
+          11008,
+          11264,
+          11520,
+          11776,
+          12032,
+          12288,
+          12544,
+          12800,
+          13056,
+          13312,
+          13568,
+          13824,
+          14080,
+          14336,
+          14592,
+          14848,
+          15104,
+          15360,
+          15616,
+          15872,
+          16128,
+          16384,
+          16640,
+          16896,
+          17152,
+          17408,
+          17664,
+          17920,
+          18176,
+          18432,
+          18688,
+          18944,
+          19200,
+          19456,
+          19712,
+          19968,
+          20224,
+          20480,
+          20736,
+          20992,
+          21248,
+          21504,
+          21760,
+          22016,
+          22272,
+          22528,
+          22784,
+          23040,
+          23296,
+          23552,
+          23808,
+          24064,
+          24320,
+          24576,
+          24832,
+          25088,
+          25344,
+          25600,
+          25856,
+          26112,
+          26368,
+          26624,
+          26880,
+          27136,
+          27392,
+          27648,
+          27904,
+          28160,
+          28416,
+          28672,
+          28928,
+          29184,
+          29440,
+          29696,
+          29952,
+          30208,
+          30464,
+          30720,
+          30976,
+          31232,
+          31488,
+          31744,
+          32000,
+          32256,
+          32512,
+          32768
+        ],
+        "kv_cache_free_gpu_memory_fraction": [
+          0.65,
+          0.75,
+          0.85,
+          0.95
+        ]
+      }
+    }
+  },
+  "expanded_choices": {
+    "vllm": {
+      "async_scheduling": [
+        false,
+        true
+      ],
+      "performance_mode": [
+        "balanced",
+        "interactivity",
+        "throughput"
+      ],
+      "attention_backend": [
+        "auto",
+        "FLASH_ATTN",
+        "FLASHINFER"
+      ],
+      "kv_cache_dtype": [
+        "auto"
+      ],
+      "enable_prefix_caching": [
+        false,
+        true
+      ],
+      "graph_mode": [
+        "NONE",
+        "PIECEWISE",
+        "FULL_AND_PIECEWISE"
+      ]
+    },
+    "sglang": {
+      "attention_backend": [
+        "triton",
+        "fa3",
+        "flashinfer"
+      ],
+      "disable_radix_cache": [
+        false,
+        true
+      ],
+      "schedule_policy": [
+        "fcfs",
+        "lpm"
+      ],
+      "enable_mixed_chunk": [
+        false,
+        true
+      ],
+      "disable_overlap_schedule": [
+        false,
+        true
+      ],
+      "cuda_graph_backend_decode": [
+        "disabled",
+        "full"
+      ],
+      "cuda_graph_backend_prefill": [
+        "disabled",
+        "breakable"
+      ]
+    },
+    "trtllm": {
+      "attn_backend": [
+        "TRTLLM"
+      ],
+      "enable_chunked_prefill": [
+        false,
+        true
+      ],
+      "enable_block_reuse": [
+        false,
+        true
+      ],
+      "capacity_scheduler_policy": [
+        "GUARANTEED_NO_EVICT",
+        "MAX_UTILIZATION"
+      ],
+      "graph_enabled": [
+        false,
+        true
+      ]
+    }
+  },
+  "extra_spaces": {
+    "vllm": {
+      "graph_capture_profile": [
+        "powers",
+        "dense"
+      ]
+    },
+    "sglang": {
+      "schedule_conservativeness": [
+        0.5,
+        0.75,
+        1.0,
+        1.25,
+        1.5
+      ],
+      "max_prefill_tokens": [
+        8192,
+        16384,
+        24576,
+        32768
+      ]
+    },
+    "trtllm": {
+      "graph_capture_profile": [
+        "powers",
+        "dense"
+      ],
+      "graph_padding": [
+        0,
+        1
+      ]
+    }
+  },
+  "precision_choices": {
+    "vllm": {
+      "weight_precision": [
+        "bf16",
+        "fp8"
+      ],
+      "kv_cache_precision": [
+        "bf16",
+        "fp8"
+      ]
+    },
+    "sglang": {
+      "weight_precision": [
+        "bf16",
+        "fp8"
+      ],
+      "kv_cache_precision": [
+        "bf16",
+        "fp8"
+      ]
+    },
+    "trtllm": {
+      "weight_precision": [
+        "bf16",
+        "fp8"
+      ],
+      "kv_cache_precision": [
+        "bf16",
+        "fp8"
+      ]
+    }
+  },
+  "trt_fp8_calibration": {
+    "calib_batches": 32,
+    "calib_batch_size": 1,
+    "calib_max_seq_length": 512,
+    "tokenizer_max_seq_length": 512
+  },
+  "requests_by_concurrency": {
+    "1": 32,
+    "8": 62,
+    "16": 125,
+    "32": 250,
+    "128": 1000
+  },
+  "pruning_min_completed_requests": {
+    "1": 12,
+    "8": 24,
+    "16": 50,
+    "32": 100,
+    "128": 400
+  }
+}

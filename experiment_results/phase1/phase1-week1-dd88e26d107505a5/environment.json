@@ -1,0 +1,19 @@
+{
+  "python": "3.12.16 (main, Nov 11 2026, 00:15:59) [Clang 23.1.3 ]",
+  "platform": "Linux-6.11.0-1016-nvidia-x86_64-with-glibc2.39",
+  "packages": {
+    "llm-optimizer": "0.0.1",
+    "optuna": "4.9.0",
+    "numpy": "2.3.5",
+    "scipy": "1.18.1",
+    "torch": "2.14.0",
+    "wandb": "0.31.0"
+  },
+  "git_revision": "27681754e13675d0e3ce85ba61e9b69823235dbf",
+  "implementation_sha256": {
+    "lab.py": "34071486ccf3e13de63122f37d67f1fe1d665869e0bee75539b614bcb003de24",
+    "config.py": "5b6dc663d67718f31a9a060e9c0b3cf9f557d38049bdcb6f072b268b4784c794",
+    "workflow.py": "990b3d20c3dc3b4670e18fa62a7c61ff66d98a527acac1b74e6944a2bdf3f12e",
+    "defaults.json": "445d5c806e296b905e293874ce71a3f51d22c5f7f80a3178239d1d57c5337775"
+  }
+}

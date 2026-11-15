@@ -1,0 +1,1847 @@
+{
+  "study": "B-vllm-c8-throughput-tpe-median-s47",
+  "contract": {
+    "environment": {
+      "gpu_type": "H100",
+      "framework_version": "0.33.0",
+      "cuda_version": " cuda_13.0.r13.0/compiler.36424714_0",
+      "driver_version": "HBM3",
+      "model_revision": "REPLACE_WITH_MODEL_COMMIT",
+      "native_config_verified": false,
+      "quality_verified": false,
+      "verified_precision_combinations": [],
+      "expanded_choices": {
+        "async_scheduling": [
+          false,
+          true
+        ],
+        "performance_mode": [
+          "balanced",
+          "interactivity",
+          "throughput"
+        ],
+        "attention_backend": [
+          "auto",
+          "FLASH_ATTN",
+          "FLASHINFER"
+        ],
+        "kv_cache_dtype": [
+          "auto"
+        ],
+        "enable_prefix_caching": [
+          false,
+          true
+        ],
+        "graph_mode": [
+          "NONE",
+          "PIECEWISE",
+          "FULL_AND_PIECEWISE"
+        ]
+      },
+      "measurement": "SYNTHETIC",
+      "optuna": "4.9.0",
+      "python": "3.12.16",
+      "numpy": "2.3.5",
+      "model": "simulation-only",
+      "gpu_count": 1
+    },
+    "framework": "vllm",
+    "phase": "B",
+    "target_model": "Qwen/Qwen3.5-4B",
+    "concurrency": 8,
+    "workload": {
+      "dataset_name": "random",
+      "apply_chat_template": true,
+      "random_input_len": 512,
+      "random_output_len": 128,
+      "random_range_ratio": 1.0,
+      "seed": 2026,
+      "request_rate": "inf",
+      "num_prompts": 62,
+      "max_concurrency": 8
+    },
+    "space_kind": "expanded",
+    "phase_a_space": {
+      "max_num_seqs": [
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64,
+        72,
+        80,
+        88,
+        96,
+        104,
+        112,
+        120,
+        128
+      ],
+      "max_num_batched_tokens": [
+        1024,
+        1280,
+        1536,
+        1792,
+        2048,
+        2304,
+        2560,
+        2816,
+        3072,
+        3328,
+        3584,
+        3840,
+        4096,
+        4352,
+        4608,
+        4864,
+        5120,
+        5376,
+        5632,
+        5888,
+        6144,
+        6400,
+        6656,
+        6912,
+        7168,
+        7424,
+        7680,
+        7936,
+        8192,
+        8448,
+        8704,
+        8960,
+        9216,
+        9472,
+        9728,
+        9984,
+        10240,
+        10496,
+        10752,
+        11008,
+        11264,
+        11520,
+        11776,
+        12032,
+        12288,
+        12544,
+        12800,
+        13056,
+        13312,
+        13568,
+        13824,
+        14080,
+        14336,
+        14592,
+        14848,
+        15104,
+        15360,
+        15616,
+        15872,
+        16128,
+        16384,
+        16640,
+        16896,
+        17152,
+        17408,
+        17664,
+        17920,
+        18176,
+        18432,
+        18688,
+        18944,
+        19200,
+        19456,
+        19712,
+        19968,
+        20224,
+        20480,
+        20736,
+        20992,
+        21248,
+        21504,
+        21760,
+        22016,
+        22272,
+        22528,
+        22784,
+        23040,
+        23296,
+        23552,
+        23808,
+        24064,
+        24320,
+        24576,
+        24832,
+        25088,
+        25344,
+        25600,
+        25856,
+        26112,
+        26368,
+        26624,
+        26880,
+        27136,
+        27392,
+        27648,
+        27904,
+        28160,
+        28416,
+        28672,
+        28928,
+        29184,
+        29440,
+        29696,
+        29952,
+        30208,
+        30464,
+        30720,
+        30976,
+        31232,
+        31488,
+        31744,
+        32000,
+        32256,
+        32512,
+        32768
+      ],
+      "gpu_memory_utilization": [
+        0.75,
+        0.8,
+        0.85,
+        0.9
+      ]
+    },
+    "expanded_choices": {
+      "async_scheduling": [
+        false,
+        true
+      ],
+      "performance_mode": [
+        "balanced",
+        "interactivity",
+        "throughput"
+      ],
+      "attention_backend": [
+        "auto",
+        "FLASH_ATTN",
+        "FLASHINFER"
+      ],
+      "kv_cache_dtype": [
+        "auto"
+      ],
+      "enable_prefix_caching": [
+        false,
+        true
+      ],
+      "graph_mode": [
+        "NONE",
+        "PIECEWISE",
+        "FULL_AND_PIECEWISE"
+      ]
+    },
+    "sampling_menu": {
+      "max_num_seqs": [
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64,
+        72,
+        80,
+        88,
+        96,
+        104,
+        112,
+        120,
+        128
+      ],
+      "max_num_batched_tokens": [
+        1024,
+        1280,
+        1536,
+        1792,
+        2048,
+        2304,
+        2560,
+        2816,
+        3072,
+        3328,
+        3584,
+        3840,
+        4096,
+        4352,
+        4608,
+        4864,
+        5120,
+        5376,
+        5632,
+        5888,
+        6144,
+        6400,
+        6656,
+        6912,
+        7168,
+        7424,
+        7680,
+        7936,
+        8192,
+        8448,
+        8704,
+        8960,
+        9216,
+        9472,
+        9728,
+        9984,
+        10240,
+        10496,
+        10752,
+        11008,
+        11264,
+        11520,
+        11776,
+        12032,
+        12288,
+        12544,
+        12800,
+        13056,
+        13312,
+        13568,
+        13824,
+        14080,
+        14336,
+        14592,
+        14848,
+        15104,
+        15360,
+        15616,
+        15872,
+        16128,
+        16384,
+        16640,
+        16896,
+        17152,
+        17408,
+        17664,
+        17920,
+        18176,
+        18432,
+        18688,
+        18944,
+        19200,
+        19456,
+        19712,
+        19968,
+        20224,
+        20480,
+        20736,
+        20992,
+        21248,
+        21504,
+        21760,
+        22016,
+        22272,
+        22528,
+        22784,
+        23040,
+        23296,
+        23552,
+        23808,
+        24064,
+        24320,
+        24576,
+        24832,
+        25088,
+        25344,
+        25600,
+        25856,
+        26112,
+        26368,
+        26624,
+        26880,
+        27136,
+        27392,
+        27648,
+        27904,
+        28160,
+        28416,
+        28672,
+        28928,
+        29184,
+        29440,
+        29696,
+        29952,
+        30208,
+        30464,
+        30720,
+        30976,
+        31232,
+        31488,
+        31744,
+        32000,
+        32256,
+        32512,
+        32768
+      ],
+      "gpu_memory_utilization": [
+        0.75,
+        0.8,
+        0.85,
+        0.9
+      ],
+      "async_scheduling": [
+        false,
+        true
+      ],
+      "performance_mode": [
+        "balanced",
+        "interactivity",
+        "throughput"
+      ],
+      "attention_backend": [
+        "auto",
+        "FLASH_ATTN",
+        "FLASHINFER"
+      ],
+      "enable_prefix_caching": [
+        false,
+        true
+      ],
+      "graph_mode": [
+        "NONE",
+        "PIECEWISE",
+        "FULL_AND_PIECEWISE"
+      ],
+      "graph_capture_profile": [
+        "powers",
+        "dense"
+      ],
+      "weight_precision": [
+        "bf16",
+        "fp8"
+      ],
+      "kv_cache_precision": [
+        "bf16",
+        "fp8"
+      ]
+    },
+    "target": "throughput",
+    "metrics": [
+      "output_throughput"
+    ],
+    "directions": [
+      "MAXIMIZE"
+    ],
+    "constrained": false,
+    "ttft_limit_ms": 200.0,
+    "e2e_limit_ms": 6000.0,
+    "sampler": "tpe",
+    "sampler_class": "TPESampler",
+    "sampler_semantics": "tpe",
+    "sampler_settings": {
+      "seed": 47,
+      "n_startup_trials": 10,
+      "multivariate": false,
+      "group": false
+    },
+    "pruner_class": "MedianPruner",
+    "pruner_settings": {
+      "n_startup_trials": 10,
+      "n_warmup_steps": 24,
+      "n_min_trials": 3
+    },
+    "budget_trials": 20,
+    "budget_gpu_seconds": null,
+    "quick_demo": false,
+    "grid_declared_points": null,
+    "checkpoint_requests": [
+      24,
+      31,
+      62
+    ]
+  },
+  "trials": [
+    {
+      "number": 0,
+      "state": "COMPLETE",
+      "values": [
+        1724.7884988462745
+      ],
+      "params": {
+        "max_num_seqs": 72,
+        "max_num_batched_tokens": 16896,
+        "gpu_memory_utilization": 0.85,
+        "async_scheduling": true,
+        "performance_mode": "balanced",
+        "attention_backend": "auto",
+        "enable_prefix_caching": false,
+        "graph_mode": "NONE",
+        "weight_precision": "fp8",
+        "kv_cache_precision": "bf16"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 72,
+          "max_num_batched_tokens": 16896,
+          "gpu_memory_utilization": 0.85,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "NONE"
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "auto",
+          "async_scheduling": true,
+          "performance_mode": "balanced",
+          "attention_backend": "auto",
+          "enable_prefix_caching": false,
+          "quantization": "fp8"
+        },
+        "config_id": "7e74628b0db37e16",
+        "constraint_values": [
+          240.16665349871488,
+          -4971.65705790579,
+          0.0
+        ],
+        "gpu_seconds": 39.60114385346868,
+        "measurement": {
+          "output_throughput": 1724.7884988462745,
+          "p95_ttft_ms": 440.1666534987149,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 39.60114385346868,
+          "gpu_seconds": 39.60114385346868,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 1028.3429420942098
+        },
+        "orchestrator_wall_seconds": 0.044828573000813776,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 1,
+      "state": "COMPLETE",
+      "values": [
+        1677.6063296168431
+      ],
+      "params": {
+        "max_num_seqs": 120,
+        "max_num_batched_tokens": 9472,
+        "gpu_memory_utilization": 0.8,
+        "async_scheduling": false,
+        "performance_mode": "throughput",
+        "attention_backend": "FLASHINFER",
+        "enable_prefix_caching": false,
+        "graph_mode": "NONE",
+        "weight_precision": "bf16",
+        "kv_cache_precision": "bf16"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 120,
+          "max_num_batched_tokens": 9472,
+          "gpu_memory_utilization": 0.8,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "NONE"
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "auto",
+          "async_scheduling": false,
+          "performance_mode": "throughput",
+          "attention_backend": "FLASHINFER",
+          "enable_prefix_caching": false
+        },
+        "config_id": "d2ed18b0e9756cab",
+        "constraint_values": [
+          337.14499165574694,
+          -4839.809274243506,
+          0.0
+        ],
+        "gpu_seconds": 39.73054962889449,
+        "measurement": {
+          "output_throughput": 1677.6063296168431,
+          "p95_ttft_ms": 537.1449916557469,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 39.73054962889449,
+          "gpu_seconds": 39.73054962889449,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 1160.1907257564944
+        },
+        "orchestrator_wall_seconds": 0.0523713909997241,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 2,
+      "state": "COMPLETE",
+      "values": [
+        1645.2525920811263
+      ],
+      "params": {
+        "max_num_seqs": 40,
+        "max_num_batched_tokens": 12544,
+        "gpu_memory_utilization": 0.85,
+        "async_scheduling": false,
+        "performance_mode": "interactivity",
+        "attention_backend": "FLASHINFER",
+        "enable_prefix_caching": true,
+        "graph_mode": "NONE",
+        "weight_precision": "bf16",
+        "kv_cache_precision": "bf16"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 40,
+          "max_num_batched_tokens": 12544,
+          "gpu_memory_utilization": 0.85,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "NONE"
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "auto",
+          "async_scheduling": false,
+          "performance_mode": "interactivity",
+          "attention_backend": "FLASHINFER",
+          "enable_prefix_caching": true
+        },
+        "config_id": "47868d0e9d453c07",
+        "constraint_values": [
+          97.28813958856438,
+          -5093.340093054996,
+          0.0
+        ],
+        "gpu_seconds": 39.823575442577805,
+        "measurement": {
+          "output_throughput": 1645.2525920811263,
+          "p95_ttft_ms": 297.2881395885644,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 39.823575442577805,
+          "gpu_seconds": 39.823575442577805,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 906.6599069450037
+        },
+        "orchestrator_wall_seconds": 0.04992366100032086,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 3,
+      "state": "COMPLETE",
+      "values": [
+        1298.39050422133
+      ],
+      "params": {
+        "max_num_seqs": 16,
+        "max_num_batched_tokens": 18944,
+        "gpu_memory_utilization": 0.85,
+        "async_scheduling": false,
+        "performance_mode": "balanced",
+        "attention_backend": "FLASHINFER",
+        "enable_prefix_caching": false,
+        "graph_mode": "NONE",
+        "weight_precision": "bf16",
+        "kv_cache_precision": "fp8"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 16,
+          "max_num_batched_tokens": 18944,
+          "gpu_memory_utilization": 0.85,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "NONE"
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "fp8",
+          "async_scheduling": false,
+          "performance_mode": "balanced",
+          "attention_backend": "FLASHINFER",
+          "enable_prefix_caching": false,
+          "calculate_kv_scales": true
+        },
+        "config_id": "da4dd36311fa1324",
+        "constraint_values": [
+          59.856768336859545,
+          -4937.0203047803825,
+          0.0
+        ],
+        "gpu_seconds": 41.11218271713977,
+        "measurement": {
+          "output_throughput": 1298.39050422133,
+          "p95_ttft_ms": 259.85676833685955,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 41.11218271713977,
+          "gpu_seconds": 41.11218271713977,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 1062.979695219617
+        },
+        "orchestrator_wall_seconds": 0.04396436299975903,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 4,
+      "state": "COMPLETE",
+      "values": [
+        1691.206865166397
+      ],
+      "params": {
+        "max_num_seqs": 72,
+        "max_num_batched_tokens": 20480,
+        "gpu_memory_utilization": 0.85,
+        "async_scheduling": false,
+        "performance_mode": "balanced",
+        "attention_backend": "FLASH_ATTN",
+        "enable_prefix_caching": true,
+        "graph_mode": "NONE",
+        "weight_precision": "bf16",
+        "kv_cache_precision": "fp8"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 72,
+          "max_num_batched_tokens": 20480,
+          "gpu_memory_utilization": 0.85,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "NONE"
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "fp8",
+          "async_scheduling": false,
+          "performance_mode": "balanced",
+          "attention_backend": "FLASH_ATTN",
+          "enable_prefix_caching": true,
+          "calculate_kv_scales": true
+        },
+        "config_id": "cc596a3b5fd9e09b",
+        "constraint_values": [
+          279.14268652288825,
+          -4902.411513396923,
+          0.0
+        ],
+        "gpu_seconds": 39.692506968518714,
+        "measurement": {
+          "output_throughput": 1691.206865166397,
+          "p95_ttft_ms": 479.14268652288825,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 39.692506968518714,
+          "gpu_seconds": 39.692506968518714,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 1097.5884866030774
+        },
+        "orchestrator_wall_seconds": 0.0439578170007735,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 5,
+      "state": "COMPLETE",
+      "values": [
+        1832.337761150751
+      ],
+      "params": {
+        "max_num_seqs": 64,
+        "max_num_batched_tokens": 28416,
+        "gpu_memory_utilization": 0.85,
+        "async_scheduling": true,
+        "performance_mode": "throughput",
+        "attention_backend": "auto",
+        "enable_prefix_caching": true,
+        "graph_mode": "NONE",
+        "weight_precision": "bf16",
+        "kv_cache_precision": "fp8"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 64,
+          "max_num_batched_tokens": 28416,
+          "gpu_memory_utilization": 0.85,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "NONE"
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "fp8",
+          "async_scheduling": true,
+          "performance_mode": "throughput",
+          "attention_backend": "auto",
+          "enable_prefix_caching": true,
+          "calculate_kv_scales": true
+        },
+        "config_id": "88463681f84d09e1",
+        "constraint_values": [
+          293.8990576944673,
+          -4926.10353452169,
+          0.0
+        ],
+        "gpu_seconds": 39.33107921926796,
+        "measurement": {
+          "output_throughput": 1832.337761150751,
+          "p95_ttft_ms": 493.8990576944673,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 39.33107921926796,
+          "gpu_seconds": 39.33107921926796,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 1073.8964654783101
+        },
+        "orchestrator_wall_seconds": 0.04889416900005017,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 6,
+      "state": "COMPLETE",
+      "values": [
+        1688.6204521068196
+      ],
+      "params": {
+        "max_num_seqs": 32,
+        "max_num_batched_tokens": 11264,
+        "gpu_memory_utilization": 0.9,
+        "async_scheduling": true,
+        "performance_mode": "throughput",
+        "attention_backend": "FLASH_ATTN",
+        "enable_prefix_caching": false,
+        "graph_mode": "PIECEWISE",
+        "graph_capture_profile": "powers",
+        "weight_precision": "bf16",
+        "kv_cache_precision": "bf16"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 32,
+          "max_num_batched_tokens": 11264,
+          "gpu_memory_utilization": 0.9,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "PIECEWISE",
+            "cudagraph_capture_sizes": [
+              1,
+              2,
+              4,
+              8,
+              16,
+              32
+            ]
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "auto",
+          "async_scheduling": true,
+          "performance_mode": "throughput",
+          "attention_backend": "FLASH_ATTN",
+          "enable_prefix_caching": false
+        },
+        "config_id": "9bddc6805e49713d",
+        "constraint_values": [
+          53.36637479086943,
+          -5156.711349093056,
+          0.0
+        ],
+        "gpu_seconds": 47.69969435114835,
+        "measurement": {
+          "output_throughput": 1688.6204521068196,
+          "p95_ttft_ms": 253.36637479086943,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 47.69969435114835,
+          "gpu_seconds": 47.69969435114835,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 843.2886509069436
+        },
+        "orchestrator_wall_seconds": 0.04478891700000531,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 7,
+      "state": "COMPLETE",
+      "values": [
+        1720.704550757473
+      ],
+      "params": {
+        "max_num_seqs": 104,
+        "max_num_batched_tokens": 26624,
+        "gpu_memory_utilization": 0.75,
+        "async_scheduling": false,
+        "performance_mode": "throughput",
+        "attention_backend": "auto",
+        "enable_prefix_caching": false,
+        "graph_mode": "NONE",
+        "weight_precision": "fp8",
+        "kv_cache_precision": "bf16"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 104,
+          "max_num_batched_tokens": 26624,
+          "gpu_memory_utilization": 0.75,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "NONE"
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "auto",
+          "async_scheduling": false,
+          "performance_mode": "throughput",
+          "attention_backend": "auto",
+          "enable_prefix_caching": false,
+          "quantization": "fp8"
+        },
+        "config_id": "394e9a6fb49ddc23",
+        "constraint_values": [
+          400.2344218411588,
+          -4821.249334385847,
+          0.0
+        ],
+        "gpu_seconds": 39.61206428291625,
+        "measurement": {
+          "output_throughput": 1720.704550757473,
+          "p95_ttft_ms": 600.2344218411588,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 39.61206428291625,
+          "gpu_seconds": 39.61206428291625,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 1178.750665614153
+        },
+        "orchestrator_wall_seconds": 0.044623203999435646,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 8,
+      "state": "COMPLETE",
+      "values": [
+        932.0103331491057
+      ],
+      "params": {
+        "max_num_seqs": 88,
+        "max_num_batched_tokens": 1536,
+        "gpu_memory_utilization": 0.8,
+        "async_scheduling": true,
+        "performance_mode": "throughput",
+        "attention_backend": "FLASHINFER",
+        "enable_prefix_caching": false,
+        "graph_mode": "NONE",
+        "weight_precision": "bf16",
+        "kv_cache_precision": "fp8"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 88,
+          "max_num_batched_tokens": 1536,
+          "gpu_memory_utilization": 0.8,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "NONE"
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "fp8",
+          "async_scheduling": true,
+          "performance_mode": "throughput",
+          "attention_backend": "FLASHINFER",
+          "enable_prefix_caching": false,
+          "calculate_kv_scales": true
+        },
+        "config_id": "17906187e85ae2f2",
+        "constraint_values": [
+          170.1843759759086,
+          -4485.550730007247,
+          0.0
+        ],
+        "gpu_seconds": 43.514927053636406,
+        "measurement": {
+          "output_throughput": 932.0103331491057,
+          "p95_ttft_ms": 370.1843759759086,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 43.514927053636406,
+          "gpu_seconds": 43.514927053636406,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 1514.449269992753
+        },
+        "orchestrator_wall_seconds": 0.04362113400020462,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 9,
+      "state": "COMPLETE",
+      "values": [
+        1748.7473127627445
+      ],
+      "params": {
+        "max_num_seqs": 56,
+        "max_num_batched_tokens": 31744,
+        "gpu_memory_utilization": 0.9,
+        "async_scheduling": false,
+        "performance_mode": "interactivity",
+        "attention_backend": "FLASHINFER",
+        "enable_prefix_caching": true,
+        "graph_mode": "PIECEWISE",
+        "graph_capture_profile": "powers",
+        "weight_precision": "bf16",
+        "kv_cache_precision": "bf16"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 56,
+          "max_num_batched_tokens": 31744,
+          "gpu_memory_utilization": 0.9,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "PIECEWISE",
+            "cudagraph_capture_sizes": [
+              1,
+              2,
+              4,
+              8,
+              16,
+              32,
+              56
+            ]
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "auto",
+          "async_scheduling": false,
+          "performance_mode": "interactivity",
+          "attention_backend": "FLASHINFER",
+          "enable_prefix_caching": true
+        },
+        "config_id": "9f68bca90ed987ec",
+        "constraint_values": [
+          276.31262050282834,
+          -4923.642805002006,
+          0.0
+        ],
+        "gpu_seconds": 47.538105615420434,
+        "measurement": {
+          "output_throughput": 1748.7473127627445,
+          "p95_ttft_ms": 476.31262050282834,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 47.538105615420434,
+          "gpu_seconds": 47.538105615420434,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 1076.3571949979946
+        },
+        "orchestrator_wall_seconds": 0.04281362399979116,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 10,
+      "state": "PRUNED",
+      "values": [
+        1478.6879439083227
+      ],
+      "params": {
+        "max_num_seqs": 128,
+        "max_num_batched_tokens": 3840,
+        "gpu_memory_utilization": 0.75,
+        "async_scheduling": true,
+        "performance_mode": "throughput",
+        "attention_backend": "auto",
+        "enable_prefix_caching": true,
+        "graph_mode": "FULL_AND_PIECEWISE",
+        "graph_capture_profile": "dense",
+        "weight_precision": "fp8",
+        "kv_cache_precision": "fp8"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 128,
+          "max_num_batched_tokens": 3840,
+          "gpu_memory_utilization": 0.75,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "FULL_AND_PIECEWISE",
+            "cudagraph_capture_sizes": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39,
+              40,
+              41,
+              42,
+              43,
+              44,
+              45,
+              46,
+              47,
+              48,
+              49,
+              50,
+              51,
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85,
+              86,
+              87,
+              88,
+              89,
+              90,
+              91,
+              92,
+              93,
+              94,
+              95,
+              96,
+              97,
+              98,
+              99,
+              100,
+              101,
+              102,
+              103,
+              104,
+              105,
+              106,
+              107,
+              108,
+              109,
+              110,
+              111,
+              112,
+              113,
+              114,
+              115,
+              116,
+              117,
+              118,
+              119,
+              120,
+              121,
+              122,
+              123,
+              124,
+              125,
+              126,
+              127,
+              128
+            ]
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "fp8",
+          "async_scheduling": true,
+          "performance_mode": "throughput",
+          "attention_backend": "auto",
+          "enable_prefix_caching": true,
+          "quantization": "fp8",
+          "calculate_kv_scales": true
+        },
+        "config_id": "74920c592b0c7087",
+        "gpu_seconds": 45.07751744555406,
+        "orchestrator_wall_seconds": 0.017284808999647794,
+        "phase": "B",
+        "pruned_at_fraction": 0.3870967741935484
+      }
+    },
+    {
+      "number": 11,
+      "state": "COMPLETE",
+      "values": [
+        1806.234297398062
+      ],
+      "params": {
+        "max_num_seqs": 56,
+        "max_num_batched_tokens": 32512,
+        "gpu_memory_utilization": 0.9,
+        "async_scheduling": true,
+        "performance_mode": "interactivity",
+        "attention_backend": "auto",
+        "enable_prefix_caching": true,
+        "graph_mode": "PIECEWISE",
+        "graph_capture_profile": "powers",
+        "weight_precision": "bf16",
+        "kv_cache_precision": "fp8"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 56,
+          "max_num_batched_tokens": 32512,
+          "gpu_memory_utilization": 0.9,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "PIECEWISE",
+            "cudagraph_capture_sizes": [
+              1,
+              2,
+              4,
+              8,
+              16,
+              32,
+              56
+            ]
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "fp8",
+          "async_scheduling": true,
+          "performance_mode": "interactivity",
+          "attention_backend": "auto",
+          "enable_prefix_caching": true,
+          "calculate_kv_scales": true
+        },
+        "config_id": "64ffb20233b43920",
+        "constraint_values": [
+          271.5118690343023,
+          -4962.151294793797,
+          0.0
+        ],
+        "gpu_seconds": 47.39367141429662,
+        "measurement": {
+          "output_throughput": 1806.234297398062,
+          "p95_ttft_ms": 471.5118690343023,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 47.39367141429662,
+          "gpu_seconds": 47.39367141429662,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 1037.8487052062032
+        },
+        "orchestrator_wall_seconds": 0.04421121799987304,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 12,
+      "state": "COMPLETE",
+      "values": [
+        1862.5164380306976
+      ],
+      "params": {
+        "max_num_seqs": 56,
+        "max_num_batched_tokens": 32768,
+        "gpu_memory_utilization": 0.9,
+        "async_scheduling": true,
+        "performance_mode": "interactivity",
+        "attention_backend": "auto",
+        "enable_prefix_caching": true,
+        "graph_mode": "PIECEWISE",
+        "graph_capture_profile": "powers",
+        "weight_precision": "bf16",
+        "kv_cache_precision": "fp8"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 56,
+          "max_num_batched_tokens": 32768,
+          "gpu_memory_utilization": 0.9,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "PIECEWISE",
+            "cudagraph_capture_sizes": [
+              1,
+              2,
+              4,
+              8,
+              16,
+              32,
+              56
+            ]
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "fp8",
+          "async_scheduling": true,
+          "performance_mode": "interactivity",
+          "attention_backend": "auto",
+          "enable_prefix_caching": true,
+          "calculate_kv_scales": true
+        },
+        "config_id": "2ff94cf5cd107f3e",
+        "constraint_values": [
+          303.70643636535004,
+          -4963.262152428843,
+          0.0
+        ],
+        "gpu_seconds": 47.26090199149652,
+        "measurement": {
+          "output_throughput": 1862.5164380306976,
+          "p95_ttft_ms": 503.70643636535004,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 47.26090199149652,
+          "gpu_seconds": 47.26090199149652,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 1036.7378475711569
+        },
+        "orchestrator_wall_seconds": 0.04809301699970092,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 13,
+      "state": "PRUNED",
+      "values": [
+        857.3663685097787
+      ],
+      "params": {
+        "max_num_seqs": 8,
+        "max_num_batched_tokens": 25856,
+        "gpu_memory_utilization": 0.9,
+        "async_scheduling": true,
+        "performance_mode": "interactivity",
+        "attention_backend": "auto",
+        "enable_prefix_caching": true,
+        "graph_mode": "FULL_AND_PIECEWISE",
+        "graph_capture_profile": "dense",
+        "weight_precision": "bf16",
+        "kv_cache_precision": "fp8"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 8,
+          "max_num_batched_tokens": 25856,
+          "gpu_memory_utilization": 0.9,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "FULL_AND_PIECEWISE",
+            "cudagraph_capture_sizes": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "fp8",
+          "async_scheduling": true,
+          "performance_mode": "interactivity",
+          "attention_backend": "auto",
+          "enable_prefix_caching": true,
+          "calculate_kv_scales": true
+        },
+        "config_id": "50af36b46fdc3b7a",
+        "gpu_seconds": 46.58306566811054,
+        "orchestrator_wall_seconds": 0.018020108999735385,
+        "phase": "B",
+        "pruned_at_fraction": 0.3870967741935484
+      }
+    },
+    {
+      "number": 14,
+      "state": "COMPLETE",
+      "values": [
+        1901.6512266919865
+      ],
+      "params": {
+        "max_num_seqs": 80,
+        "max_num_batched_tokens": 27648,
+        "gpu_memory_utilization": 0.8,
+        "async_scheduling": true,
+        "performance_mode": "interactivity",
+        "attention_backend": "auto",
+        "enable_prefix_caching": true,
+        "graph_mode": "PIECEWISE",
+        "graph_capture_profile": "powers",
+        "weight_precision": "fp8",
+        "kv_cache_precision": "fp8"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 80,
+          "max_num_batched_tokens": 27648,
+          "gpu_memory_utilization": 0.8,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "PIECEWISE",
+            "cudagraph_capture_sizes": [
+              1,
+              2,
+              4,
+              8,
+              16,
+              32,
+              80
+            ]
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "fp8",
+          "async_scheduling": true,
+          "performance_mode": "interactivity",
+          "attention_backend": "auto",
+          "enable_prefix_caching": true,
+          "quantization": "fp8",
+          "calculate_kv_scales": true
+        },
+        "config_id": "161a9d4868c721dc",
+        "constraint_values": [
+          327.18990077465014,
+          -4948.7574416706475,
+          0.0
+        ],
+        "gpu_seconds": 47.173215302894974,
+        "measurement": {
+          "output_throughput": 1901.6512266919865,
+          "p95_ttft_ms": 527.1899007746501,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 47.173215302894974,
+          "gpu_seconds": 47.173215302894974,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 1051.2425583293523
+        },
+        "orchestrator_wall_seconds": 0.04773059899980581,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 15,
+      "state": "COMPLETE",
+      "values": [
+        1821.652329290726
+      ],
+      "params": {
+        "max_num_seqs": 88,
+        "max_num_batched_tokens": 23296,
+        "gpu_memory_utilization": 0.8,
+        "async_scheduling": true,
+        "performance_mode": "interactivity",
+        "attention_backend": "auto",
+        "enable_prefix_caching": true,
+        "graph_mode": "PIECEWISE",
+        "graph_capture_profile": "powers",
+        "weight_precision": "fp8",
+        "kv_cache_precision": "fp8"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 88,
+          "max_num_batched_tokens": 23296,
+          "gpu_memory_utilization": 0.8,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "PIECEWISE",
+            "cudagraph_capture_sizes": [
+              1,
+              2,
+              4,
+              8,
+              16,
+              32,
+              88
+            ]
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "fp8",
+          "async_scheduling": true,
+          "performance_mode": "interactivity",
+          "attention_backend": "auto",
+          "enable_prefix_caching": true,
+          "quantization": "fp8",
+          "calculate_kv_scales": true
+        },
+        "config_id": "8a51c55e3267691b",
+        "constraint_values": [
+          304.2852473849228,
+          -4956.82184670329,
+          0.0
+        ],
+        "gpu_seconds": 47.35648442482432,
+        "measurement": {
+          "output_throughput": 1821.652329290726,
+          "p95_ttft_ms": 504.2852473849228,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 47.35648442482432,
+          "gpu_seconds": 47.35648442482432,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 1043.1781532967095
+        },
+        "orchestrator_wall_seconds": 0.050317804000769684,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 16,
+      "state": "COMPLETE",
+      "values": [
+        1817.3535656630766
+      ],
+      "params": {
+        "max_num_seqs": 88,
+        "max_num_batched_tokens": 29696,
+        "gpu_memory_utilization": 0.75,
+        "async_scheduling": true,
+        "performance_mode": "interactivity",
+        "attention_backend": "auto",
+        "enable_prefix_caching": true,
+        "graph_mode": "PIECEWISE",
+        "graph_capture_profile": "powers",
+        "weight_precision": "fp8",
+        "kv_cache_precision": "fp8"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 88,
+          "max_num_batched_tokens": 29696,
+          "gpu_memory_utilization": 0.75,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "PIECEWISE",
+            "cudagraph_capture_sizes": [
+              1,
+              2,
+              4,
+              8,
+              16,
+              32,
+              88
+            ]
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "fp8",
+          "async_scheduling": true,
+          "performance_mode": "interactivity",
+          "attention_backend": "auto",
+          "enable_prefix_caching": true,
+          "quantization": "fp8",
+          "calculate_kv_scales": true
+        },
+        "config_id": "73db2601b0388394",
+        "constraint_values": [
+          346.2097046727571,
+          -4856.164565874204,
+          0.0
+        ],
+        "gpu_seconds": 47.36678924230381,
+        "measurement": {
+          "output_throughput": 1817.3535656630766,
+          "p95_ttft_ms": 546.2097046727571,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 47.36678924230381,
+          "gpu_seconds": 47.36678924230381,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 1143.835434125796
+        },
+        "orchestrator_wall_seconds": 0.04543786100020952,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 17,
+      "state": "PRUNED",
+      "values": [
+        1646.133036936721
+      ],
+      "params": {
+        "max_num_seqs": 40,
+        "max_num_batched_tokens": 22528,
+        "gpu_memory_utilization": 0.8,
+        "async_scheduling": true,
+        "performance_mode": "interactivity",
+        "attention_backend": "FLASH_ATTN",
+        "enable_prefix_caching": true,
+        "graph_mode": "PIECEWISE",
+        "graph_capture_profile": "powers",
+        "weight_precision": "fp8",
+        "kv_cache_precision": "fp8"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 40,
+          "max_num_batched_tokens": 22528,
+          "gpu_memory_utilization": 0.8,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "PIECEWISE",
+            "cudagraph_capture_sizes": [
+              1,
+              2,
+              4,
+              8,
+              16,
+              32,
+              40
+            ]
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "fp8",
+          "async_scheduling": true,
+          "performance_mode": "interactivity",
+          "attention_backend": "FLASH_ATTN",
+          "enable_prefix_caching": true,
+          "quantization": "fp8",
+          "calculate_kv_scales": true
+        },
+        "config_id": "c5c5e882d2c88aad",
+        "gpu_seconds": 45.41049776109471,
+        "orchestrator_wall_seconds": 0.028952609000043594,
+        "phase": "B",
+        "pruned_at_fraction": 0.5
+      }
+    },
+    {
+      "number": 18,
+      "state": "COMPLETE",
+      "values": [
+        1830.175926084657
+      ],
+      "params": {
+        "max_num_seqs": 104,
+        "max_num_batched_tokens": 32768,
+        "gpu_memory_utilization": 0.8,
+        "async_scheduling": true,
+        "performance_mode": "interactivity",
+        "attention_backend": "auto",
+        "enable_prefix_caching": true,
+        "graph_mode": "PIECEWISE",
+        "graph_capture_profile": "powers",
+        "weight_precision": "fp8",
+        "kv_cache_precision": "fp8"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 104,
+          "max_num_batched_tokens": 32768,
+          "gpu_memory_utilization": 0.8,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "PIECEWISE",
+            "cudagraph_capture_sizes": [
+              1,
+              2,
+              4,
+              8,
+              16,
+              32,
+              104
+            ]
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "fp8",
+          "async_scheduling": true,
+          "performance_mode": "interactivity",
+          "attention_backend": "auto",
+          "enable_prefix_caching": true,
+          "quantization": "fp8",
+          "calculate_kv_scales": true
+        },
+        "config_id": "b39de509c986d8a9",
+        "constraint_values": [
+          460.5390572059081,
+          -4814.2675735849025,
+          0.0
+        ],
+        "gpu_seconds": 47.336195164023216,
+        "measurement": {
+          "output_throughput": 1830.175926084657,
+          "p95_ttft_ms": 660.5390572059081,
+          "completed": 62,
+          "total_requests": 62,
+          "failed": 0,
+          "wall_seconds": 47.336195164023216,
+          "gpu_seconds": 47.336195164023216,
+          "source": "SYNTHETIC",
+          "p95_e2e_latency_ms": 1185.7324264150975
+        },
+        "orchestrator_wall_seconds": 0.04543984100018861,
+        "phase": "B",
+        "slo_feasible": false
+      }
+    },
+    {
+      "number": 19,
+      "state": "PRUNED",
+      "values": [
+        1468.6175501138493
+      ],
+      "params": {
+        "max_num_seqs": 24,
+        "max_num_batched_tokens": 25600,
+        "gpu_memory_utilization": 0.75,
+        "async_scheduling": true,
+        "performance_mode": "interactivity",
+        "attention_backend": "auto",
+        "enable_prefix_caching": true,
+        "graph_mode": "PIECEWISE",
+        "graph_capture_profile": "dense",
+        "weight_precision": "fp8",
+        "kv_cache_precision": "fp8"
+      },
+      "attrs": {
+        "concurrency": 8,
+        "config": {
+          "max_num_seqs": 24,
+          "max_num_batched_tokens": 25600,
+          "gpu_memory_utilization": 0.75,
+          "enable_chunked_prefill": true,
+          "compilation_config": {
+            "cudagraph_mode": "PIECEWISE",
+            "cudagraph_capture_sizes": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24
+            ]
+          },
+          "dtype": "bfloat16",
+          "kv_cache_dtype": "fp8",
+          "async_scheduling": true,
+          "performance_mode": "interactivity",
+          "attention_backend": "auto",
+          "enable_prefix_caching": true,
+          "quantization": "fp8",
+          "calculate_kv_scales": true
+        },
+        "config_id": "4f3d09fde4075560",
+        "gpu_seconds": 45.09176310044903,
+        "orchestrator_wall_seconds": 0.017507748999378236,
+        "phase": "B",
+        "pruned_at_fraction": 0.3870967741935484
+      }
+    }
+  ]
+}
