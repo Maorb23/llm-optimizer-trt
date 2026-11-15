@@ -13,7 +13,7 @@ dependencies = [
     "openai",
     "psutil",
     "click",
-    "nvidia-ml-py3",
+    "nvidia-ml-py>=13.610.43",
     "numpy",
     "scipy",
     "huggingface_hub",
