@@ -214,3 +214,20 @@ and numeric tolerances. By default it discovers saved measured runs under
 `experiment_results/`. Tables, figures, and comparison settings are exported
 to `experiment_results/phase_stability_analysis/`. Matching placeholder metadata
 or a GPU model name cannot establish an unchanged physical GPU or runtime.
+
+## Phase 1 campaign
+
+Open [phase1_experiments.ipynb](phase1_experiments.ipynb) for explicit framework,
+search-space, pruning, and BF16/FP8 weight and KV-cache controls. The matching
+editable batch configuration is
+`src/llm_optimizer/experiment/phase1_experiments.py`; shared orchestration lives
+in `src/llm_optimizer/experiment/phase1.py`, alongside the existing lab/workflow.
+
+```bash
+python -m llm_optimizer.experiment.phase1_experiments --smoke --run-root /tmp/phase1-smoke
+python -m llm_optimizer.experiment.phase1_experiments
+```
+
+Install the editable package first. The campaign defaults to CPU simulation;
+fill the verified GPU/model preflight records before enabling real measurements.
+The notebook includes the systemd service example for unattended execution.
