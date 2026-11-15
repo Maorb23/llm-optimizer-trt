@@ -5,6 +5,7 @@ import fcntl
 import hashlib
 import itertools
 import json
+import warnings
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -17,6 +18,20 @@ from .workflow import create_lab, environment_manifest, write_json
 
 class ExplicitLab(Lab):
     """Expose the extended numeric, conditional and precision domains."""
+
+    def benchmark_for(self, phase, framework, concurrency, run_label, **kwargs):
+        benchmark = super().benchmark_for(phase, framework, concurrency, run_label, **kwargs)
+        if not self.RUN_REAL_GPU:
+            benchmark.environment = {
+                **copy.deepcopy(self.REAL_PREFLIGHT.get((phase, framework), {})),
+                **self.ENVIRONMENT,
+            }
+        return benchmark
+
+    def workload_for(self, concurrency, phase="A", num_prompts=None, seed=None):
+        if num_prompts is None and self.requests_by_concurrency:
+            num_prompts = self.requests_by_concurrency[concurrency]
+        return super().workload_for(concurrency, phase, num_prompts, seed)
 
     def expanded_config(self, trial, framework, concurrency, config, choices=None):
         domains = self.extra_spaces[framework]
@@ -136,18 +151,32 @@ def verify_precision(values, precision_choices):
 
 class Phase1Runner:
     def __init__(self, settings, base_spaces, expanded_choices, extra_spaces, run_root,
-                 precision_choices=None, trt_fp8_calibration=None):
+                 precision_choices=None, trt_fp8_calibration=None,
+                 requests_by_concurrency=None, pruning_min_completed_requests=None):
         values = copy.deepcopy(DEFAULTS)
         values.update(copy.deepcopy(settings))
         ExperimentConfig._validate(values)
         precision_choices = copy.deepcopy(precision_choices or {})
         trt_fp8_calibration = copy.deepcopy(trt_fp8_calibration or {})
         verify_precision(values, precision_choices)
+        request_map = {int(c): n for c, n in (requests_by_concurrency or {}).items()}
+        minimum_map = {int(c): n for c, n in (pruning_min_completed_requests or {}).items()}
+        for concurrency in values["concurrencies"]:
+            if request_map and concurrency not in request_map:
+                raise ValueError(f"Missing request count for concurrency {concurrency}")
+            count = request_map.get(concurrency, values["phase_requests"]["B"])
+            minimum = minimum_map.get(concurrency, 1)
+            if (isinstance(count, bool) or not isinstance(count, int) or count < 1
+                    or isinstance(minimum, bool) or not isinstance(minimum, int)
+                    or not 1 <= minimum <= count):
+                raise ValueError("Request counts and pruning minimums must be positive integers; minimum <= count")
         self.payload = {
             "settings": values, "base_spaces": base_spaces,
             "expanded_choices": expanded_choices, "extra_spaces": extra_spaces,
             "precision_choices": precision_choices,
             "trt_fp8_calibration": trt_fp8_calibration,
+            "requests_by_concurrency": request_map,
+            "pruning_min_completed_requests": minimum_map,
         }
         encoded = json.dumps(self.payload, sort_keys=True)
         digest = hashlib.sha256(encoded.encode()).hexdigest()[:16]
@@ -168,6 +197,8 @@ class Phase1Runner:
         self.lab.extra_spaces = copy.deepcopy(extra_spaces)
         self.lab.precision_choices = precision_choices
         self.lab.trt_fp8_calibration = trt_fp8_calibration
+        self.lab.requests_by_concurrency = request_map
+        self.lab.pruning_min_completed_requests = minimum_map
         self.lab.EXPANDED_CHOICES = copy.deepcopy(expanded_choices)
         for framework in values["frameworks"]:
             self.lab.expanded_choices(framework)
@@ -189,21 +220,61 @@ class Phase1Runner:
             finally:
                 fcntl.flock(handle, fcntl.LOCK_UN)
 
-    def run_objective_group(self, phase, target, concurrencies, pruner_name="nop"):
-        if pruner_name not in {"nop", "median"}:
-            raise ValueError("Use nop or median")
+    def _calibrate(self, phase, target, concurrency, framework, samples, reuse=False):
+        path = self.run_dir / f"calibration-{phase}-{framework}-c{concurrency}-{target}.json"
+        if reuse and path.exists():
+            report = json.loads(path.read_text())
+            if report.get("requested_samples") == samples:
+                return report
+        report = self.lab.calibrate_pruning(
+            phase, concurrency, framework, target, samples=samples,
+            min_completed_requests=self.lab.pruning_min_completed_requests.get(concurrency, 1),
+        )
+        report = self.lab.artifact_value(report)
+        write_json(path, report)
+        return report
+
+    def calibrate(self, phase, target, concurrency, framework, samples=32):
+        with self.lock():
+            return self._calibrate(phase, target, concurrency, framework, samples)
+
+    def run_objective_group(self, phase, target, concurrencies, pruner_name="nop",
+                            sampler_names=None, constrained=False):
+        if pruner_name not in {"nop", "median", "percentile", "halving", "hyperband", "threshold"}:
+            raise ValueError("Unknown pruner")
+        if constrained and pruner_name != "nop":
+            raise ValueError("Constrained searches require nop pruning")
         if pruner_name != "nop" and target.startswith("pareto"):
             raise ValueError("Pareto objectives require nop pruning")
+        samplers = list(sampler_names if sampler_names is not None else (
+            self.lab.PARETO_SAMPLERS if target.startswith("pareto") else self.lab.SAMPLER_NAMES
+        ))
+        if not samplers or len(set(samplers)) != len(samplers):
+            raise ValueError("Select a nonempty list of distinct samplers")
+        supported = {"gp", "tpe", "tpe_multivariate", "nsga2", "random", "qmc", "grid"}
+        if not set(samplers) <= supported:
+            raise ValueError(f"Unknown samplers: {sorted(set(samplers) - supported)}")
+        if constrained and not set(samplers) <= {"gp", "tpe", "tpe_multivariate", "nsga2"}:
+            raise ValueError("Select a constraint-aware sampler")
         results = {}
         with self.lock():
             for concurrency in concurrencies:
                 if target not in self.lab.objectives_for(concurrency):
                     raise ValueError("Objective incompatible with concurrency")
                 for framework in self.lab.REAL_FRAMEWORKS:
-                    for sampler in self.lab.SAMPLER_NAMES:
+                    for sampler in samplers:
+                        if sampler == "gp" and not self.lab.RUN_GP:
+                            skipped = {"phase": phase, "framework": framework,
+                                       "concurrency": concurrency, "target": target,
+                                       "sampler": sampler, "reason": "Install engine-compatible torch for GPSampler"}
+                            self.lab.SKIPPED_ARMS.append(skipped)
+                            warnings.warn(skipped["reason"], stacklevel=2)
+                            write_json(self.run_dir / "skipped-arms.json", self.lab.SKIPPED_ARMS)
+                            continue
                         for seed in self.lab.ACTIVE_SEEDS:
                             name = (f"{phase}-{framework}-c{concurrency}-{target}-"
-                                    f"{sampler}-{pruner_name}-s{seed}")
+                                    f"{sampler}-{pruner_name}-s{seed}"
+                                    + ("-constrained" if constrained else ""))
                             summaries = optuna.get_all_study_summaries(self.lab.STORAGE)
                             if any(s.study_name == name for s in summaries):
                                 old = optuna.load_study(
@@ -218,17 +289,29 @@ class Phase1Runner:
                             choices = self.lab.REAL_PREFLIGHT.get(
                                 (phase, framework), {}
                             ).get("expanded_choices", self.lab.EXPANDED_CHOICES[framework])
-                            pruning = ({"n_startup_trials": 10, "n_warmup_steps": 32,
-                                        "n_min_trials": 3}
-                                       if pruner_name == "median" else {})
-                            pruner = (optuna.pruners.MedianPruner(**pruning)
-                                      if pruning else optuna.pruners.NopPruner())
+                            minimum = self.lab.pruning_min_completed_requests.get(concurrency, 1)
+                            calibration = None
+                            if pruner_name == "threshold":
+                                calibration = self._calibrate(
+                                    phase, target, concurrency, framework,
+                                    samples=self.payload["settings"]["pruning_samples"], reuse=True,
+                                )
+                                write_json(self.run_dir / (name + "-calibration.json"), calibration)
+                            menu = self.lab.pruner_menu(
+                                self.lab.objective_spec(target, concurrency)[2][0],
+                                threshold=calibration["threshold"] if calibration else None,
+                                max_requests=self.lab.workload_for(concurrency, phase)["num_prompts"],
+                                min_completed_requests=minimum,
+                            )
+                            pruner_type, pruning = menu[pruner_name]
+                            pruner = pruner_type(**pruning)
                             study = self.lab.run_study(
                                 name, framework, sampler, concurrency=concurrency,
-                                phase=phase, seed=seed, target=target,
+                                phase=phase, seed=seed, target=target, constrained=constrained,
                                 space_kind="expanded" if phase == "B" else "baseline",
                                 choices=choices if phase == "B" else None,
                                 pruner=pruner, pruner_settings=pruning,
+                                min_completed_requests=minimum,
                                 benchmark=self.lab.benchmark_for(
                                     phase, framework, concurrency, name
                                 ),
@@ -249,6 +332,9 @@ class Phase1Runner:
 def plot_group(studies):
     import matplotlib.pyplot as plt
 
+    if any(len(s.directions) > 1 for s in studies.values()):
+        return {name: optuna.visualization.matplotlib.plot_pareto_front(study).figure
+                for name, study in studies.items() if len(study.directions) > 1}
     fig, ax = plt.subplots(figsize=(10, 4))
     for name, study in studies.items():
         trials = [t for t in study.trials

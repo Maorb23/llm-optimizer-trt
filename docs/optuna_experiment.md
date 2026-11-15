@@ -231,3 +231,45 @@ python -m llm_optimizer.experiment.phase1_experiments
 Install the editable package first. The campaign defaults to CPU simulation;
 fill the verified GPU/model preflight records before enabling real measurements.
 The notebook includes the systemd service example for unattended execution.
+Phase 1 exposes `WANDB_ENABLED`, `WANDB_PROJECT`, `WANDB_ENTITY`, `WANDB_MODE`,
+and `WANDB_GROUP`, with online logging enabled as in the v2 lab. Install
+`.[notebook,wandb]` and run its `wandb.login()` cell before studies. For the batch
+entry point, authenticate on the VM first or provide `WANDB_API_KEY` through its
+environment. Offline mode skips login; CPU smoke runs disable tracking.
+
+The Phase 1 default scalar samplers are GP, TPE, and multivariate TPE, with 20
+attempts per sampler/seed/framework/concurrency/objective/pruner. Requests scale
+as `{1: 32, 8: 62, 16: 125, 32: 250, 128: 1000}`. See
+[the v2 parity checklist](phase1_v2_parity.md) for optional features not included
+in the default campaign.
+
+
+Phase 1 now includes independent Pareto, constrained-search, calibration and
+pruner-comparison cells. Edit `TTFT_LIMITS_MS`, `E2E_LIMITS_MS` and
+`FAILURE_RATE_LIMIT` before searching. `CONSTRAINED` applies to ordinary calls;
+explicit constrained cells pass `constrained=True`. Active pruning requires an
+unconstrained scalar objective and a benchmark with checkpoint cancellation.
+`PRUNER_NAMES` controls the optional comparison cell; all arms retain `TRIALS`
+attempts and the same request map. Calibration uses `PRUNING_SAMPLES` additional
+pilot configurations, and threshold arms share a persisted task calibration.
+Inspect its correlations and false-prune diagnostic before trusting thresholds.
+
+For pinned HF setup, edit `HF_SETUP`, enable real GPU execution and explicitly
+call `setup_pinned_models()`. This is the only new setup action that downloads
+weights; the default notebook leaves it commented out. Ordinary serving uses
+`enable_dflash=False` and `speculative_algorithm=None`; selecting speculative
+serving requires a draft ID/revision and the framework-specific choice documented
+in the controls. The existing helper checks the installed runtime and resolves
+immutable revisions before committing profiles. Phase A keeps its original
+model; Phase B uses the resolved target. Clear `MODEL_PROFILES` and
+`MODEL_SETUP_IDENTITY` and `MODEL_SETUP_CHOICES` before changing/rerunning setup. For batch execution,
+persist resolved `PHASE_B_MODEL`, `PHASE_B_SNAPSHOT` and `MODEL_PROFILES` in the
+script controls; notebook memory is not shared with subprocesses. Optional
+searches are callable through `get_runner().run_objective_group(...)`; the
+supervised default scalar queue is unchanged.
+
+GPU follow-up is required for native configuration support, checkpoint
+cancellation, pinned draft/target compatibility, precision quality, and real
+calibration/SLO validity. CPU simulation and mocked serialization do not verify
+those properties. Validation remains independent at 1000 requests and five
+repeats by default. No GPU experiment is needed to run the CPU tests.

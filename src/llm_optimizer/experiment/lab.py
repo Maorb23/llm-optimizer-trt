@@ -1907,14 +1907,19 @@ class Lab:
             if not target.startswith("pareto")
         ]
 
-    def calibrate_pruning(self, phase, concurrency, framework, target, samples=32):
+    def calibrate_pruning(self, phase, concurrency, framework, target, samples=32,
+                          min_completed_requests=1):
         target, metrics, directions = self.objective_spec(target, concurrency)
         if len(metrics) != 1:
             raise ValueError("Pareto pruning is unsupported")
         pilot = optuna.create_study(
             sampler=optuna.samplers.RandomSampler(seed=self.CALIBRATION_SAMPLER_SEED)
         )
-        benchmark = self.Simulator(seed=self.CALIBRATION_NOISE_SEED, phase=phase)
+        from llm_optimizer.optimization import checkpoint_schedule
+        workload = self.workload_for(concurrency, phase)
+        schedule = checkpoint_schedule(workload["num_prompts"], min_completed_requests)
+        benchmark = self.benchmark_for(phase, framework, concurrency,
+                                       f"calibration-{phase}-{framework}-c{concurrency}-{target}")
         trajectories = []
         for _ in range(samples):
             trial = pilot.ask()
@@ -1923,9 +1928,28 @@ class Lab:
                 framework,
                 concurrency,
                 "baseline" if phase == "A" else "expanded",
+                choices=(self.REAL_PREFLIGHT.get((phase, framework), {}).get("expanded_choices")
+                         if phase == "B" else None),
             )
             try:
-                rows = list(benchmark.stream(framework, cfg, concurrency))
+                if isinstance(benchmark, RepositoryBenchmark):
+                    rows = []
+                    def collect(m):
+                        self.validate_measurement(m)
+                        previous = sum(row[3] for row in rows)
+                        rows.append((m.completed, m.completed / schedule[-1], m,
+                                     max(0.0, m.gpu_seconds - previous)))
+                    final = benchmark.measure(
+                        framework, cfg, concurrency, checkpoint_callback=collect,
+                        checkpoint_requests=schedule,
+                    )
+                    if not rows or rows[-1][0] != schedule[-1]:
+                        collect(final)
+                else:
+                    rows = list(benchmark.stream(
+                        framework, cfg, concurrency, checkpoint_requests=schedule))
+                if [row[0] for row in rows] != schedule:
+                    raise ValueError("Calibration checkpoint schedule differs from search")
             except BenchmarkFailure:
                 pilot.tell(trial, state=TrialState.FAIL)
                 continue
@@ -1961,7 +1985,7 @@ class Lab:
         )
         correlations = [
             float(spearmanr(scores[:, step], scores[:, -1]).statistic)
-            for step in [0, 1]
+            for step in range(len(schedule) - 1)
         ]
         return {
             "phase": phase,
@@ -1972,7 +1996,11 @@ class Lab:
             "metric": metrics[0],
             "direction": directions[0],
             "workload": self.workload_for(concurrency, phase),
+            "requested_samples": samples,
             "valid_trajectories": len(scores),
+            "checkpoint_requests": schedule,
+            "environment": getattr(benchmark, "environment", self.ENVIRONMENT),
+            "synthetic": not self.RUN_REAL_GPU,
             "rank_correlations": [v if np.isfinite(v) else None for v in correlations],
             "false_prune_rate_among_top_10pct": len(top & stopped) / len(top),
             "replayed_time_saved_fraction": 1 - replay / total,
