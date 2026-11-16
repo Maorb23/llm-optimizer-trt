@@ -133,42 +133,18 @@ def test_report_runs_isolates_phase_framework_concurrency_objective():
     assert len(namespace["report_runs"]("B", "vllm")) == 3
 
 
-def test_notebook_has_separate_model_sections():
+def test_notebook_has_separate_phase_framework_sections():
     notebook = json.loads(NOTEBOOK.read_text())
     calls = [
         "".join(c["source"]).strip()
         for c in notebook["cells"]
-        if c["cell_type"] == "code" and "".join(c["source"]).startswith("show_model(")
+        if c["cell_type"] == "code"
+        and "".join(c["source"]).startswith("show_framework(")
     ]
-
     assert calls == [
-        f'show_model("{model}")'
-        for model in [
-            "cpm5_2",
-            "qwen3.5-4b",
-            "qwen3-4b",
-            "qwen3-4b dspark",
-            "qwen3-8b",
-            "qwen3-8b dspark",
-            "gemma4-12b",
-            "gemma4-12b dspark",
-        ]
-    ]
-
-
-def test_report_runs_keeps_dspark_and_base_models_separate():
-    namespace = helpers()
-    base = {
-        "phase": "B",
-        "framework": "vllm",
-        "model_group": "qwen3-4b",
-        "contract": {"concurrency": 128, "target": "e2e"},
-    }
-    speculative = dict(base, model_group="qwen3-4b dspark")
-    namespace["included"] = [base, speculative]
-    assert namespace["report_runs"]("B", "vllm", model="qwen3-4b") == [base]
-    assert namespace["report_runs"]("B", "vllm", model="qwen3-4b dspark") == [
-        speculative
+        f'show_framework("{phase}", "{framework}")'
+        for phase in ["B", "A"]
+        for framework in ["vllm", "trtllm", "sglang"]
     ]
 
 

@@ -60,7 +60,6 @@ SERVER_CONFIGS: ConfigsDict = {
     "gpu_memory_utilization": ArgConfig[float](name="gpu_memory_utilization"),
     "swap_space": ArgConfig[float](name="swap_space"),
     "kv_cache_dtype": ArgConfig[str](name="kv_cache_dtype"),
-    "calculate_kv_scales": ArgConfig[bool](name="calculate_kv_scales"),
     "num_gpu_blocks_override": ArgConfig[int](name="num_gpu_blocks_override"),
     "enable_prefix_caching": ArgConfig[bool](name="enable_prefix_caching"),
     "prefix_caching_hash_algo": ArgConfig[str](name="prefix_caching_hash_algo"),

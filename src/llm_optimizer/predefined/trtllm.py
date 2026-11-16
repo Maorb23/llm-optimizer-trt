@@ -145,9 +145,6 @@ def _parallel_value(
 
 # Native YAML fields, not flat trtllm-serve flags (v1.3.0rc26).
 NATIVE_CONFIG_FIELDS = (
-    "dtype",
-    "quant_config",
-    "calib_config",
     "kv_cache_config",
     "cuda_graph_config",
     "scheduler_config",
