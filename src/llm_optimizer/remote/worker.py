@@ -225,6 +225,10 @@ def run_worker(
     run_id, framework = payload["run_id"], payload["framework"]
     if request.dry_run:
         raise ValueError("dry-run requests do not launch GPU workers")
+    if request.campaign_v4 is not None:
+        from .campaign_v4 import run_campaign_worker
+
+        return run_campaign_worker(request, run_id, framework, store, work_dir)
     store = store or S3Artifacts(
         request.bucket, request.prefix, os.getenv("AWS_ENDPOINT_URL_S3")
     )

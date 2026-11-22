@@ -35,6 +35,7 @@ class OptimizationRequest:
     follows_spot_price: bool | None = None
     semantic_context: dict[str, Any] | None = None
     workload_manifest: dict[str, Any] | None = None
+    campaign_v4: str | None = None
 
     @classmethod
     def parse(cls, data: dict[str, Any]) -> OptimizationRequest:
@@ -253,6 +254,10 @@ class OptimizationRequest:
                 raise ValueError('Custom workload paths are managed by the worker')
             if any(config.get('client_args') for config in [request.optuna, *request.optuna_by_framework.values()]):
                 raise ValueError('Custom workloads cannot be overridden by Optuna')
+        if request.campaign_v4 is not None:
+            from .campaign_v4 import validate_selection
+
+            validate_selection(request)
         return request
 
     def optuna_for(self, framework: str) -> dict[str, Any]:
@@ -263,4 +268,6 @@ class OptimizationRequest:
         # Preserve the payload accepted by existing images for default workloads.
         if self.workload_manifest is None:
             data.pop("workload_manifest")
+        if self.campaign_v4 is None:
+            data.pop("campaign_v4")
         return data

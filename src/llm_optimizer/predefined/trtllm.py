@@ -176,8 +176,8 @@ def validate_draft_request(algorithm, max_draft_len, draft_model_id):
         or max_draft_len < 1
     ):
         raise ValueError("max_draft_len must be a positive integer")
-    if importlib.metadata.version("tensorrt_llm") != "1.3.0rc26":
-        raise ValueError("Draft setup is verified for TensorRT-LLM 1.3.0rc26")
+    if importlib.metadata.version("tensorrt_llm") not in {"1.3.0rc26", "1.4.0rc3"}:
+        raise ValueError("Draft setup requires TensorRT-LLM 1.3.0rc26 or 1.4.0rc3")
     from tensorrt_llm.llmapi import llm_args
 
     if not hasattr(llm_args, DRAFT_ALGORITHMS[algorithm]):

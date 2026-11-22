@@ -19,7 +19,7 @@ def configure_hf_models(
     """Configure Phase B atomically, retaining resolved revisions for safe resume.
 
     The legacy enable_dflash toggle selects vLLM DSpark or SGLang DFlash,
-    matching the v2 notebook. SGLang DSPARK is selected explicitly.
+    matching the v2 notebook. Select DSPARK explicitly on vLLM or SGLang.
     """
     import copy
     import importlib.metadata
@@ -74,8 +74,8 @@ def configure_hf_models(
             raise ValueError("Select SGLang DFLASH or DSPARK")
         if enable_dflash and speculative_algorithm != "DFLASH":
             raise ValueError("Disable enable_dflash when selecting DSPARK")
-    elif speculative_algorithm is not None:
-        raise ValueError("speculative_algorithm is supported for SGLang and TRT-LLM")
+    elif framework == "vllm" and speculative_algorithm not in {None, "DSPARK"}:
+        raise ValueError("Select vLLM DSPARK")
     if (
         framework != "trtllm"
         and draft_enabled

@@ -1,0 +1,7 @@
+# CPU-only executable scorer. Build explicitly, then use its immutable image ID.
+# docker build -f docs/Dockerfile.scorer_v4 -t llm-v4-scorer .
+# docker image inspect llm-v4-scorer --format '{{.Id}}'
+FROM python:3.11-slim
+RUN pip install --no-cache-dir evalplus==0.3.1
+ENV PYTHONDONTWRITEBYTECODE=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+USER 65534:65534

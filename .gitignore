@@ -152,3 +152,12 @@ Thumbs.db
 
 # Additional local model caches
 .huggingface/
+# Local benchmark artifacts and experiment copies
+/results/
+/runs/
+/experiments/
+/experiment_results/
+/collection-merge-backups/
+
+# Local private key
+/private.pem
